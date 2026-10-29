@@ -63,7 +63,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
 .bests { display: flex; align-items: center; gap: 16px; }
 .bests > div { display: flex; flex-direction: column; align-items: flex-end; }
 .bests b { font-family: var(--font-display); font-weight: 600; font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums; }
-#mute {
+#mute, #haptic {
   position: absolute; right: 10px; top: 44px;
   background: rgba(15, 35, 43, .72); border: 0; border-radius: 4px;
   padding: 5px 9px; font-size: 12px; color: var(--paper);
@@ -148,6 +148,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
 #angle::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--ochre); border: 3px solid var(--deck); }
 .note { grid-column: 1; font-size: 11px; color: var(--mute); }
 
+#haptic { top: 76px; }
+
 @media (prefers-reduced-motion: reduce) {
   #skips.pop { animation: none; }
   .card, .hint { transition: none; }
@@ -175,6 +177,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
       </div>
       <div class="wind" id="wind">Calm</div>
       <button id="mute" type="button" aria-pressed="false">Sound on</button>
+      <button id="haptic" type="button" aria-pressed="false">Haptics on</button>
       <div class="card" id="card" aria-live="polite">
         <h2><span id="cardHead">0 skips</span><span class="badge" id="cardBadge" style="display:none">New best</span></h2>
         <div class="diag">
@@ -308,6 +311,32 @@ var Sound = (function () {
   };
 })();
 
+/* ---------- Haptics: Android vibrate; iOS 18 Safari switch-input fallback (best effort) ---------- */
+var Haptics = (function () {
+  var enabled = true, label = null;
+  function iosTick() {
+    try {
+      if (!label) {
+        label = document.createElement('label');
+        label.style.cssText = 'position:fixed;left:-99px;top:-99px;opacity:0;pointer-events:none';
+        var cb = document.createElement('input'); cb.type = 'checkbox'; cb.setAttribute('switch', '');
+        label.appendChild(cb); document.body.appendChild(label);
+      }
+      label.click();
+    } catch (e) {}
+  }
+  function buzz(ms) {
+    if (!enabled) return;
+    if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} }
+    else iosTick();
+  }
+  return {
+    skip: function (v) { buzz(8 + Math.round(Math.min(v, 9) * 2)); },
+    sink: function () { buzz([30, 40, 45]); },
+    setEnabled: function (e) { enabled = e; if (e) buzz(15); }
+  };
+})();
+
 /* ---------- Game state ---------- */
 var stoneIdx = 0, aimAngle = 20, aimLocked = null, wind = 0;
 var state = 'ready'; // ready | flying | settling | returning
@@ -360,6 +389,13 @@ $('mute').addEventListener('click', function () {
   $('mute').setAttribute('aria-pressed', m ? 'true' : 'false');
   $('mute').textContent = m ? 'Sound off' : 'Sound on';
   Sound.setMuted(m); if (!m) Sound.unlock();
+});
+
+$('haptic').addEventListener('click', function () {
+  var off = $('haptic').getAttribute('aria-pressed') !== 'true';
+  $('haptic').setAttribute('aria-pressed', off ? 'true' : 'false');
+  $('haptic').textContent = off ? 'Haptics off' : 'Haptics on';
+  Haptics.setEnabled(!off);
 });
 
 /* Tilt: phone tilt sets the throw angle. The pose held when tilt is switched on counts as 20 degrees. */
@@ -589,12 +625,14 @@ function update(time, delta) {
         ripples.push({ x: ex, age: 0, life: 1.9, p: Math.min(ev.v, 9) });
         spawnDrops(ex, ev.v, 1);
         Sound.skip(ev.n, ev.v);
+        Haptics.skip(ev.v);
         $('skips').textContent = String(ev.n);
         var el = $('skips'); el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
       } else {
         ripples.push({ x: ex, age: 0, life: 2.4, p: 10 });
         spawnDrops(ex, Math.max(ev.v, 3) + 2, 1.6);
         Sound.sink();
+        Haptics.sink();
       }
     }
     var xm = run.xs[idx], hm = run.hs[idx], sm = run.ss[idx];
