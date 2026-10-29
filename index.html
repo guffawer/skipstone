@@ -1,13 +1,11 @@
-<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>html{color-scheme:dark;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}</style></head><body>
-<title>Skipstone</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>html{color-scheme:dark;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}</style></head><body><title>Skipstone</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Figtree:wght@400;600&display=swap">
 <style>
-/* Layout: one-screen portrait app. Slim header strip, a 3:4 lake stage with HUD overlays, a control deck (stones, angle).
-   One committed look (morning lake), so tokens are set once with an explicit dark UI. */
+/* Layout: one-screen portrait app. Header strip, a 3:4 first-person lake stage with HUD overlays, a control deck (stone basket, angle).
+   One committed look (dawn lake), so tokens are set once with an explicit dark UI. */
 :root {
   --ink: #0f232b;
   --deck: #15292f;
@@ -37,23 +35,8 @@ body {
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
-.app {
-  height: 100%;
-  max-width: 560px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-block: 8px;
-  box-sizing: border-box;
-}
-.lbl {
-  white-space: nowrap;
-  font-size: 10px;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--mute);
-}
+.app { height: 100%; max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; padding-block: 8px; box-sizing: border-box; }
+.lbl { white-space: nowrap; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--mute); }
 button { font: inherit; color: inherit; cursor: pointer; }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); outline-offset: 2px; }
 
@@ -63,54 +46,77 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
 .bests { display: flex; align-items: center; gap: 16px; }
 .bests > div { display: flex; flex-direction: column; align-items: flex-end; }
 .bests b { font-family: var(--font-display); font-weight: 600; font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums; }
-#mute, #haptic {
-  position: absolute; right: 10px; top: 44px;
-  background: rgba(15, 35, 43, .72); border: 0; border-radius: 4px;
-  padding: 5px 9px; font-size: 12px; color: var(--paper);
-}
 
 .stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
-.frame { position: relative; overflow: hidden; border-radius: 6px; background: #8fb8c9; }
+.frame { position: relative; overflow: hidden; border-radius: 6px; background: #4f7fa6; }
 #game { position: absolute; inset: 0; }
 #game canvas { display: block; touch-action: none; }
 
-.hud { position: absolute; left: 12px; top: 10px; display: flex; gap: 18px; pointer-events: none; color: #10262e; }
-.stat { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 4px; }
-.stat .lbl { width: 100%; color: rgba(16, 38, 46, .72); }
-.stat b { font-family: var(--font-display); font-weight: 800; font-size: 46px; line-height: .95; font-variant-numeric: tabular-nums; }
-.stat i { font-style: normal; font-family: var(--font-display); font-weight: 600; font-size: 18px; }
+.hud { position: absolute; left: 12px; top: 10px; display: flex; gap: 16px; pointer-events: none; color: var(--paper); text-shadow: 0 1px 6px rgba(8, 24, 32, .55); }
+.stat { display: flex; flex-direction: column; }
+.stat .lbl { color: rgba(236, 230, 214, .85); }
+.stat b { font-family: var(--font-display); font-weight: 800; font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
+.big { position: absolute; left: 50%; top: 4px; transform: translateX(-50%); text-align: center; pointer-events: none; color: #fff; text-shadow: 0 2px 10px rgba(8, 24, 32, .5); }
+.big b { display: block; font-family: var(--font-display); font-weight: 800; font-size: 64px; line-height: 1; font-variant-numeric: tabular-nums; }
+.big .lbl { color: rgba(255, 255, 255, .85); }
 #skips.pop { animation: pop .22s ease-out; }
 @keyframes pop { 0% { transform: scale(1.35); } 100% { transform: scale(1); } }
 
-.wind {
-  position: absolute; right: 10px; top: 10px; pointer-events: none;
-  background: rgba(15, 35, 43, .72); color: var(--paper);
-  font-size: 12px; padding: 5px 9px; border-radius: 4px; font-variant-numeric: tabular-nums;
+.side { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.chip { background: rgba(15, 35, 43, .72); color: var(--paper); font-size: 12px; padding: 5px 9px; border-radius: 4px; border: 0; font-variant-numeric: tabular-nums; }
+.wind { display: flex; align-items: center; gap: 7px; pointer-events: none; }
+.wind svg { width: 16px; height: 16px; transition: transform .3s linear; }
+.wind span { white-space: nowrap; }
+.tgt { pointer-events: none; }
+
+.metrics {
+  position: absolute; right: 10px; top: 36%; width: 104px; box-sizing: border-box;
+  background: rgba(15, 35, 43, .76); border-radius: 6px; padding: 8px 10px; pointer-events: none;
+  display: grid; gap: 6px; opacity: 0; transition: opacity .2s ease;
 }
+.metrics.show { opacity: 1; }
+.metrics div { display: flex; flex-direction: column; }
+.metrics b { font-family: var(--font-display); font-weight: 600; font-size: 20px; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.metrics b small { font-size: 12px; color: var(--mute); margin-left: 2px; }
+.metrics .ring b { color: var(--ochre); }
 
 .card {
-  position: absolute; left: 50%; top: 21%; transform: translate(-50%, 6px);
-  width: min(86%, 340px); box-sizing: border-box;
-  background: rgba(15, 35, 43, .9); color: var(--paper);
+  position: absolute; left: 50%; top: 24%; transform: translate(-50%, 6px);
+  width: min(88%, 350px); box-sizing: border-box;
+  background: rgba(15, 35, 43, .92); color: var(--paper);
   border-radius: 8px; padding: 12px 14px 10px;
   opacity: 0; transition: opacity .18s ease, transform .18s ease; pointer-events: none;
 }
 .card.show { opacity: 1; transform: translate(-50%, 0); }
 .card h2 { margin: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-family: var(--font-display); font-weight: 800; font-size: 28px; line-height: 1.05; letter-spacing: .02em; }
 .card h2 .badge { font-family: var(--font-body); font-weight: 600; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink); background: var(--ochre); padding: 3px 6px; border-radius: 3px; }
-.diag { margin-top: 8px; display: grid; grid-template-columns: 1fr; gap: 5px; }
-.diag div { display: grid; grid-template-columns: 52px 54px 1fr; align-items: baseline; gap: 6px; min-width: 0; }
+.card .score { margin-top: 2px; font-size: 12px; color: var(--ochre); font-variant-numeric: tabular-nums; }
+.diag { margin-top: 8px; display: grid; gap: 5px; }
+.diag div { display: grid; grid-template-columns: 50px 56px 1fr; align-items: baseline; gap: 6px; min-width: 0; }
 .diag .k { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--mute); }
 .diag .v { font-family: var(--font-display); font-weight: 600; font-size: 18px; font-variant-numeric: tabular-nums; }
-.diag .w { font-size: 12px; color: var(--paper); min-width: 0; }
+.diag .w { font-size: 12px; min-width: 0; }
 .diag .w.ok { color: var(--good); }
-.card .foot { margin-top: 8px; font-size: 11px; color: var(--mute); }
+
+.round {
+  position: absolute; inset: 0; box-sizing: border-box; padding: 14px 14px 12px; overflow: auto;
+  background: rgba(15, 35, 43, .94); color: var(--paper);
+  display: flex; flex-direction: column; gap: 8px; opacity: 0; pointer-events: none; transition: opacity .25s ease;
+}
+.round.show { opacity: 1; pointer-events: auto; }
+.round h2 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 26px; letter-spacing: .06em; text-transform: uppercase; }
+.round .tot { font-family: var(--font-display); font-weight: 800; font-size: 64px; line-height: 1; color: var(--ochre); font-variant-numeric: tabular-nums; }
+.round .sub { font-size: 12px; color: var(--mute); }
+.round table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.round th { text-align: right; font-weight: 400; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--mute); padding: 3px 4px; }
+.round td { text-align: right; padding: 3px 4px; border-top: 1px solid var(--line); }
+.round th:first-child, .round td:first-child, .round th:nth-child(2), .round td:nth-child(2) { text-align: left; }
+.round button { margin-top: auto; background: var(--ochre); color: var(--ink); border: 0; border-radius: 6px; padding: 11px 14px; font-weight: 600; font-size: 14px; }
 
 .hint {
-  position: absolute; left: 50%; bottom: 14%; transform: translateX(-50%);
-  width: min(80%, 300px); text-align: center; font-size: 13px; color: var(--paper);
-  background: rgba(15, 35, 43, .78); padding: 8px 12px; border-radius: 6px; pointer-events: none;
-  transition: opacity .3s ease;
+  position: absolute; left: 50%; top: 47%; transform: translateX(-50%);
+  width: min(78%, 300px); text-align: center; font-size: 13px; color: var(--paper);
+  background: rgba(15, 35, 43, .78); padding: 8px 12px; border-radius: 6px; pointer-events: none; transition: opacity .3s ease;
 }
 .hint.gone { opacity: 0; }
 
@@ -121,9 +127,11 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
   background: var(--deck-2); border: 1px solid var(--line); border-radius: 6px; padding: 7px 8px; min-width: 0;
 }
 .stone[aria-pressed="true"] { border-color: var(--ochre); box-shadow: inset 0 0 0 1px var(--ochre); }
-.stone .nm { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; min-width: 0; }
-.stone .nm span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.stone .sw { flex: none; display: block; border-radius: 50%; height: 7px; }
+.stone:disabled { opacity: .4; cursor: default; }
+.stone .nm { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; min-width: 0; width: 100%; }
+.stone .nm .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
+.stone .sw { flex: none; display: block; border-radius: 50%; }
+.stone .ct { flex: none; font-family: var(--font-display); font-weight: 800; font-size: 16px; color: var(--ochre); font-variant-numeric: tabular-nums; }
 .stone .nt { font-size: 11px; color: var(--mute); line-height: 1.25; }
 
 .angle { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 10px; }
@@ -133,26 +141,16 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
 #tilt { grid-column: 2; background: var(--deck-2); border: 1px solid var(--line); border-radius: 4px; padding: 7px 10px; font-size: 12px; }
 #tilt[aria-pressed="true"] { border-color: var(--good); color: var(--good); }
 .slider { grid-column: 1 / -1; }
-#angle {
-  -webkit-appearance: none; appearance: none; width: 100%; height: 30px; margin: 0; background: transparent; touch-action: pan-y;
-}
-#angle::-webkit-slider-runnable-track {
-  height: 8px; border-radius: 4px;
-  background: linear-gradient(to right, var(--line) 0 33.3%, #3f7a63 33.3% 55.6%, var(--line) 55.6% 100%);
-}
-#angle::-moz-range-track {
-  height: 8px; border-radius: 4px;
-  background: linear-gradient(to right, var(--line) 0 33.3%, #3f7a63 33.3% 55.6%, var(--line) 55.6% 100%);
-}
+#angle { -webkit-appearance: none; appearance: none; width: 100%; height: 30px; margin: 0; background: transparent; touch-action: pan-y; }
+#angle::-webkit-slider-runnable-track { height: 8px; border-radius: 4px; background: linear-gradient(to right, var(--line) 0 33.3%, #3f7a63 33.3% 55.6%, var(--line) 55.6% 100%); }
+#angle::-moz-range-track { height: 8px; border-radius: 4px; background: linear-gradient(to right, var(--line) 0 33.3%, #3f7a63 33.3% 55.6%, var(--line) 55.6% 100%); }
 #angle::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; margin-top: -10px; border-radius: 50%; background: var(--ochre); border: 3px solid var(--deck); }
 #angle::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--ochre); border: 3px solid var(--deck); }
 .note { grid-column: 1; font-size: 11px; color: var(--mute); }
 
-#haptic { top: 76px; }
-
 @media (prefers-reduced-motion: reduce) {
   #skips.pop { animation: none; }
-  .card, .hint { transition: none; }
+  .card, .hint, .metrics, .round, .wind svg { transition: none; }
 }
 </style>
 
@@ -160,11 +158,11 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
   <header class="top">
     <div class="brand">
       <span class="word">Skipstone</span>
-      <span class="lbl">Prototype v0.1</span>
+      <span class="lbl">Prototype v0.2</span>
     </div>
     <div class="bests">
+      <div><span class="lbl">Best round</span><b id="bestRound">0</b></div>
       <div><span class="lbl">Best skips</span><b id="bestSkips">0</b></div>
-      <div><span class="lbl">Best distance</span><b id="bestDist">0.0 m</b></div>
     </div>
   </header>
 
@@ -172,22 +170,47 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
     <div class="frame" id="frame">
       <div id="game"></div>
       <div class="hud">
-        <div class="stat"><span class="lbl">Skips</span><b id="skips">0</b></div>
-        <div class="stat"><span class="lbl">Distance</span><b id="dist">0.0</b><i>m</i></div>
+        <div class="stat"><span class="lbl">Throw</span><b id="throwNo">1/10</b></div>
+        <div class="stat"><span class="lbl">Total</span><b id="total">0</b></div>
       </div>
-      <div class="wind" id="wind">Calm</div>
-      <button id="mute" type="button" aria-pressed="false">Sound on</button>
-      <button id="haptic" type="button" aria-pressed="false">Haptics on</button>
+      <div class="big"><b id="skips">0</b><span class="lbl">Skips</span></div>
+      <div class="side">
+        <div class="chip wind" id="windChip">
+          <svg id="windArrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 L12.5 8.5 L9 8.5 L9 14.5 L7 14.5 L7 8.5 L3.5 8.5 Z" fill="#ece6d6"/></svg>
+          <span id="windTxt">Calm</span>
+        </div>
+        <div class="chip tgt" id="tgtChip">Target 0 m</div>
+        <button class="chip" id="mute" type="button" aria-pressed="false">Sound on</button>
+        <button class="chip" id="haptic" type="button" aria-pressed="false">Haptics on</button>
+      </div>
+      <div class="metrics" id="metrics" aria-live="off">
+        <div><span class="lbl">Skip</span><b id="mSkip">-</b></div>
+        <div><span class="lbl">Speed</span><b><span id="mSpeed">-</span><small>m/s</small></b></div>
+        <div><span class="lbl">Entry angle</span><b><span id="mEntry">-</span><small>&deg;</small></b></div>
+        <div><span class="lbl">Hop</span><b><span id="mHop">-</span><small>m</small></b></div>
+        <div class="ring"><span class="lbl">Ring</span><b id="mRing">-</b></div>
+      </div>
       <div class="card" id="card" aria-live="polite">
         <h2><span id="cardHead">0 skips</span><span class="badge" id="cardBadge" style="display:none">New best</span></h2>
+        <div class="score" id="cardScore"></div>
         <div class="diag">
           <div><span class="k">Angle</span><span class="v" id="dAngle">-</span><span class="w" id="dAngleW"></span></div>
           <div><span class="k">Power</span><span class="v" id="dPower">-</span><span class="w" id="dPowerW"></span></div>
           <div><span class="k">Spin</span><span class="v" id="dSpin">-</span><span class="w" id="dSpinW"></span></div>
+          <div><span class="k">Aim</span><span class="v" id="dAim">-</span><span class="w" id="dAimW"></span></div>
         </div>
-        <div class="foot" id="cardFoot"></div>
       </div>
-      <div class="hint" id="hint">Swipe fast across the lake to throw. A curved swipe adds spin.</div>
+      <div class="hint" id="hint">Swipe up toward the ring. Direction aims, speed is power, a curve adds spin.</div>
+      <div class="round" id="round" aria-live="polite">
+        <h2>Basket complete</h2>
+        <div class="tot" id="rTotal">0</div>
+        <div class="sub" id="rSub"></div>
+        <table>
+          <thead><tr><th>#</th><th>Stone</th><th>Skips</th><th>Dist</th><th>Ring</th><th>Score</th></tr></thead>
+          <tbody id="rRows"></tbody>
+        </table>
+        <button id="again" type="button">New basket</button>
+      </div>
     </div>
   </main>
 
@@ -209,27 +232,40 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
 'use strict';
 
 //--SIM-START
-/* Physics model. Units: metres, seconds. Every bounce uses entry angle, speed, spin and stone stats (STUDIO_BRIEF Section 5). */
-var MAXM = 150;
+/* Physics model v2. Units: metres, seconds. x is distance down the lake, z is sideways (right positive), h is height above water.
+   Every bounce uses entry angle, speed, spin and stone stats (STUDIO_BRIEF Section 5). Wind varies with time and pushes the stone. */
+var MAXM = 150, KW = 0.07;
 var STONES = [
-  { id: 'pebble',  name: 'River Pebble',  note: 'Balanced',                 tol: 1.00, sens: 1.0, flat: 0.60, mass: 0.50, spinRet: 0.94, drag: 0.050, launch: 1.00, w: 16, t: 5, color: 0x8c9b93, css: '#8c9b93' },
-  { id: 'slate',   name: 'Flat Slate',    note: 'Most skips, touchy angle', tol: 0.85, sens: 1.0, flat: 0.95, mass: 0.30, spinRet: 0.96, drag: 0.090, launch: 1.04, w: 15, t: 3, color: 0x5d7688, css: '#5d7688' },
-  { id: 'granite', name: 'Granite Disc',  note: 'Few skips, forgiving',   tol: 1.35, sens: 0.55, flat: 0.30, mass: 1.10, spinRet: 0.90, drag: 0.024, launch: 0.90, w: 19, t: 8, color: 0xb3a290, css: '#b3a290' }
+  { id: 'pebble',  name: 'River Pebble', note: 'Balanced',                 tol: 1.00, sens: 1.0,  flat: 0.60, mass: 0.50, spinRet: 0.94, drag: 0.050, launch: 1.00, vw: 0.46, vt: 0.13, sw: 16, sh: 5, color: 0x8c9b93, css: '#8c9b93' },
+  { id: 'slate',   name: 'Flat Slate',   note: 'Most skips, touchy angle', tol: 0.85, sens: 1.0,  flat: 0.95, mass: 0.30, spinRet: 0.96, drag: 0.090, launch: 1.04, vw: 0.50, vt: 0.08, sw: 15, sh: 3, color: 0x5d7688, css: '#5d7688' },
+  { id: 'granite', name: 'Granite Disc', note: 'Few skips, forgiving',     tol: 1.35, sens: 0.55, flat: 0.30, mass: 1.10, spinRet: 0.90, drag: 0.024, launch: 0.90, vw: 0.52, vt: 0.19, sw: 19, sh: 8, color: 0xb3a290, css: '#b3a290' }
 ];
-function simulate(stone, angleDeg, power, spin, wind, rng) {
+/* Wind as a pure function of time: speed gusts and direction drifts (x along the lake, z sideways). */
+function windAt(T) {
+  var sp = Math.max(0, 2.4 + 1.5 * Math.sin(T * 0.29 + 0.6) + 0.9 * Math.sin(T * 0.77 + 2.1) + 0.5 * Math.sin(T * 1.9));
+  var dir = 1.0 * Math.sin(T * 0.13 + 1.0) + 0.5 * Math.sin(T * 0.37 + 0.2);
+  return { x: sp * Math.cos(dir), z: sp * Math.sin(dir), speed: sp, dir: dir };
+}
+function simulate(stone, angleDeg, yawDeg, power, spin, windFn, T0, rng) {
   var dt = 1 / 120, G = 9.81;
   var v0 = (7 + 16 * power) * stone.launch;
-  var th = angleDeg * Math.PI / 180;
-  var x = 0, h = 0.45, vx = v0 * Math.cos(th), vy = -v0 * Math.sin(th), s = spin, t = 0;
+  var th = angleDeg * Math.PI / 180, ps = yawDeg * Math.PI / 180;
+  var x = 0, z = 0, h = 0.45;
+  var vh0 = v0 * Math.cos(th);
+  var vx = vh0 * Math.cos(ps), vz = vh0 * Math.sin(ps), vy = -v0 * Math.sin(th);
+  var s = spin, t = 0;
   var air = 0.0016 / stone.mass;
-  var xs = [x], hs = [h], ss = [s], events = [];
-  var skips = 0, entry = null, sunk = false, sinkVel = 0;
+  var xs = [x], zs = [z], hs = [h], ss = [s], events = [];
+  var skips = 0, entry = null, sunk = false, sinkVx = 0, sinkVz = 0, px = 0, pz = 0;
   while (t < 30 && !sunk) {
-    var rel = vx - wind;
-    vx -= air * rel * Math.abs(rel) * dt;
-    vy -= G * dt; x += vx * dt; h += vy * dt; t += dt;
+    var w = windFn(T0 + t);
+    var rx = vx - w.x, rz = vz - w.z, rs = Math.hypot(rx, rz);
+    vx -= air * rs * rx * dt; vz -= air * rs * rz * dt;
+    vx += KW * w.x / stone.mass * dt; vz += KW * w.z / stone.mass * dt;
+    vy -= G * dt; x += vx * dt; z += vz * dt; h += vy * dt; t += dt;
     if (h <= 0 && vy < 0) {
-      var vd = -vy, a = Math.atan2(vd, vx) * 180 / Math.PI;
+      var vd = -vy, vh = Math.hypot(vx, vz), a = Math.atan2(vd, vh) * 180 / Math.PI;
+      var sp = Math.hypot(vh, vd);
       if (entry === null) entry = a;
       var fa = a >= 20 ? Math.exp(-Math.pow((a - 20) / (13 * stone.tol), 2)) : Math.exp(-Math.pow((20 - a) / 36, 2));
       var stab = 1 - (0.45 - 0.45 * Math.min(1, s * 1.15)) * stone.sens;
@@ -238,98 +274,206 @@ function simulate(stone, angleDeg, power, spin, wind, rng) {
       var r = (0.66 + 0.34 * stone.flat) * fa * stab * chop * wob;
       var vup = vd * r;
       var loss = stone.drag + (a < 20 ? 0.10 * (20 - a) / 20 : 0.02 * (a - 20) / 10);
-      vx *= 1 - loss;
-      if (vup < 0.30 || vx < 1.6 || a > 50) {
-        events.push({ type: 'sink', i: xs.length, t: t, x: x, v: vd });
-        sunk = true; sinkVel = vx; h = 0;
+      vx *= 1 - loss; vz *= 1 - loss;
+      var hop = Math.hypot(x - px, z - pz);
+      if (vup < 0.30 || Math.hypot(vx, vz) < 1.6 || a > 50) {
+        events.push({ type: 'sink', i: xs.length, t: t, x: x, z: z, v: vd, sp: sp, a: a, hop: hop });
+        sunk = true; sinkVx = vx; sinkVz = vz; h = 0;
       } else {
         skips++; vy = vup; h = 0.0005; s *= stone.spinRet;
-        events.push({ type: 'skip', i: xs.length, t: t, x: x, v: vd, n: skips });
+        events.push({ type: 'skip', i: xs.length, t: t, x: x, z: z, v: vd, sp: sp, a: a, hop: hop, n: skips });
+        px = x; pz = z;
       }
     }
-    xs.push(x); hs.push(h); ss.push(s);
-    if (!sunk && x > MAXM) {
-      events.push({ type: 'sink', i: xs.length - 1, t: t, x: x, v: 1 });
-      sunk = true; sinkVel = vx; h = 0; hs[hs.length - 1] = 0;
+    xs.push(x); zs.push(z); hs.push(h); ss.push(s);
+    if (!sunk && (x > MAXM || Math.abs(z) > 90)) {
+      events.push({ type: 'sink', i: xs.length - 1, t: t, x: x, z: z, v: 1, sp: 1, a: 0, hop: Math.hypot(x - px, z - pz) });
+      sunk = true; sinkVx = vx; sinkVz = vz; h = 0; hs[hs.length - 1] = 0;
     }
   }
   if (sunk) {
     for (var k = 1; k <= 72; k++) {
-      x += sinkVel * dt * (1 - k / 72) * 0.6;
-      xs.push(x); hs.push(-k / 72 * 0.8); ss.push(s);
+      var f = (1 - k / 72) * 0.6 * dt;
+      x += sinkVx * f; z += sinkVz * f;
+      xs.push(x); zs.push(z); hs.push(-k / 72 * 0.8); ss.push(s);
     }
   }
-  return { xs: xs, hs: hs, ss: ss, events: events, skips: skips, distance: events.length ? events[events.length - 1].x : x, entry: entry, v0: v0 };
+  var last = events.length ? events[events.length - 1] : { x: x, z: z };
+  return { xs: xs, zs: zs, hs: hs, ss: ss, events: events, skips: skips, distance: Math.hypot(last.x, last.z), entry: entry, v0: v0 };
 }
+
 //--SIM-END
 
 var W = 480, H = 640, Z = 2;
-var WATER_TOP = 292, LANE_Y = 418, SHORE_X = 118, PPM = 26, VPPM = 44, HAND_H = 0.45;
-var GROUND_Y = LANE_Y - 2;
-var WORLD_PX = SHORE_X + MAXM * PPM + 80;
+var HOR_AIM = 190, F0 = 600, HAND_H = 0.45;
+var AIM = { x: -2.2, z: 0, h: 1.8 };
+var BGW = 900, HBG = 340, SUNX = 330, SUNH = 70;
 
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 function $(id) { return document.getElementById(id); }
+function clockT() { return performance.now() / 1000; }
+function hash2(a, b) { var n = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return n - Math.floor(n); }
 
 /* ---------- Saved personal best (device only) ---------- */
-var BEST_KEY = 'skipstone.v01.best';
-var best = { skips: 0, dist: 0 };
-try { var raw = localStorage.getItem(BEST_KEY); if (raw) { var p = JSON.parse(raw); best.skips = +p.skips || 0; best.dist = +p.dist || 0; } } catch (e) {}
+var BEST_KEY = 'skipstone.v02.best';
+var best = { round: 0, skips: 0 };
+try { var raw = localStorage.getItem(BEST_KEY); if (raw) { var pb = JSON.parse(raw); best.round = +pb.round || 0; best.skips = +pb.skips || 0; } } catch (e) {}
 function saveBest() { try { localStorage.setItem(BEST_KEY, JSON.stringify(best)); } catch (e) {} }
-function showBest() { $('bestSkips').textContent = String(best.skips); $('bestDist').textContent = best.dist.toFixed(1) + ' m'; }
+function showBest() { $('bestRound').textContent = String(best.round); $('bestSkips').textContent = String(best.skips); }
 showBest();
 
-/* ---------- Sound placeholders (synthesised, no files) ---------- */
+/* ---------- Sound: synthesised lake ambience and layered effects (no audio files) ---------- */
 var Sound = (function () {
-  var ctx = null, muted = false, noiseBuf = null;
+  var ctx = null, muted = false, master = null, sfx = null, noiseW = null, noiseB = null;
+  var started = false, wGain = null, wFilt = null, whGain = null, birdTimer = 0, visible = true;
+  function makeNoise(brown) {
+    var n = Math.floor(ctx.sampleRate * 4), X = 4096, gen = new Float32Array(n + X), last = 0, i;
+    for (i = 0; i < gen.length; i++) {
+      var w = Math.random() * 2 - 1;
+      if (brown) { last = (last + 0.02 * w) / 1.02; gen[i] = last * 3.2; } else gen[i] = w * 0.6;
+    }
+    var buf = ctx.createBuffer(1, n, ctx.sampleRate), d = buf.getChannelData(0);
+    for (i = 0; i < n; i++) d[i] = i < X ? gen[i] * (i / X) + gen[n + i] * (1 - i / X) : gen[i];
+    return buf;
+  }
+  function makeIR(sec) {
+    var len = Math.floor(ctx.sampleRate * sec), buf = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (var c = 0; c < 2; c++) { var d = buf.getChannelData(c); for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6); }
+    return buf;
+  }
+  function loopSrc(buf, rate) { var s = ctx.createBufferSource(); s.buffer = buf; s.loop = true; if (rate) s.playbackRate.value = rate; s.start(0, Math.random() * 3); return s; }
+  function build() {
+    master = ctx.createGain(); master.gain.value = muted ? 0 : 0.9;
+    var comp = ctx.createDynamicsCompressor(); comp.threshold.value = -20; comp.ratio.value = 3;
+    master.connect(comp); comp.connect(ctx.destination);
+    sfx = ctx.createGain(); sfx.connect(master);
+    var conv = ctx.createConvolver(); conv.buffer = makeIR(1.7);
+    var wet = ctx.createGain(); wet.gain.value = 0.3; sfx.connect(conv); conv.connect(wet); wet.connect(master);
+    noiseW = makeNoise(false); noiseB = makeNoise(true);
+  }
+  function startAmbient() {
+    started = true;
+    // Wind: soft brown noise through a moving band, plus a thin whistle that only rises in strong gusts
+    wFilt = ctx.createBiquadFilter(); wFilt.type = 'bandpass'; wFilt.frequency.value = 420; wFilt.Q.value = 0.6;
+    wGain = ctx.createGain(); wGain.gain.value = 0.03;
+    loopSrc(noiseB, 1).connect(wFilt); wFilt.connect(wGain); wGain.connect(master);
+    var wh = ctx.createBiquadFilter(); wh.type = 'bandpass'; wh.frequency.value = 1700; wh.Q.value = 7;
+    whGain = ctx.createGain(); whGain.gain.value = 0;
+    loopSrc(noiseW, 1).connect(wh); wh.connect(whGain); whGain.connect(master);
+    // Water lapping: low rumble that swells, with a faint glitter layer
+    var lo = ctx.createBiquadFilter(); lo.type = 'lowpass'; lo.frequency.value = 360;
+    var lg = ctx.createGain(); lg.gain.value = 0.05;
+    loopSrc(noiseB, 0.55).connect(lo); lo.connect(lg); lg.connect(master);
+    var lfo = ctx.createOscillator(); lfo.frequency.value = 0.21; var lfoG = ctx.createGain(); lfoG.gain.value = 0.03; lfo.connect(lfoG); lfoG.connect(lg.gain); lfo.start();
+    var hi = ctx.createBiquadFilter(); hi.type = 'bandpass'; hi.frequency.value = 2600; hi.Q.value = 1.1;
+    var hg = ctx.createGain(); hg.gain.value = 0.007;
+    loopSrc(noiseW, 1.3).connect(hi); hi.connect(hg); hg.connect(master);
+    var lfo2 = ctx.createOscillator(); lfo2.frequency.value = 0.47; var lfo2G = ctx.createGain(); lfo2G.gain.value = 0.006; lfo2.connect(lfo2G); lfo2G.connect(hg.gain); lfo2.start();
+    scheduleBird();
+  }
   function ensure() {
-    if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ctx = null; } }
-    if (ctx && ctx.state === 'suspended') { try { ctx.resume(); } catch (e) {} }
+    if (!ctx) {
+      try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ctx = null; return null; }
+      build();
+    }
+    if (ctx.state === 'suspended' && visible) { try { ctx.resume(); } catch (e) {} }
+    if (!started) startAmbient();
     return ctx;
   }
-  function tone(f, dur, vol, slide) {
-    if (muted || !ensure()) return;
-    var o = ctx.createOscillator(), g = ctx.createGain(), n = ctx.currentTime;
-    o.type = 'sine'; o.frequency.setValueAtTime(f, n); o.frequency.linearRampToValueAtTime(Math.max(40, f + slide), n + dur);
-    g.gain.setValueAtTime(vol, n); g.gain.exponentialRampToValueAtTime(0.0008, n + dur);
-    o.connect(g); g.connect(ctx.destination); o.start(n); o.stop(n + dur + 0.02);
+  function burst(t, dur, type, f0, f1, q, vol) {
+    var s = ctx.createBufferSource(); s.buffer = noiseW;
+    var f = ctx.createBiquadFilter(); f.type = type; f.Q.value = q; f.frequency.setValueAtTime(f0, t);
+    if (f1) f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(g); g.connect(sfx); s.start(t, Math.random() * 2); s.stop(t + dur + 0.05);
   }
-  function noise(dur, vol, freq) {
-    if (muted || !ensure()) return;
-    if (!noiseBuf) { noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); var d = noiseBuf.getChannelData(0); for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
-    var s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(), n = ctx.currentTime;
-    s.buffer = noiseBuf; f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 0.8;
-    g.gain.setValueAtTime(vol, n); g.gain.exponentialRampToValueAtTime(0.0008, n + dur);
-    s.connect(f); f.connect(g); g.connect(ctx.destination); s.start(n); s.stop(n + dur + 0.02);
+  function tone(t, f0, f1, dur, vol, type) {
+    var o = ctx.createOscillator(); o.type = type || 'sine'; o.frequency.setValueAtTime(f0, t);
+    if (f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(sfx); o.start(t); o.stop(t + dur + 0.05);
   }
+  function note(t, fa, fb, dur, vol, pan) {
+    var o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(fa, t); o.frequency.exponentialRampToValueAtTime(fb, t + dur * 0.8);
+    var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 6500;
+    o.connect(g); g.connect(lp);
+    if (ctx.createStereoPanner) { var p = ctx.createStereoPanner(); p.pan.value = pan; lp.connect(p); p.connect(sfx); } else lp.connect(sfx);
+    o.start(t); o.stop(t + dur + 0.05);
+  }
+  function chirp() {
+    if (!ctx || muted || !visible) return;
+    var t = ctx.currentTime + 0.03, pan = Math.random() * 1.6 - 0.8, f0 = 2300 + Math.random() * 2000, i;
+    if (Math.random() < 0.55) {
+      var n = 2 + Math.floor(Math.random() * 3);
+      for (i = 0; i < n; i++) note(t + i * 0.14, f0 * (1 + i * 0.03), f0 * (1.28 + i * 0.03), 0.09, 0.016, pan);
+    } else {
+      var m = 7 + Math.floor(Math.random() * 7);
+      for (i = 0; i < m; i++) note(t + i * 0.06, f0 * (i % 2 ? 1.12 : 1), f0 * (i % 2 ? 1.0 : 1.12), 0.05, 0.011, pan);
+    }
+  }
+  function scheduleBird() {
+    clearTimeout(birdTimer);
+    birdTimer = setTimeout(function () { chirp(); scheduleBird(); }, 3000 + Math.random() * 8000);
+  }
+  document.addEventListener('visibilitychange', function () {
+    visible = !document.hidden;
+    if (!ctx) return;
+    try { if (visible && !muted) ctx.resume(); else ctx.suspend(); } catch (e) {}
+  });
   return {
     unlock: ensure,
-    throwIt: function () { noise(0.28, 0.12, 1400); },
-    skip: function (n, v) { tone(300 + Math.min(n, 14) * 38, 0.09, 0.10 + Math.min(v, 9) * 0.01, -90); noise(0.07, 0.05, 2400); },
-    sink: function () { tone(150, 0.3, 0.2, -80); noise(0.22, 0.09, 600); },
-    setMuted: function (m) { muted = m; }
+    setWind: function (sp) {
+      if (!ctx || !wGain) return;
+      var n = ctx.currentTime;
+      wGain.gain.setTargetAtTime(0.02 + 0.075 * Math.min(sp, 6) / 6, n, 0.35);
+      wFilt.frequency.setTargetAtTime(280 + sp * 150, n, 0.35);
+      whGain.gain.setTargetAtTime(sp > 3.2 ? (sp - 3.2) * 0.006 : 0, n, 0.4);
+    },
+    throwIt: function (power) {
+      if (muted || !ensure()) return;
+      var t = ctx.currentTime;
+      burst(t, 0.34, 'bandpass', 500, 1500 + power * 2400, 1.1, 0.10 + power * 0.1);
+      burst(t + 0.02, 0.22, 'highpass', 3000, 6000, 0.7, 0.03);
+    },
+    skip: function (n, v) {
+      if (muted || !ensure()) return;
+      var t = ctx.currentTime, vv = Math.min(v, 9) / 9, pf = 1 + (1 - vv) * 0.55 + (Math.random() - 0.5) * 0.12, i;
+      burst(t, 0.07 + vv * 0.06, 'highpass', 1700 * pf, 900 * pf, 0.7, 0.26 + vv * 0.2);
+      burst(t, 0.12, 'bandpass', 900 * pf, 500 * pf, 1.2, 0.14 + vv * 0.12);
+      tone(t, 230 * pf, 85 * pf, 0.1, 0.2 + vv * 0.16, 'sine');
+      var k = 2 + Math.round(vv * 3);
+      for (i = 0; i < k; i++) burst(t + 0.03 + Math.random() * 0.17, 0.025, 'bandpass', 3200 + Math.random() * 3500, 0, 2, 0.04 + vv * 0.03);
+    },
+    sink: function () {
+      if (muted || !ensure()) return;
+      var t = ctx.currentTime, i;
+      burst(t, 0.6, 'lowpass', 2800, 260, 0.8, 0.5);
+      burst(t, 0.18, 'highpass', 1800, 900, 0.7, 0.3);
+      tone(t, 540, 170, 0.2, 0.3, 'sine');
+      tone(t + 0.07, 380, 140, 0.24, 0.22, 'sine');
+      tone(t + 0.05, 150, 62, 0.34, 0.3, 'sine');
+      for (i = 0; i < 7; i++) { var f = 450 + Math.random() * 1400; tone(t + 0.14 + i * 0.055 + Math.random() * 0.03, f, f * 1.35, 0.05, 0.06, 'sine'); }
+    },
+    ring: function (bull) {
+      if (muted || !ensure()) return;
+      var t = ctx.currentTime + 0.05;
+      tone(t, 1046, 0, 0.5, 0.11, 'sine'); tone(t, 1568, 0, 0.45, 0.07, 'sine');
+      if (bull) { tone(t + 0.09, 2093, 0, 0.55, 0.08, 'sine'); tone(t + 0.09, 1318, 0, 0.5, 0.06, 'sine'); }
+    },
+    roundEnd: function () {
+      if (muted || !ensure()) return;
+      var t = ctx.currentTime;
+      [523, 659, 784, 1046].forEach(function (f, i) { tone(t + i * 0.2, f, 0, 0.9, 0.09, 'triangle'); });
+    },
+    setMuted: function (m) { muted = m; if (master) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.05); if (!m) ensure(); }
   };
 })();
 
-/* ---------- Haptics: Android vibrate; iOS 18 Safari switch-input fallback (best effort) ---------- */
+/* ---------- Haptics: Android vibrate only (iPhone Safari has no vibration support) ---------- */
 var Haptics = (function () {
-  var enabled = true, label = null;
-  function iosTick() {
-    try {
-      if (!label) {
-        label = document.createElement('label');
-        label.style.cssText = 'position:fixed;left:-99px;top:-99px;opacity:0;pointer-events:none';
-        var cb = document.createElement('input'); cb.type = 'checkbox'; cb.setAttribute('switch', '');
-        label.appendChild(cb); document.body.appendChild(label);
-      }
-      label.click();
-    } catch (e) {}
-  }
-  function buzz(ms) {
-    if (!enabled) return;
-    if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} }
-    else iosTick();
-  }
+  var enabled = true;
+  function buzz(ms) { if (enabled && navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } }
   return {
     skip: function (v) { buzz(8 + Math.round(Math.min(v, 9) * 2)); },
     sink: function () { buzz([30, 40, 45]); },
@@ -338,41 +482,50 @@ var Haptics = (function () {
 })();
 
 /* ---------- Game state ---------- */
-var stoneIdx = 0, aimAngle = 20, aimLocked = null, wind = 0;
-var state = 'ready'; // ready | flying | settling | returning
-var run = null, playT = 0, evIdx = 0, settleT = 0, firstThrow = false;
-var ripples = [], drops = [], trail = [], trailAcc = 0, swipePts = null;
-var scene = null;
+var BASKET0 = { pebble: 4, slate: 3, granite: 3 };
+var basket = {}, thrown = 0, total = 0, throws = [], ring = null, needsNext = false;
+var stoneIdx = 0, aimAngle = 20, aimLocked = null;
+var state = 'ready'; // ready | flying | settling | returning | roundEnd
+var run = null, playT = 0, evIdx = 0, settleT = 0, swipePts = null, swipeYaw = null;
+var ripples = [], drops = [], trail = [], trailAcc = 0;
+var cam = { x: AIM.x, z: AIM.z, h: AIM.h, yaw: 0, f: F0, hy: HOR_AIM };
+var punch = 1, slow = 1, handA = 1, camc = 1, cams = 0, windAcc = 0, lastWind = null;
+var po = { x: 0, y: 0, d: 1, s: 1 };
 
-function pickWind() {
-  wind = Math.round((Math.random() * 4 - 2) * 10) / 10;
-  var el = $('wind');
-  if (Math.abs(wind) < 0.3) { wind = 0; el.textContent = 'Calm'; }
-  else el.textContent = (wind > 0 ? 'Tailwind ' : 'Headwind ') + Math.abs(wind).toFixed(1) + ' m/s';
-}
-pickWind();
+function currentStone() { return STONES[stoneIdx]; }
 
 /* ---------- Controls ---------- */
+var stoneBtns = [];
 (function buildStones() {
   var box = $('stones');
   STONES.forEach(function (st, i) {
     var b = document.createElement('button');
-    b.type = 'button'; b.className = 'stone'; b.setAttribute('aria-pressed', i === stoneIdx ? 'true' : 'false');
+    b.type = 'button'; b.className = 'stone';
     var nm = document.createElement('span'); nm.className = 'nm';
-    var sw = document.createElement('span'); sw.className = 'sw'; sw.style.width = (st.w - 2) + 'px'; sw.style.height = Math.max(4, st.t) + 'px'; sw.style.background = st.css;
-    var tx = document.createElement('span'); tx.textContent = st.name;
-    nm.appendChild(sw); nm.appendChild(tx);
+    var sw = document.createElement('span'); sw.className = 'sw'; sw.style.width = st.sw + 'px'; sw.style.height = st.sh + 'px'; sw.style.background = st.css;
+    var tx = document.createElement('span'); tx.className = 't'; tx.textContent = st.name;
+    var ct = document.createElement('span'); ct.className = 'ct';
+    nm.appendChild(sw); nm.appendChild(tx); nm.appendChild(ct);
     var nt = document.createElement('span'); nt.className = 'nt'; nt.textContent = st.note;
     b.appendChild(nm); b.appendChild(nt);
     b.addEventListener('click', function () {
       Sound.unlock();
-      if (state === 'flying') return;
-      stoneIdx = i;
-      Array.prototype.forEach.call(box.children, function (c, j) { c.setAttribute('aria-pressed', j === i ? 'true' : 'false'); });
+      if (state === 'flying' || state === 'roundEnd' || basket[st.id] <= 0) return;
+      stoneIdx = i; refreshStones();
     });
-    box.appendChild(b);
+    box.appendChild(b); stoneBtns.push({ b: b, ct: ct });
   });
 })();
+function refreshStones() {
+  if (basket[STONES[stoneIdx].id] <= 0) {
+    for (var k = 0; k < STONES.length; k++) if (basket[STONES[k].id] > 0) { stoneIdx = k; break; }
+  }
+  STONES.forEach(function (st, i) {
+    stoneBtns[i].b.setAttribute('aria-pressed', i === stoneIdx ? 'true' : 'false');
+    stoneBtns[i].b.disabled = basket[st.id] <= 0;
+    stoneBtns[i].ct.textContent = 'x' + basket[st.id];
+  });
+}
 
 function angleTag(a) { return a < 15 ? 'flat' : a <= 25 ? 'in the zone' : 'steep'; }
 function setAngle(a, fromSlider) {
@@ -388,9 +541,8 @@ $('mute').addEventListener('click', function () {
   var m = $('mute').getAttribute('aria-pressed') !== 'true';
   $('mute').setAttribute('aria-pressed', m ? 'true' : 'false');
   $('mute').textContent = m ? 'Sound off' : 'Sound on';
-  Sound.setMuted(m); if (!m) Sound.unlock();
+  Sound.setMuted(m);
 });
-
 $('haptic').addEventListener('click', function () {
   var off = $('haptic').getAttribute('aria-pressed') !== 'true';
   $('haptic').setAttribute('aria-pressed', off ? 'true' : 'false');
@@ -420,9 +572,7 @@ function tiltOn() {
   $('tiltNote').textContent = 'Tilt on. The angle you hold now counts as 20°. Tap again to turn off.';
   window.addEventListener('deviceorientation', onOrient);
   clearTimeout(tilt.timer);
-  tilt.timer = setTimeout(function () {
-    if (tilt.on && !tilt.seen) tiltOff('No motion data reached this page. The slider stays active.');
-  }, 1500);
+  tilt.timer = setTimeout(function () { if (tilt.on && !tilt.seen) tiltOff('No motion data reached this page. The slider stays active.'); }, 1500);
 }
 $('tilt').addEventListener('click', function () {
   Sound.unlock();
@@ -448,6 +598,42 @@ if (window.ResizeObserver) new ResizeObserver(fitFrame).observe($('stage'));
 window.addEventListener('resize', fitFrame);
 fitFrame();
 
+/* ---------- Basket, target and scoring ---------- */
+function pickRing() {
+  var D = 18 + Math.random() * 34, lim = Math.min(12, D * 0.28);
+  ring = { x: D, z: (Math.random() * 2 - 1) * lim, r: 3.2, flash: 0 };
+  $('tgtChip').textContent = 'Target ' + Math.round(Math.hypot(ring.x, ring.z)) + ' m';
+}
+function updateHud() {
+  $('throwNo').textContent = Math.min(thrown + (state === 'flying' || state === 'settling' || state === 'returning' ? 0 : 1), 10) + '/10';
+  $('total').textContent = String(total);
+}
+function newRound() {
+  for (var k in BASKET0) basket[k] = BASKET0[k];
+  thrown = 0; total = 0; throws = []; needsNext = false;
+  $('round').classList.remove('show'); hideResult(); $('metrics').classList.remove('show');
+  $('skips').textContent = '0';
+  state = 'ready'; stoneIdx = 0; refreshStones(); pickRing(); updateHud();
+  cam.x = AIM.x; cam.z = AIM.z; cam.h = AIM.h; cam.yaw = 0; cam.f = F0; cam.hy = HOR_AIM; punch = 1; slow = 1; handA = 1;
+}
+$('again').addEventListener('click', function () { Sound.unlock(); newRound(); });
+
+function ringHits(events) {
+  return events.map(function (ev) {
+    if (ev.type !== 'skip') return 0;
+    var d = Math.hypot(ev.x - ring.x, ev.z - ring.z);
+    return d <= ring.r / 3 ? 40 : d <= ring.r ? 20 : 0;
+  });
+}
+
+/* ---------- Windows: wind readout ---------- */
+function updateWindHud(wv) {
+  var sp = wv.speed;
+  $('windTxt').textContent = sp < 0.4 ? 'Calm' : sp.toFixed(1) + ' m/s';
+  $('windArrow').style.transform = 'rotate(' + (Math.atan2(wv.z, wv.x) * 180 / Math.PI).toFixed(0) + 'deg)';
+  $('windArrow').style.opacity = sp < 0.4 ? '0.3' : '1';
+}
+
 /* ---------- Result card ---------- */
 function verdictAngle(a) {
   if (a < 12) return ['Too flat. Speed bled off.', false];
@@ -460,307 +646,479 @@ function verdictPower(p) { return p < 30 ? ['Weak. Not enough speed.', false] : 
 function verdictSpin(s) { return s < 20 ? ['Wobbly. Curve the swipe.', false] : s < 55 ? ['Stable.', true] : ['Locked in.', true]; }
 function setRow(idV, idW, val, v) { $(idV).textContent = val; var w = $(idW); w.textContent = v[0]; w.className = 'w' + (v[1] ? ' ok' : ''); }
 
-function showResult(res, power, spin, stone) {
-  var skips = res.skips, d = res.distance;
-  var newSkips = skips > best.skips, newDist = d > best.dist + 0.05;
-  if (newSkips) best.skips = skips;
-  if (newDist) best.dist = Math.round(d * 10) / 10;
-  if (newSkips || newDist) { saveBest(); showBest(); }
+function finishThrow() {
+  var r = run, skips = r.skips, d = r.distance;
+  var bonus = r.hits.reduce(function (a, b) { return a + b; }, 0);
+  var score = skips * 10 + Math.round(d) + bonus;
+  total += score;
+  throws.push({ n: thrown, stone: r.stone.name, skips: skips, dist: d, ring: bonus, score: score });
+  var newBest = skips > best.skips;
+  if (newBest) { best.skips = skips; saveBest(); showBest(); }
+  $('total').textContent = String(total);
   $('cardHead').textContent = (skips === 0 ? 'No skips' : skips + (skips === 1 ? ' skip' : ' skips')) + ' · ' + d.toFixed(1) + ' m';
-  $('cardBadge').style.display = (newSkips || newDist) && skips > 0 ? '' : 'none';
-  var ea = res.entry === null ? 0 : res.entry;
+  $('cardBadge').style.display = newBest && skips > 0 ? '' : 'none';
+  $('cardScore').textContent = 'Score +' + score + '  (skips ' + skips * 10 + ', distance ' + Math.round(d) + ', ring ' + bonus + ')';
+  var ea = r.entry === null ? 0 : r.entry;
   setRow('dAngle', 'dAngleW', ea.toFixed(0) + '°', verdictAngle(ea));
-  setRow('dPower', 'dPowerW', Math.round(power * 100) + '%', verdictPower(Math.round(power * 100)));
-  setRow('dSpin', 'dSpinW', Math.round(spin * 100) + '%', verdictSpin(Math.round(spin * 100)));
-  $('cardFoot').textContent = stone.name + ' · entry angle measured at first contact with the water';
+  setRow('dPower', 'dPowerW', Math.round(r.power * 100) + '%', verdictPower(Math.round(r.power * 100)));
+  setRow('dSpin', 'dSpinW', Math.round(r.spin * 100) + '%', verdictSpin(Math.round(r.spin * 100)));
+  var yd = Math.abs(r.yaw).toFixed(0) + '°' + (Math.abs(r.yaw) < 0.5 ? '' : r.yaw > 0 ? ' R' : ' L');
+  var close = 1e9;
+  r.events.forEach(function (ev) { if (ev.type === 'skip') close = Math.min(close, Math.hypot(ev.x - ring.x, ev.z - ring.z)); });
+  var av = close === 1e9 ? ['No skip reached the ring.', false] : bonus > 0 ? ['Ring hit.', true] : ['Closest skip ' + close.toFixed(1) + ' m from the ring.', false];
+  setRow('dAim', 'dAimW', yd, av);
   $('card').classList.add('show');
+  $('metrics').classList.remove('show');
+  updateHud();
 }
 function hideResult() { $('card').classList.remove('show'); }
 
+function showRound() {
+  var rows = $('rRows'); rows.textContent = '';
+  var bestThrow = 0;
+  throws.forEach(function (t) {
+    bestThrow = Math.max(bestThrow, t.score);
+    var tr = document.createElement('tr');
+    [t.n, t.stone.replace('River ', '').replace(' Disc', ''), t.skips, t.dist.toFixed(1), t.ring, t.score].forEach(function (v) { var td = document.createElement('td'); td.textContent = String(v); tr.appendChild(td); });
+    rows.appendChild(tr);
+  });
+  var isBest = total > best.round;
+  if (isBest) { best.round = total; saveBest(); showBest(); }
+  $('rTotal').textContent = String(total);
+  $('rSub').textContent = (isBest ? 'New best round. ' : 'Best round ' + best.round + '. ') + 'Top throw ' + bestThrow + ' points.';
+  $('round').classList.add('show');
+  Sound.roundEnd();
+}
+
 /* ---------- Phaser scene ---------- */
 function rad(d) { return d * Math.PI / 180; }
+function P(wx, wz, wh) {
+  var rx = wx - cam.x, rz = wz - cam.z, d = rx * camc + rz * cams;
+  if (d < 0.4) return false;
+  var lat = -rx * cams + rz * camc;
+  po.x = W / 2 + cam.f * lat / d; po.y = cam.hy + cam.f * (cam.h - wh) / d; po.d = d; po.s = cam.f / d;
+  return true;
+}
+function ellipsePts(cx, cy, rx, ry, rot, n) {
+  var pts = [], c = Math.cos(rot), s = Math.sin(rot);
+  for (var i = 0; i < n; i++) { var a = i / n * Math.PI * 2, ex = Math.cos(a) * rx, ey = Math.sin(a) * ry; pts.push({ x: cx + ex * c - ey * s, y: cy + ex * s + ey * c }); }
+  return pts;
+}
+function capsule(x1, y1, x2, y2, r) {
+  var a = Math.atan2(y2 - y1, x2 - x1), pts = [], i;
+  for (i = 0; i <= 8; i++) { var t = a - Math.PI / 2 + Math.PI * i / 8; pts.push({ x: x2 + Math.cos(t) * r, y: y2 + Math.sin(t) * r }); }
+  for (i = 0; i <= 8; i++) { var u = a + Math.PI / 2 + Math.PI * i / 8; pts.push({ x: x1 + Math.cos(u) * r, y: y1 + Math.sin(u) * r }); }
+  return pts;
+}
+function shade(c, k) { var r = ((c >> 16) & 255) * k, g = ((c >> 8) & 255) * k, b = (c & 255) * k; return (Math.min(255, r) << 16) | (Math.min(255, g) << 8) | Math.min(255, b); }
+function rng32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+/* Static dawn scenery painted once at double resolution: sky, sun, clouds, three ridges, tree line, mist. */
+function paintScenery(c, S) {
+  c.scale(S, S);
+  var hor = HBG, r = rng32(7), i, x;
+  var g = c.createLinearGradient(0, 0, 0, hor);
+  g.addColorStop(0, '#47739b'); g.addColorStop(0.5, '#93b9cf'); g.addColorStop(0.82, '#e6d8c2'); g.addColorStop(1, '#f5d8b2');
+  c.fillStyle = g; c.fillRect(0, 0, BGW, hor);
+  var sx = SUNX, sy = hor - SUNH;
+  var glow = c.createRadialGradient(sx, sy, 0, sx, sy, 190);
+  glow.addColorStop(0, 'rgba(255,238,200,.95)'); glow.addColorStop(0.18, 'rgba(255,226,170,.55)'); glow.addColorStop(1, 'rgba(255,214,150,0)');
+  c.fillStyle = glow; c.fillRect(0, 0, BGW, hor);
+  var disc = c.createRadialGradient(sx, sy, 0, sx, sy, 22);
+  disc.addColorStop(0, '#fffbe8'); disc.addColorStop(1, 'rgba(255,244,210,.92)');
+  c.fillStyle = disc; c.beginPath(); c.arc(sx, sy, 22, 0, Math.PI * 2); c.fill();
+  for (i = 0; i < 11; i++) {
+    var cx = r() * BGW, cy = 30 + r() * (hor - 150), rx = 60 + r() * 120, ry = 8 + r() * 14, near = 1 - Math.min(1, Math.hypot(cx - sx, (cy - sy) * 2) / 360);
+    c.save(); c.translate(cx, cy); c.scale(1, ry / rx);
+    var cg = c.createRadialGradient(0, 0, 0, 0, 0, rx);
+    cg.addColorStop(0, 'rgba(255,' + (240 - near * 40 | 0) + ',' + (230 - near * 80 | 0) + ',.62)'); cg.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = cg; c.beginPath(); c.arc(0, 0, rx, 0, Math.PI * 2); c.fill(); c.restore();
+  }
+  function ridge(base, amp, top, bot, seed, f1) {
+    var q = rng32(seed), p1 = q() * 6, p2 = q() * 6, p3 = q() * 6;
+    c.beginPath(); c.moveTo(0, hor);
+    for (x = 0; x <= BGW; x += 3) c.lineTo(x, hor - base - Math.sin(x * f1 + p1) * amp - Math.sin(x * f1 * 2.3 + p2) * amp * 0.45 - Math.sin(x * f1 * 5.1 + p3) * amp * 0.14);
+    c.lineTo(BGW, hor); c.closePath();
+    var rg = c.createLinearGradient(0, hor - base - amp * 1.6, 0, hor); rg.addColorStop(0, top); rg.addColorStop(1, bot);
+    c.fillStyle = rg; c.fill();
+  }
+  ridge(52, 26, '#a9c2cc', '#d5d9cf', 11, 0.0085);
+  ridge(32, 20, '#7f9fa8', '#b7c7c3', 23, 0.012);
+  ridge(15, 11, '#5d8186', '#8fa9a5', 31, 0.019);
+  var t = rng32(5);
+  for (x = -4; x < BGW + 4; x += 2.4) {
+    var hh = 5 + t() * 8 * (0.6 + 0.4 * Math.sin(x * 0.03 + 1)), w2 = 2.2 + t() * 1.6;
+    c.fillStyle = t() < 0.5 ? '#2c4a44' : '#355650';
+    c.beginPath(); c.moveTo(x - w2, hor); c.lineTo(x, hor - hh); c.lineTo(x + w2, hor); c.closePath(); c.fill();
+  }
+  var mist = c.createLinearGradient(0, hor - 34, 0, hor);
+  mist.addColorStop(0, 'rgba(240,226,204,0)'); mist.addColorStop(1, 'rgba(240,226,204,.55)');
+  c.fillStyle = mist; c.fillRect(0, hor - 34, BGW, 34);
+}
 
 function create() {
-  var sc = this; scene = sc;
-  var cam = sc.cameras.main;
-  cam.setOrigin(0, 0); cam.setZoom(Z);
+  var sc = this;
+  var cm = sc.cameras.main;
+  cm.setOrigin(0, 0); cm.setZoom(Z); cm.setBackgroundColor('#47739b');
 
-  // Sky and water gradients as canvas textures
-  var skyT = sc.textures.createCanvas('sky', W, WATER_TOP + 6), c1 = skyT.getContext();
-  var g1 = c1.createLinearGradient(0, 0, 0, WATER_TOP + 6);
-  g1.addColorStop(0, '#86b2c6'); g1.addColorStop(0.55, '#bcd6d8'); g1.addColorStop(1, '#f0e4c9');
-  c1.fillStyle = g1; c1.fillRect(0, 0, W, WATER_TOP + 6); skyT.refresh();
-  sc.add.image(0, 0, 'sky').setOrigin(0, 0).setScrollFactor(0);
+  var S = 2, st = sc.textures.createCanvas('scenery', BGW * S, HBG * S);
+  paintScenery(st.getContext(), S); st.refresh();
+  sc.bgImg = sc.add.image(0, HOR_AIM, 'scenery').setOrigin(0, 1).setScale(1 / S);
 
-  var sun = sc.add.graphics().setScrollFactor(0.03);
-  sun.fillStyle(0xfff4d6, 0.22); sun.fillCircle(350, WATER_TOP - 78, 50);
-  sun.fillStyle(0xfff6de, 0.85); sun.fillCircle(350, WATER_TOP - 78, 24);
+  var wt = sc.textures.createCanvas('water', 4, 760), wc = wt.getContext();
+  var wg = wc.createLinearGradient(0, 0, 0, 760);
+  wg.addColorStop(0, '#d3d7c8'); wg.addColorStop(0.03, '#a7c3c2'); wg.addColorStop(0.14, '#5f949d'); wg.addColorStop(0.4, '#2d5e6d'); wg.addColorStop(1, '#10303e');
+  wc.fillStyle = wg; wc.fillRect(0, 0, 4, 760); wt.refresh();
+  sc.waterImg = sc.add.image(0, HOR_AIM, 'water').setOrigin(0, 0).setDisplaySize(W, 760);
 
-  function hills(factor, color, base, amp, seed) {
-    var g = sc.add.graphics().setScrollFactor(factor);
-    g.fillStyle(color, 1); g.beginPath(); g.moveTo(0, WATER_TOP + 2);
-    for (var x = 0; x <= 1500; x += 8) {
-      var y = base + Math.sin(x * 0.011 + seed) * amp + Math.sin(x * 0.027 + seed * 2.3) * amp * 0.45 + Math.sin(x * 0.061 + seed * 5) * amp * 0.12;
-      g.lineTo(x, WATER_TOP - y);
-    }
-    g.lineTo(1500, WATER_TOP + 2); g.closePath(); g.fillPath();
-  }
-  hills(0.06, 0x9dbcc0, 44, 20, 1.3);
-  hills(0.16, 0x7aa0a2, 20, 14, 4.1);
+  sc.g = sc.add.graphics();
+  sc.fg = sc.add.graphics();
+  sc.gaugeTxt = sc.add.text(W - 40, H - 78, '20°', { fontFamily: "'Big Shoulders Display','Arial Narrow',sans-serif", fontSize: '17px', color: '#ece6d6' }).setOrigin(0.5, 0).setResolution(Z);
+  sc.gaugeLbl = sc.add.text(W - 112, H - 156, 'ANGLE', { fontFamily: "'Figtree',sans-serif", fontSize: '9px', color: '#d7e2dc' }).setOrigin(0, 0).setResolution(Z).setAlpha(0.8);
 
-  var wT = sc.textures.createCanvas('water', W, H - WATER_TOP), c2 = wT.getContext();
-  var g2 = c2.createLinearGradient(0, 0, 0, H - WATER_TOP);
-  g2.addColorStop(0, '#a6c9c6'); g2.addColorStop(0.22, '#5e929a'); g2.addColorStop(0.6, '#2b5866'); g2.addColorStop(1, '#173946');
-  c2.fillStyle = g2; c2.fillRect(0, 0, W, H - WATER_TOP); wT.refresh();
-  sc.add.image(0, WATER_TOP, 'water').setOrigin(0, 0).setScrollFactor(0);
-
-  sc.waterG = sc.add.graphics().setScrollFactor(0);
-
-  // Ruler along the foreground in metres (world space)
-  var ruler = sc.add.graphics();
-  ruler.lineStyle(1.5, 0xece6d6, 0.55); ruler.lineBetween(SHORE_X, H - 14, SHORE_X + MAXM * PPM, H - 14);
-  for (var m = 0; m <= MAXM; m += 5) {
-    var rx = SHORE_X + m * PPM, long = m % 10 === 0;
-    ruler.lineBetween(rx, H - 14, rx, H - 14 - (long ? 9 : 5));
-    if (long && m > 0) sc.add.text(rx, H - 25, String(m), { fontFamily: "'Big Shoulders Display','Arial Narrow',sans-serif", fontSize: '15px', color: '#ece6d6' }).setOrigin(0.5, 1).setAlpha(0.8).setResolution(Z);
-  }
-
-  // Bank and thrower
-  var land = sc.add.graphics();
-  land.fillStyle(0x3b3b30, 1);
-  land.beginPath(); land.moveTo(-800, GROUND_Y); land.lineTo(78, GROUND_Y); land.lineTo(92, GROUND_Y + 12); land.lineTo(104, GROUND_Y + 40); land.lineTo(112, H + 4); land.lineTo(-800, H + 4); land.closePath(); land.fillPath();
-  land.fillStyle(0x5e7a4e, 1);
-  land.beginPath(); land.moveTo(-800, GROUND_Y); land.lineTo(78, GROUND_Y); land.lineTo(92, GROUND_Y + 12); land.lineTo(90, GROUND_Y + 18); land.lineTo(72, GROUND_Y + 8); land.lineTo(-800, GROUND_Y + 8); land.closePath(); land.fillPath();
-  var th = sc.add.graphics();
-  th.lineStyle(8, 0x1a2a2e, 1);
-  th.beginPath(); th.moveTo(58, GROUND_Y); th.lineTo(68, GROUND_Y - 18); th.lineTo(56, GROUND_Y - 34); th.strokePath();
-  th.lineStyle(10, 0x1a2a2e, 1); th.lineBetween(56, GROUND_Y - 34, 66, GROUND_Y - 62);
-  th.lineStyle(6, 0x1a2a2e, 1); th.beginPath(); th.moveTo(66, GROUND_Y - 60); th.lineTo(88, GROUND_Y - 44); th.lineTo(112, GROUND_Y - 18); th.strokePath();
-  th.fillStyle(0x1a2a2e, 1); th.fillCircle(73, GROUND_Y - 74, 8);
-
-  sc.aimG = sc.add.graphics();
-  sc.shadow = sc.add.ellipse(0, LANE_Y + 3, 14, 3, 0x0b2530, 0.35).setVisible(false);
-  sc.trailG = sc.add.graphics();
-  sc.fxG = sc.add.graphics();
-  sc.stoneObjs = STONES.map(function (st) { return sc.add.ellipse(SHORE_X, LANE_Y - HAND_H * VPPM, st.w, st.t, st.color).setStrokeStyle(1, 0xffffff, 0.35); });
-  sc.swipeG = sc.add.graphics().setScrollFactor(0);
-
-  // Input: swipe to throw. Native pointer events carry exact timestamps, so swipe speed does not depend on the frame rate.
+  // Input: swipe up to throw. Native pointer events carry exact timestamps, so swipe speed does not depend on frame rate.
   var cv = sc.game.canvas;
-  function toDesign(e) {
-    var r = cv.getBoundingClientRect();
-    return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H, t: e.timeStamp };
-  }
+  function toDesign(e) { var rc = cv.getBoundingClientRect(); return { x: (e.clientX - rc.left) / rc.width * W, y: (e.clientY - rc.top) / rc.height * H, t: e.timeStamp }; }
   cv.addEventListener('pointerdown', function (e) {
     Sound.unlock();
-    if (state === 'flying') return;
-    if (state !== 'ready') { state = 'ready'; cam.scrollX = 0; }
+    if (state === 'flying' || state === 'roundEnd') return;
+    if (state !== 'ready') toReady(true);
     hideResult();
     try { cv.setPointerCapture(e.pointerId); } catch (err) {}
-    aimLocked = aimAngle;
-    swipePts = [toDesign(e)];
+    aimLocked = aimAngle; swipePts = [toDesign(e)]; swipeYaw = null;
     e.preventDefault();
   });
   cv.addEventListener('pointermove', function (e) {
     if (!swipePts) return;
     var list = e.getCoalescedEvents ? e.getCoalescedEvents() : null;
-    if (list && list.length) { for (var i = 0; i < list.length; i++) swipePts.push(toDesign(list[i])); }
-    else swipePts.push(toDesign(e));
+    if (list && list.length) { for (var i = 0; i < list.length; i++) swipePts.push(toDesign(list[i])); } else swipePts.push(toDesign(e));
+    swipeYaw = tailYaw(swipePts);
   });
   function release(e) {
     if (!swipePts) return;
     swipePts.push(toDesign(e));
-    var pts = swipePts; swipePts = null;
+    var pts = swipePts; swipePts = null; swipeYaw = null;
     var lockedAngle = aimLocked; aimLocked = null;
     if (e.type === 'pointercancel') return;
     var a = analyse(pts);
     if (!a) return;
-    if (a.tap) { var h = $('hint'); h.textContent = 'Swipe across the screen, do not tap.'; h.classList.remove('gone'); return; }
-    launch(lockedAngle === null ? aimAngle : lockedAngle, a.power, a.spin);
+    var h = $('hint');
+    if (a.tap) { h.textContent = 'Swipe up toward the ring, do not tap.'; h.classList.remove('gone'); return; }
+    if (a.down) { h.textContent = 'Swipe upward, away from you, toward the water.'; h.classList.remove('gone'); return; }
+    launch(lockedAngle === null ? aimAngle : lockedAngle, a.yaw, a.power, a.spin);
   }
   cv.addEventListener('pointerup', release);
   cv.addEventListener('pointercancel', release);
 }
 
+function tailYaw(pts) {
+  var n = pts.length; if (n < 4) return null;
+  var m = pts[Math.floor(n * 0.5)], b = pts[n - 1];
+  var dx = b.x - m.x, dy = b.y - m.y;
+  if (-dy < 6) return null;
+  return clamp(Math.atan2(dx, -dy) * 180 / Math.PI, -35, 35);
+}
 function analyse(pts) {
   var n = pts.length; if (n < 3) return null;
-  var a = pts[0], b = pts[n - 1];
-  var dx = b.x - a.x, dy = b.y - a.y, chord = Math.hypot(dx, dy);
+  var a = pts[0], b = pts[n - 1], dx = b.x - a.x, dy = b.y - a.y, chord = Math.hypot(dx, dy);
   if (chord < 40) return { tap: true };
-  var peak = 0;
-  for (var j = 0; j < n - 1; j++) {
-    var k = j + 1;
+  if (-dy < 25) return { down: true };
+  var peak = 0, j, k;
+  for (j = 0; j < n - 1; j++) {
+    k = j + 1;
     while (k < n - 1 && pts[k].t - pts[j].t < 80) k++;
     var dt = Math.max(pts[k].t - pts[j].t, 16) / 1000;
     peak = Math.max(peak, Math.hypot(pts[k].x - pts[j].x, pts[k].y - pts[j].y) / dt / W);
   }
   var maxDev = 0;
   for (var i = 0; i < n; i++) maxDev = Math.max(maxDev, Math.abs((pts[i].x - a.x) * dy - (pts[i].y - a.y) * dx) / chord);
-  return { power: clamp((peak - 1.0) / 5.0, 0.04, 1), spin: clamp((maxDev / chord - 0.02) / 0.2, 0, 1), tap: false };
+  var yaw = tailYaw(pts); if (yaw === null) yaw = clamp(Math.atan2(dx, -dy) * 180 / Math.PI, -35, 35);
+  return { power: clamp((peak - 1.0) / 5.0, 0.04, 1), spin: clamp((maxDev / chord - 0.02) / 0.2, 0, 1), yaw: yaw, tap: false };
 }
 
-function launch(angle, power, spin) {
-  var stone = STONES[stoneIdx];
-  run = simulate(stone, angle, power, spin, wind, Math.random);
-  run.power = power; run.spin = spin; run.stone = stone;
-  playT = 0; evIdx = 0; settleT = 0; trail.length = 0; trailAcc = 0;
-  state = 'flying'; firstThrow = true;
+function launch(angle, yaw, power, spin) {
+  var stone = currentStone();
+  if (basket[stone.id] <= 0) return;
+  basket[stone.id]--; thrown++;
+  run = simulate(stone, angle, yaw, power, spin, windAt, clockT(), Math.random);
+  run.power = power; run.spin = spin; run.stone = stone; run.yaw = yaw; run.yawRad = rad(yaw); run.hits = ringHits(run.events); run.shown = false;
+  playT = 0; evIdx = 0; settleT = 0; trail.length = 0; trailAcc = 0; punch = 1; slow = 1; needsNext = true;
+  state = 'flying';
   $('hint').classList.add('gone');
-  $('skips').textContent = '0'; $('dist').textContent = '0.0';
-  Sound.throwIt();
+  $('skips').textContent = '0';
+  $('mSkip').textContent = '-'; $('mSpeed').textContent = '-'; $('mEntry').textContent = '-'; $('mHop').textContent = '-'; $('mRing').textContent = '-';
+  $('metrics').classList.add('show');
+  refreshStones(); updateHud();
+  Sound.throwIt(power);
+}
+function toReady(snap) {
+  state = 'ready';
+  if (snap) { cam.x = AIM.x; cam.z = AIM.z; cam.h = AIM.h; cam.yaw = 0; cam.f = F0; cam.hy = HOR_AIM; punch = 1; slow = 1; handA = 1; }
+  if (needsNext) { needsNext = false; pickRing(); refreshStones(); }
+  $('metrics').classList.remove('show');
+  updateHud();
+}
+
+function spawnDrops(x, z, strength, scale) {
+  var n = Math.round((5 + strength * 1.5) * scale);
+  for (var i = 0; i < n; i++) drops.push({ x: x + (Math.random() - 0.5) * 0.3, z: z + (Math.random() - 0.5) * 0.3, h: 0.03, vx: (Math.random() - 0.3) * 1.6, vz: (Math.random() - 0.5) * 1.6, vy: (1.6 + Math.random() * 2.6) * (0.6 + strength * 0.07) * scale, life: 0.5 + Math.random() * 0.35, age: 0 });
 }
 
 function update(time, delta) {
-  var sc = this, cam = sc.cameras.main, dt = Math.min(delta, 50) / 1000;
-  var stone = STONES[stoneIdx];
-  var sx = SHORE_X, sy = LANE_Y - HAND_H * VPPM, sAlpha = 1, tiltRot = 0, showShadow = false, shadowA = 0;
+  var sc = this, dt = Math.min(delta, 50) / 1000, T = time / 1000;
+  var stone = state === 'flying' || state === 'settling' ? run.stone : currentStone();
+  var sx = 0, sz = 0, sh = HAND_H, sAlpha = 1, tiltRot = 0, shadowA = 0, inWorld = true, underwater = false;
+  var wnow = windAt(clockT());
+
+  windAcc += dt;
+  if (windAcc > 0.2) { windAcc = 0; updateWindHud(wnow); Sound.setWind(wnow.speed); }
 
   if (state === 'flying' && run) {
-    playT += dt;
+    playT += dt * slow;
+    slow += (1 - slow) * Math.min(1, 5 * dt);
     var idx = Math.min(Math.floor(playT * 120), run.xs.length - 1);
     while (evIdx < run.events.length && run.events[evIdx].i <= idx) {
-      var ev = run.events[evIdx++];
-      var ex = SHORE_X + ev.x * PPM;
+      var ev = run.events[evIdx], hit = run.hits[evIdx]; evIdx++;
       if (ev.type === 'skip') {
-        ripples.push({ x: ex, age: 0, life: 1.9, p: Math.min(ev.v, 9) });
-        spawnDrops(ex, ev.v, 1);
-        Sound.skip(ev.n, ev.v);
-        Haptics.skip(ev.v);
+        ripples.push({ x: ev.x, z: ev.z, age: 0, life: 1.9, p: Math.min(ev.v, 9) });
+        spawnDrops(ev.x, ev.z, ev.v, 1);
+        Sound.skip(ev.n, ev.v); Haptics.skip(ev.v);
         $('skips').textContent = String(ev.n);
         var el = $('skips'); el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+        $('mSkip').textContent = String(ev.n); $('mSpeed').textContent = ev.sp.toFixed(1); $('mEntry').textContent = ev.a.toFixed(0); $('mHop').textContent = ev.hop.toFixed(1);
+        if (hit > 0) { $('mRing').textContent = '+' + hit; ring.flash = 1; Sound.ring(hit >= 40); }
+        punch = Math.max(punch, 1.3 + 0.4 * Math.min(ev.v, 9) / 9); slow = 0.55;
       } else {
-        ripples.push({ x: ex, age: 0, life: 2.4, p: 10 });
-        spawnDrops(ex, Math.max(ev.v, 3) + 2, 1.6);
-        Sound.sink();
-        Haptics.sink();
+        ripples.push({ x: ev.x, z: ev.z, age: 0, life: 2.4, p: 10 });
+        spawnDrops(ev.x, ev.z, Math.max(ev.v, 3) + 2, 1.6);
+        Sound.sink(); Haptics.sink();
+        $('mHop').textContent = ev.hop.toFixed(1);
+        punch = 1.75; slow = 0.4;
       }
     }
-    var xm = run.xs[idx], hm = run.hs[idx], sm = run.ss[idx];
-    sx = SHORE_X + xm * PPM; sy = LANE_Y - Math.max(hm, 0) * VPPM - stone.t * 0.5;
-    if (hm < 0) { sy = LANE_Y - hm * VPPM * 0.9; sAlpha = clamp(1 + hm / 0.7, 0, 1); }
+    sx = run.xs[idx]; sz = run.zs[idx]; var hm = run.hs[idx], sm = run.ss[idx];
+    sh = Math.max(hm, 0) + stone.vt * 0.5;
+    if (hm < 0) { underwater = true; sh = hm; sAlpha = clamp(1 + hm / 0.7, 0, 1); }
     tiltRot = Math.sin(playT * 22) * (1 - Math.min(1, sm)) * 0.5;
-    showShadow = hm >= 0; shadowA = 0.35 * (1 - Math.min(hm / 1.8, 1));
-    $('dist').textContent = Math.max(0, xm).toFixed(1);
+    shadowA = hm >= 0 ? 0.35 * (1 - Math.min(hm / 1.8, 1)) : 0;
     trailAcc += dt;
-    if (trailAcc > 0.03 && hm >= 0) { trailAcc = 0; trail.push({ x: sx, y: sy, a: 0 }); }
-    if (idx >= run.xs.length - 1) {
-      state = 'settling'; settleT = 0;
-      $('dist').textContent = run.distance.toFixed(1);
-      $('skips').textContent = String(run.skips);
-    }
+    if (trailAcc > 0.03 && hm >= 0) { trailAcc = 0; trail.push({ x: sx, z: sz, h: sh, a: 0 }); }
+    if (idx >= run.xs.length - 1) { state = 'settling'; settleT = 0; $('skips').textContent = String(run.skips); }
   } else if (state === 'settling') {
     settleT += dt;
-    var last = run.xs.length - 1;
-    sx = SHORE_X + run.xs[last] * PPM; sy = LANE_Y + 30; sAlpha = 0;
-    if (!run.shown && settleT > 0.35) { run.shown = true; showResult(run, run.power, run.spin, run.stone); }
-    if (settleT > 1.5) { state = 'returning'; }
+    slow += (1 - slow) * Math.min(1, 5 * dt);
+    var li = run.xs.length - 1; sx = run.xs[li]; sz = run.zs[li]; sh = -0.8; sAlpha = 0; underwater = true;
+    if (!run.shown && settleT > 0.45) { run.shown = true; finishThrow(); }
+    if (settleT > 2.0) {
+      if (thrown >= 10) { state = 'roundEnd'; hideResult(); showRound(); } else state = 'returning';
+    }
   } else if (state === 'returning') {
-    sx = SHORE_X; sy = LANE_Y - HAND_H * VPPM;
-    if (Math.abs(cam.scrollX) < 3) { cam.scrollX = 0; state = 'ready'; pickWind(); }
+    if (Math.abs(cam.x - AIM.x) < 0.25 && Math.abs(cam.h - AIM.h) < 0.12 && Math.abs(cam.hy - HOR_AIM) < 3) toReady(true);
   }
+  punch += (1 - punch) * Math.min(1, 3.4 * dt);
 
   // Camera
-  if (state === 'flying' || state === 'settling') {
-    var target = clamp(sx - 190, 0, WORLD_PX - W);
-    cam.scrollX += (target - cam.scrollX) * Math.min(1, 5 * dt);
-  } else if (state === 'returning') {
-    cam.scrollX += (0 - cam.scrollX) * Math.min(1, 7 * dt);
+  var aimMode = state === 'ready' || state === 'returning' || state === 'roundEnd';
+  var tgt, hyT;
+  if (aimMode) {
+    var sway = Math.sin(T * 0.5) * 0.004;
+    tgt = { x: AIM.x, z: AIM.z, h: AIM.h + Math.sin(T * 1.3) * 0.012, yaw: sway, f: F0 };
+    hyT = HOR_AIM;
+  } else {
+    var hd = run.yawRad, hdx = Math.cos(hd), hdz = Math.sin(hd), pk = clamp((punch - 1) / 0.6, 0, 1);
+    var chaseD = 5.6 - 2.2 * pk, side = 1.9 - 0.6 * pk, ch = 1.25 - 0.3 * pk;
+    var look = { x: sx + hdx * 1.4, z: sz + hdz * 1.4 };
+    tgt = { x: sx - hdx * chaseD - hdz * side, z: sz - hdz * chaseD + hdx * side, h: ch, f: F0 * punch };
+    tgt.yaw = Math.atan2(look.z - cam.z, look.x - cam.x);
+    var dd = Math.max(1.5, (sx - cam.x) * camc + (sz - cam.z) * cams);
+    hyT = 0.52 * H - cam.f * (cam.h - sh) / dd;
+    hyT = clamp(hyT, 120, 300);
   }
+  var kp = state === 'returning' ? 4 : 6;
+  cam.x += (tgt.x - cam.x) * Math.min(1, kp * dt);
+  cam.z += (tgt.z - cam.z) * Math.min(1, kp * dt);
+  cam.h += (tgt.h - cam.h) * Math.min(1, kp * dt);
+  cam.yaw += (tgt.yaw - cam.yaw) * Math.min(1, 7 * dt);
+  cam.f += (tgt.f - cam.f) * Math.min(1, 9 * dt);
+  cam.hy += (hyT - cam.hy) * Math.min(1, 7 * dt);
+  camc = Math.cos(cam.yaw); cams = Math.sin(cam.yaw);
 
-  // Stones: only the chosen one is visible
-  sc.stoneObjs.forEach(function (o, i) { o.setVisible(i === stoneIdx); });
-  var so = sc.stoneObjs[stoneIdx];
-  if (state === 'ready' || state === 'returning') { so.setPosition(SHORE_X, LANE_Y - HAND_H * VPPM); so.setRotation(0); so.setAlpha(1); }
-  else { so.setPosition(sx, sy); so.setRotation(tiltRot); so.setAlpha(sAlpha); }
-  sc.shadow.setVisible(showShadow && state === 'flying').setPosition(sx, LANE_Y + 3).setAlpha(shadowA).setSize(stone.w * 0.9, 3);
+  var bgShift = -cam.yaw * cam.f * 0.9;
+  sc.bgImg.setPosition((W - BGW) / 2 + bgShift, cam.hy);
+  sc.waterImg.setPosition(0, cam.hy);
+  var sunX = (W - BGW) / 2 + bgShift + SUNX;
 
-  drawWater(sc, cam.scrollX, time / 1000);
-  drawFx(sc, dt);
-  drawTrail(sc, dt);
-  drawAim(sc);
-  drawSwipe(sc);
+  var g = sc.g; g.clear();
+  drawWaves(g, T, sunX);
+  drawRing(g, T, dt);
+  drawRipples(g, dt);
+  drawTrail(g, dt);
+  drawDrops(g, dt);
+  drawStoneScene(g, T, sx, sz, sh, stone, sAlpha, tiltRot, shadowA, underwater);
+  drawSwipeAim(g);
+  drawForeground(sc, T, stone, dt);
 }
 
-function drawWater(sc, scrollX, t) {
-  var g = sc.waterG; g.clear();
-  var rows = 15;
-  for (var i = 0; i < rows; i++) {
-    var f = i / rows;
-    var y = WATER_TOP + 6 + (H - WATER_TOP - 40) * Math.pow(f, 1.5);
-    var depth = 0.25 + 0.75 * f;
-    var step = 26 + 40 * depth, len = 6 + 22 * depth;
-    var off = -((scrollX * (0.25 + 0.9 * depth) + t * 7 * depth) % step);
-    g.lineStyle(1 + depth, 0xffffff, 0.06 + 0.08 * depth);
-    for (var x = off - step; x < W + step; x += step) {
-      var w = Math.sin(t * 1.3 + i * 1.7 + x * 0.02) * 1.2 * depth;
-      g.lineBetween(x, y + w, x + len, y + w);
+function drawWaves(g, T, sunX) {
+  var levels = [{ dmin: 1.2, dmax: 13, step: 1.25, lat: 2.3, len: 0.9 }, { dmin: 13, dmax: 56, step: 4.6, lat: 7, len: 3.0 }, { dmin: 56, dmax: 230, step: 17, lat: 25, len: 11 }];
+  for (var L = 0; L < levels.length; L++) {
+    var lv = levels[L];
+    var xa = Math.ceil((cam.x + lv.dmin) / lv.step), xb = Math.floor((cam.x + lv.dmax) / lv.step);
+    for (var m = xa; m <= xb; m++) {
+      var xw = m * lv.step, d = xw - cam.x, half = (0.7 + Math.abs(cam.yaw)) * d + 3;
+      var j0 = Math.floor((cam.z - half) / lv.lat), j1 = Math.ceil((cam.z + half) / lv.lat);
+      for (var j = j0; j <= j1; j++) {
+        var h1 = hash2(m + L * 91, j);
+        if (h1 < 0.45) continue;
+        var zc = (j + hash2(j, m + L * 17) * 0.7) * lv.lat, len = lv.len * (0.6 + h1 * 0.8);
+        if (!P(xw, zc - len / 2, 0)) continue;
+        var ax = po.x, ay = po.y, sA = po.s;
+        if (!P(xw, zc + len / 2, 0)) continue;
+        var bx = po.x, mx = (ax + bx) / 2;
+        if (mx < -40 || mx > W + 40 || ay > H + 4) continue;
+        var dy = ay - cam.hy, glit = Math.exp(-Math.pow((mx - sunX) / (12 + 0.4 * dy), 2)) * (dy < 260 ? 1 : 0.35);
+        var sh = 0.5 + 0.5 * Math.sin(T * 1.7 + h1 * 40);
+        var alpha = 0.05 + 0.07 * (1 - Math.min(dy / 300, 1)) + glit * (0.25 + 0.4 * sh);
+        g.lineStyle(clamp(sA * 0.035, 0.7, 3.2), glit > 0.25 ? 0xfff0cc : 0xffffff, Math.min(alpha, 0.9));
+        g.lineBetween(ax, ay, bx, ay);
+      }
     }
   }
 }
 
-function spawnDrops(x, strength, scale) {
-  var n = Math.round((5 + strength * 1.5) * scale);
-  for (var i = 0; i < n; i++) {
-    drops.push({ x: x + (Math.random() - 0.5) * 6, y: LANE_Y + 1, vx: (Math.random() - 0.35) * 60 + strength * 6, vy: -(60 + Math.random() * 90) * (0.6 + strength * 0.08) * scale, life: 0.5 + Math.random() * 0.35, age: 0 });
+function drawRing(g, T, dt) {
+  if (!ring) return;
+  if (ring.flash > 0) ring.flash = Math.max(0, ring.flash - dt * 1.4);
+  var pulse = 0.75 + 0.25 * Math.sin(T * 3), pts = [], pts2 = [], i, ok = true;
+  for (i = 0; i < 28; i++) { var a = i / 28 * Math.PI * 2; if (!P(ring.x + Math.cos(a) * ring.r, ring.z + Math.sin(a) * ring.r, 0)) { ok = false; break; } pts.push({ x: po.x, y: po.y }); }
+  if (ok) {
+    g.fillStyle(0xf2b24c, 0.14 + ring.flash * 0.4); g.fillPoints(pts, true);
+    g.lineStyle(clamp(po.s * 0.05, 1.4, 3.4), 0xf2b24c, 0.95 * pulse); g.strokePoints(pts, true);
+    for (i = 0; i < 20; i++) { var b = i / 20 * Math.PI * 2; if (!P(ring.x + Math.cos(b) * ring.r / 3, ring.z + Math.sin(b) * ring.r / 3, 0)) { pts2 = null; break; } pts2.push({ x: po.x, y: po.y }); }
+    if (pts2) { g.lineStyle(clamp(po.s * 0.035, 1, 2.4), 0xffffff, 0.7); g.strokePoints(pts2, true); }
+  }
+  if (P(ring.x, ring.z, 0)) {
+    var bx = po.x, by = po.y, s = po.s;
+    if (P(ring.x, ring.z, 3.4)) {
+      var ty = po.y;
+      g.lineStyle(clamp(s * 0.05, 1.4, 4), 0xf2b24c, 0.95); g.lineBetween(bx, by, bx, ty);
+      var fw = clamp(s * 0.9, 6, 70);
+      g.fillStyle(0xe0603a, 0.95); g.fillPoints([{ x: bx, y: ty }, { x: bx + fw, y: ty + fw * 0.32 }, { x: bx, y: ty + fw * 0.64 }], true);
+    }
   }
 }
-function drawFx(sc, dt) {
-  var g = sc.fxG; g.clear();
+
+function drawRipples(g, dt) {
   for (var i = ripples.length - 1; i >= 0; i--) {
     var r = ripples[i]; r.age += dt;
     if (r.age > r.life) { ripples.splice(i, 1); continue; }
     for (var k = 0; k < 3; k++) {
       var a = r.age - k * 0.14; if (a <= 0) continue;
       var p = a / r.life; if (p > 1) continue;
-      var rx = (5 + a * (16 + r.p * 4)) * (1 + k * 0.08), ry = rx * 0.24;
-      g.lineStyle(2 - p, 0xffffff, 0.6 * (1 - p) * (k === 0 ? 1 : 0.65));
-      g.strokeEllipse(r.x, LANE_Y + 3, rx * 2, ry * 2);
+      var rad0 = (0.2 + a * (0.7 + r.p * 0.18)) * (1 + k * 0.08), pts = [], ok = true, j;
+      for (j = 0; j < 26; j++) { var an = j / 26 * Math.PI * 2; if (!P(r.x + Math.cos(an) * rad0, r.z + Math.sin(an) * rad0, 0)) { ok = false; break; } pts.push({ x: po.x, y: po.y }); }
+      if (!ok) continue;
+      g.lineStyle(clamp(po.s * 0.03, 0.9, 2.4) * (1 - p * 0.6), 0xffffff, 0.6 * (1 - p) * (k === 0 ? 1 : 0.65));
+      g.strokePoints(pts, true);
     }
   }
-  for (var j = drops.length - 1; j >= 0; j--) {
-    var d = drops[j]; d.age += dt;
-    d.vy += 700 * dt; d.x += d.vx * dt; d.y += d.vy * dt;
-    if (d.age > d.life || (d.y > LANE_Y + 3 && d.vy > 0)) { drops.splice(j, 1); continue; }
-    g.fillStyle(0xffffff, 0.85 * (1 - d.age / d.life)); g.fillCircle(d.x, d.y, 1.8);
+}
+function drawDrops(g, dt) {
+  for (var i = drops.length - 1; i >= 0; i--) {
+    var d = drops[i]; d.age += dt; d.vy -= 9.8 * dt; d.x += d.vx * dt; d.z += d.vz * dt; d.h += d.vy * dt;
+    if (d.age > d.life || (d.h < 0 && d.vy < 0)) { drops.splice(i, 1); continue; }
+    if (!P(d.x, d.z, d.h)) continue;
+    g.fillStyle(0xffffff, 0.85 * (1 - d.age / d.life)); g.fillCircle(po.x, po.y, clamp(po.s * 0.03, 1.2, 3.2));
   }
 }
-function drawTrail(sc, dt) {
-  var g = sc.trailG; g.clear();
+function drawTrail(g, dt) {
   for (var i = trail.length - 1; i >= 0; i--) {
     var p = trail[i]; p.a += dt;
-    if (p.a > 1.3) { trail.splice(i, 1); continue; }
-    g.fillStyle(0xffffff, 0.45 * (1 - p.a / 1.3)); g.fillCircle(p.x, p.y, 1.5);
+    if (p.a > 1.4) { trail.splice(i, 1); continue; }
+    if (!P(p.x, p.z, p.h)) continue;
+    g.fillStyle(0xffffff, 0.5 * (1 - p.a / 1.4)); g.fillCircle(po.x, po.y, clamp(po.s * 0.02, 1, 2.2));
   }
 }
-function drawAim(sc) {
-  var g = sc.aimG; g.clear();
-  if (state !== 'ready' && state !== 'returning') return;
-  if (state === 'returning' && sc.cameras.main.scrollX > 30) return;
-  var hx = SHORE_X, hy = LANE_Y - HAND_H * VPPM, R = 66;
-  var a = aimLocked !== null ? aimLocked : aimAngle, t = rad(a);
-  g.fillStyle(0x7cc49a, 0.3); g.beginPath(); g.moveTo(hx, hy); g.arc(hx, hy, R, rad(15), rad(25), false); g.closePath(); g.fillPath();
-  g.lineStyle(1.5, 0xffffff, 0.5); g.lineBetween(hx, hy, hx + R + 14, hy);
-  var col = aimLocked !== null ? 0xffffff : 0xe2a553;
-  g.lineStyle(2.5, col, 1);
-  g.beginPath(); g.arc(hx, hy, R * 0.72, 0, t, false); g.strokePath();
-  g.lineBetween(hx, hy, hx + Math.cos(t) * (R + 14), hy + Math.sin(t) * (R + 14));
-  g.fillStyle(col, 1); g.fillCircle(hx + Math.cos(t) * (R + 14), hy + Math.sin(t) * (R + 14), 3);
+
+var handPos = { x: W / 2, y: 540, sw: 130 };
+function drawStoneScene(g, T, sx, sz, sh, stone, alpha, rot, shadowA, underwater) {
+  if (!P(sx, sz, sh)) return;
+  var px = po.x, py = po.y, s = po.s;
+  var sw = stone.vw * s, th = Math.max(2.2, stone.vt * s);
+  if (state === 'ready' || state === 'returning') { handPos.x = px; handPos.y = py; handPos.sw = sw; }
+  if (shadowA > 0 && P(sx, sz, 0)) { g.fillStyle(0x0b2530, shadowA); g.fillPoints(ellipsePts(po.x, po.y, sw * 0.5, Math.max(1.2, sw * 0.06), 0, 14), true); }
+  if (!P(sx, sz, sh)) return;
+  if (handA > 0.01 && (state === 'ready' || state === 'returning')) drawHandBack(g, px, py, sw, handA);
+  if (alpha > 0.01) {
+    var hl = Math.sin(T * 0.8) * sw * 0.1;
+    g.fillStyle(shade(stone.color, 0.55), alpha); g.fillPoints(ellipsePts(px, py + th * 0.28, sw / 2, th / 2, rot, 22), true);
+    g.fillStyle(stone.color, alpha); g.fillPoints(ellipsePts(px, py, sw / 2, th / 2, rot, 22), true);
+    g.fillStyle(0xffffff, alpha * 0.28); g.fillPoints(ellipsePts(px - sw * 0.07 + hl, py - th * 0.16, sw * 0.3, th * 0.16, rot, 14), true);
+  }
+  if (handA > 0.01 && (state === 'ready' || state === 'returning')) drawHandFront(g, px, py, sw, handA);
 }
-function drawSwipe(sc) {
-  var g = sc.swipeG; g.clear();
-  if (!swipePts || swipePts.length < 2) return;
-  g.lineStyle(4, 0xffffff, 0.75);
-  g.beginPath(); g.moveTo(swipePts[0].x, swipePts[0].y);
-  for (var i = 1; i < swipePts.length; i++) g.lineTo(swipePts[i].x, swipePts[i].y);
-  g.strokePath();
+function drawHandBack(g, x, y, sw, a) {
+  g.fillStyle(0x15191c, a * 0.97);
+  g.fillPoints(ellipsePts(x + sw * 0.04, y + sw * 0.7, sw * 0.82, sw * 0.4, 0, 28), true);
+  g.fillPoints(capsule(x - sw * 0.46, y + sw * 0.62, x - sw * 0.38, y + sw * 0.06, sw * 0.085), true);
+  g.fillPoints(capsule(x - sw * 0.2, y + sw * 0.68, x - sw * 0.14, y + sw * 0.1, sw * 0.085), true);
+  g.fillPoints(capsule(x + sw * 0.06, y + sw * 0.7, x + sw * 0.07, y + sw * 0.12, sw * 0.085), true);
+}
+function drawHandFront(g, x, y, sw, a) {
+  g.fillStyle(0x1d2226, a); g.fillPoints(capsule(x + sw * 0.66, y + sw * 0.66, x + sw * 0.2, y - sw * 0.04, sw * 0.105), true);
+  g.lineStyle(1.2, 0x4a5a63, a * 0.7); g.strokePoints(capsule(x + sw * 0.66, y + sw * 0.66, x + sw * 0.2, y - sw * 0.04, sw * 0.105), true);
 }
 
+function drawSwipeAim(g) {
+  if (swipePts && swipePts.length > 1) {
+    g.lineStyle(3, 0xffffff, 0.7);
+    g.beginPath(); g.moveTo(swipePts[0].x, swipePts[0].y);
+    for (var i = 1; i < swipePts.length; i++) g.lineTo(swipePts[i].x, swipePts[i].y);
+    g.strokePath();
+  }
+  if (swipeYaw !== null && (state === 'ready')) {
+    var yr = rad(swipeYaw);
+    for (var k = 1; k <= 22; k++) {
+      var d = k * 3.2;
+      if (!P(Math.cos(yr) * d, Math.sin(yr) * d, 0)) continue;
+      g.fillStyle(0xffffff, 0.55 * (1 - k / 26)); g.fillCircle(po.x, po.y, clamp(po.s * 0.05, 1.2, 3));
+    }
+  }
+}
+
+function drawForeground(sc, T, stone, dt) {
+  var g = sc.fg; g.clear();
+  var aim = state === 'ready' || state === 'returning' || state === 'roundEnd';
+  var target = aim ? 1 : 0;
+  if (state === 'returning' && Math.abs(cam.x - AIM.x) > 1.2) target = 0;
+  handA += (target - handA) * Math.min(1, 7 * dt);
+  var show = handA > 0.02;
+  sc.gaugeTxt.setVisible(show); sc.gaugeLbl.setVisible(show);
+  if (!show) return;
+  var a = handA;
+  g.fillStyle(0x20262a, 0.95 * a); g.fillPoints(ellipsePts(46, H + 8, 96, 54, 0.2, 22), true);
+  g.fillPoints(ellipsePts(W - 30, H + 14, 84, 46, -0.15, 22), true);
+  g.fillStyle(0x38434a, 0.55 * a); g.fillPoints(ellipsePts(30, H - 30, 38, 10, 0.2, 14), true);
+  // Angle gauge: a side-on protractor beside the hand. Pivot is the release point, the arm shows the throw angle.
+  var cx = W - 112, cy = H - 128, R = 64, ang = rad(aimLocked !== null ? aimLocked : aimAngle);
+  g.fillStyle(0x7cc49a, 0.3 * a); g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R, rad(15), rad(25), false); g.closePath(); g.fillPath();
+  g.lineStyle(1.4, 0xffffff, 0.5 * a); g.lineBetween(cx, cy, cx + R + 10, cy);
+  for (var d = 0; d <= 45; d += 15) { var q = rad(d); g.lineBetween(cx + Math.cos(q) * (R - 4), cy + Math.sin(q) * (R - 4), cx + Math.cos(q) * (R + 4), cy + Math.sin(q) * (R + 4)); }
+  var col = aimLocked !== null ? 0xffffff : 0xe2a553;
+  g.lineStyle(2.5, col, a); g.beginPath(); g.arc(cx, cy, R * 0.72, 0, ang, false); g.strokePath();
+  g.lineBetween(cx, cy, cx + Math.cos(ang) * (R + 10), cy + Math.sin(ang) * (R + 10));
+  g.fillStyle(col, a); g.fillCircle(cx + Math.cos(ang) * (R + 10), cy + Math.sin(ang) * (R + 10), 3.2);
+  sc.gaugeTxt.setText((aimLocked !== null ? aimLocked : aimAngle).toFixed(0) + '°').setAlpha(a).setPosition(cx + 24, cy + 20);
+  sc.gaugeLbl.setAlpha(0.8 * a).setPosition(cx - 4, cy - 76);
+}
+
+newRound();
 window.__skipGame = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
   width: W * Z,
   height: H * Z,
-  backgroundColor: '#86b2c6',
+  backgroundColor: '#47739b',
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   audio: { noAudio: true },
   input: { mouse: false, touch: false },
@@ -769,5 +1127,4 @@ window.__skipGame = new Phaser.Game({
 window.__skipSim = { simulate: simulate, STONES: STONES };
 })();
 </script>
-
 </body></html>
