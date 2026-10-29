@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>html{color-scheme:dark;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}</style></head><body>
+<title>Skipstone</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Figtree:wght@400;600&display=swap">
+<style>
+/* Layout: one-screen portrait app. Slim header strip, a 3:4 lake stage with HUD overlays, a control deck (stones, angle).
+   One committed look (morning lake), so tokens are set once with an explicit dark UI. */
+:root {
+  --ink: #0f232b;
+  --deck: #15292f;
+  --deck-2: #1e3b43;
+  --line: #2f505a;
+  --paper: #ece6d6;
+  --mute: #9eb5b7;
+  --ochre: #e2a553;
+  --good: #7cc49a;
+  --font-display: 'Big Shoulders Display', 'Arial Narrow', Impact, sans-serif;
+  --font-body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.35;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.app {
+  height: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-block: 8px;
+  box-sizing: border-box;
+}
+.lbl {
+  white-space: nowrap;
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); outline-offset: 2px; }
+
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+.brand { display: flex; flex-direction: column; min-width: 0; }
+.word { font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: .08em; text-transform: uppercase; line-height: 1; }
+.bests { display: flex; align-items: center; gap: 16px; }
+.bests > div { display: flex; flex-direction: column; align-items: flex-end; }
+.bests b { font-family: var(--font-display); font-weight: 600; font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums; }
+#mute {
+  position: absolute; right: 10px; top: 44px;
+  background: rgba(15, 35, 43, .72); border: 0; border-radius: 4px;
+  padding: 5px 9px; font-size: 12px; color: var(--paper);
+}
+
+.stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.frame { position: relative; overflow: hidden; border-radius: 6px; background: #8fb8c9; }
+#game { position: absolute; inset: 0; }
+#game canvas { display: block; touch-action: none; }
+
+.hud { position: absolute; left: 12px; top: 10px; display: flex; gap: 18px; pointer-events: none; color: #10262e; }
+.stat { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 4px; }
+.stat .lbl { width: 100%; color: rgba(16, 38, 46, .72); }
+.stat b { font-family: var(--font-display); font-weight: 800; font-size: 46px; line-height: .95; font-variant-numeric: tabular-nums; }
+.stat i { font-style: normal; font-family: var(--font-display); font-weight: 600; font-size: 18px; }
+#skips.pop { animation: pop .22s ease-out; }
+@keyframes pop { 0% { transform: scale(1.35); } 100% { transform: scale(1); } }
+
+.wind {
+  position: absolute; right: 10px; top: 10px; pointer-events: none;
+  background: rgba(15, 35, 43, .72); color: var(--paper);
+  font-size: 12px; padding: 5px 9px; border-radius: 4px; font-variant-numeric: tabular-nums;
+}
+
+.card {
+  position: absolute; left: 50%; top: 21%; transform: translate(-50%, 6px);
+  width: min(86%, 340px); box-sizing: border-box;
+  background: rgba(15, 35, 43, .9); color: var(--paper);
+  border-radius: 8px; padding: 12px 14px 10px;
+  opacity: 0; transition: opacity .18s ease, transform .18s ease; pointer-events: none;
+}
+.card.show { opacity: 1; transform: translate(-50%, 0); }
+.card h2 { margin: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-family: var(--font-display); font-weight: 800; font-size: 28px; line-height: 1.05; letter-spacing: .02em; }
+.card h2 .badge { font-family: var(--font-body); font-weight: 600; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink); background: var(--ochre); padding: 3px 6px; border-radius: 3px; }
+.diag { margin-top: 8px; display: grid; grid-template-columns: 1fr; gap: 5px; }
+.diag div { display: grid; grid-template-columns: 52px 54px 1fr; align-items: baseline; gap: 6px; min-width: 0; }
+.diag .k { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--mute); }
+.diag .v { font-family: var(--font-display); font-weight: 600; font-size: 18px; font-variant-numeric: tabular-nums; }
+.diag .w { font-size: 12px; color: var(--paper); min-width: 0; }
+.diag .w.ok { color: var(--good); }
+.card .foot { margin-top: 8px; font-size: 11px; color: var(--mute); }
+
+.hint {
+  position: absolute; left: 50%; bottom: 14%; transform: translateX(-50%);
+  width: min(80%, 300px); text-align: center; font-size: 13px; color: var(--paper);
+  background: rgba(15, 35, 43, .78); padding: 8px 12px; border-radius: 6px; pointer-events: none;
+  transition: opacity .3s ease;
+}
+.hint.gone { opacity: 0; }
+
+.deck { background: var(--deck); border-radius: 8px; padding: 10px 12px 12px; display: grid; gap: 10px; }
+.stones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.stone {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left;
+  background: var(--deck-2); border: 1px solid var(--line); border-radius: 6px; padding: 7px 8px; min-width: 0;
+}
+.stone[aria-pressed="true"] { border-color: var(--ochre); box-shadow: inset 0 0 0 1px var(--ochre); }
+.stone .nm { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; min-width: 0; }
+.stone .nm span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stone .sw { flex: none; display: block; border-radius: 50%; height: 7px; }
+.stone .nt { font-size: 11px; color: var(--mute); line-height: 1.25; }
+
+.angle { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 10px; }
+.angle .lbl { align-self: end; }
+.angle .read { font-family: var(--font-display); font-weight: 800; font-size: 28px; line-height: 1; font-variant-numeric: tabular-nums; }
+.angle .read small { font-size: 12px; font-weight: 600; color: var(--mute); letter-spacing: .06em; margin-left: 6px; }
+#tilt { grid-column: 2; background: var(--deck-2); border: 1px solid var(--line); border-radius: 4px; padding: 7px 10px; font-size: 12px; }
+#tilt[aria-pressed="true"] { border-color: var(--good); color: var(--good); }
+.slider { grid-column: 1 / -1; }
+#angle {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 30px; margin: 0; background: transparent; touch-action: pan-y;
+}
+#angle::-webkit-slider-runnable-track {
+  height: 8px; border-radius: 4px;
+  background: linear-gradient(to right, var(--line) 0 33.3%, #3f7a63 33.3% 55.6%, var(--line) 55.6% 100%);
+}
+#angle::-moz-range-track {
+  height: 8px; border-radius: 4px;
+  background: linear-gradient(to right, var(--line) 0 33.3%, #3f7a63 33.3% 55.6%, var(--line) 55.6% 100%);
+}
+#angle::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; margin-top: -10px; border-radius: 50%; background: var(--ochre); border: 3px solid var(--deck); }
+#angle::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--ochre); border: 3px solid var(--deck); }
+.note { grid-column: 1; font-size: 11px; color: var(--mute); }
+
+@media (prefers-reduced-motion: reduce) {
+  #skips.pop { animation: none; }
+  .card, .hint { transition: none; }
+}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <span class="word">Skipstone</span>
+      <span class="lbl">Prototype v0.1</span>
+    </div>
+    <div class="bests">
+      <div><span class="lbl">Best skips</span><b id="bestSkips">0</b></div>
+      <div><span class="lbl">Best distance</span><b id="bestDist">0.0 m</b></div>
+    </div>
+  </header>
+
+  <main class="stage" id="stage">
+    <div class="frame" id="frame">
+      <div id="game"></div>
+      <div class="hud">
+        <div class="stat"><span class="lbl">Skips</span><b id="skips">0</b></div>
+        <div class="stat"><span class="lbl">Distance</span><b id="dist">0.0</b><i>m</i></div>
+      </div>
+      <div class="wind" id="wind">Calm</div>
+      <button id="mute" type="button" aria-pressed="false">Sound on</button>
+      <div class="card" id="card" aria-live="polite">
+        <h2><span id="cardHead">0 skips</span><span class="badge" id="cardBadge" style="display:none">New best</span></h2>
+        <div class="diag">
+          <div><span class="k">Angle</span><span class="v" id="dAngle">-</span><span class="w" id="dAngleW"></span></div>
+          <div><span class="k">Power</span><span class="v" id="dPower">-</span><span class="w" id="dPowerW"></span></div>
+          <div><span class="k">Spin</span><span class="v" id="dSpin">-</span><span class="w" id="dSpinW"></span></div>
+        </div>
+        <div class="foot" id="cardFoot"></div>
+      </div>
+      <div class="hint" id="hint">Swipe fast across the lake to throw. A curved swipe adds spin.</div>
+    </div>
+  </main>
+
+  <section class="deck" aria-label="Throw setup">
+    <div class="stones" id="stones"></div>
+    <div class="angle">
+      <span class="lbl">Throw angle</span>
+      <span class="read"><span id="angleVal">20</span>&deg;<small id="angleTag">in the zone</small></span>
+      <div class="slider"><input id="angle" type="range" min="0" max="45" step="0.5" value="20" aria-label="Throw angle in degrees"></div>
+      <span class="note" id="tiltNote">Slider sets the angle. Tilt is optional on phones.</span>
+      <button id="tilt" type="button" aria-pressed="false">Use tilt</button>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.80.1/phaser.min.js"></script>
+<script>
+(function () {
+'use strict';
+
+//--SIM-START
+/* Physics model. Units: metres, seconds. Every bounce uses entry angle, speed, spin and stone stats (STUDIO_BRIEF Section 5). */
+var MAXM = 150;
+var STONES = [
+  { id: 'pebble',  name: 'River Pebble',  note: 'Balanced',                 tol: 1.00, sens: 1.0, flat: 0.60, mass: 0.50, spinRet: 0.94, drag: 0.050, launch: 1.00, w: 16, t: 5, color: 0x8c9b93, css: '#8c9b93' },
+  { id: 'slate',   name: 'Flat Slate',    note: 'Most skips, touchy angle', tol: 0.85, sens: 1.0, flat: 0.95, mass: 0.30, spinRet: 0.96, drag: 0.090, launch: 1.04, w: 15, t: 3, color: 0x5d7688, css: '#5d7688' },
+  { id: 'granite', name: 'Granite Disc',  note: 'Few skips, forgiving',   tol: 1.35, sens: 0.55, flat: 0.30, mass: 1.10, spinRet: 0.90, drag: 0.024, launch: 0.90, w: 19, t: 8, color: 0xb3a290, css: '#b3a290' }
+];
+function simulate(stone, angleDeg, power, spin, wind, rng) {
+  var dt = 1 / 120, G = 9.81;
+  var v0 = (7 + 16 * power) * stone.launch;
+  var th = angleDeg * Math.PI / 180;
+  var x = 0, h = 0.45, vx = v0 * Math.cos(th), vy = -v0 * Math.sin(th), s = spin, t = 0;
+  var air = 0.0016 / stone.mass;
+  var xs = [x], hs = [h], ss = [s], events = [];
+  var skips = 0, entry = null, sunk = false, sinkVel = 0;
+  while (t < 30 && !sunk) {
+    var rel = vx - wind;
+    vx -= air * rel * Math.abs(rel) * dt;
+    vy -= G * dt; x += vx * dt; h += vy * dt; t += dt;
+    if (h <= 0 && vy < 0) {
+      var vd = -vy, a = Math.atan2(vd, vx) * 180 / Math.PI;
+      if (entry === null) entry = a;
+      var fa = a >= 20 ? Math.exp(-Math.pow((a - 20) / (13 * stone.tol), 2)) : Math.exp(-Math.pow((20 - a) / 36, 2));
+      var stab = 1 - (0.45 - 0.45 * Math.min(1, s * 1.15)) * stone.sens;
+      var chop = 1 + (rng() - 0.5) * 0.06;
+      var wob = 1 - (1 - Math.min(1, s)) * 0.22 * stone.sens * rng();
+      var r = (0.66 + 0.34 * stone.flat) * fa * stab * chop * wob;
+      var vup = vd * r;
+      var loss = stone.drag + (a < 20 ? 0.10 * (20 - a) / 20 : 0.02 * (a - 20) / 10);
+      vx *= 1 - loss;
+      if (vup < 0.30 || vx < 1.6 || a > 50) {
+        events.push({ type: 'sink', i: xs.length, t: t, x: x, v: vd });
+        sunk = true; sinkVel = vx; h = 0;
+      } else {
+        skips++; vy = vup; h = 0.0005; s *= stone.spinRet;
+        events.push({ type: 'skip', i: xs.length, t: t, x: x, v: vd, n: skips });
+      }
+    }
+    xs.push(x); hs.push(h); ss.push(s);
+    if (!sunk && x > MAXM) {
+      events.push({ type: 'sink', i: xs.length - 1, t: t, x: x, v: 1 });
+      sunk = true; sinkVel = vx; h = 0; hs[hs.length - 1] = 0;
+    }
+  }
+  if (sunk) {
+    for (var k = 1; k <= 72; k++) {
+      x += sinkVel * dt * (1 - k / 72) * 0.6;
+      xs.push(x); hs.push(-k / 72 * 0.8); ss.push(s);
+    }
+  }
+  return { xs: xs, hs: hs, ss: ss, events: events, skips: skips, distance: events.length ? events[events.length - 1].x : x, entry: entry, v0: v0 };
+}
+//--SIM-END
+
+var W = 480, H = 640, Z = 2;
+var WATER_TOP = 292, LANE_Y = 418, SHORE_X = 118, PPM = 26, VPPM = 44, HAND_H = 0.45;
+var GROUND_Y = LANE_Y - 2;
+var WORLD_PX = SHORE_X + MAXM * PPM + 80;
+
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+function $(id) { return document.getElementById(id); }
+
+/* ---------- Saved personal best (device only) ---------- */
+var BEST_KEY = 'skipstone.v01.best';
+var best = { skips: 0, dist: 0 };
+try { var raw = localStorage.getItem(BEST_KEY); if (raw) { var p = JSON.parse(raw); best.skips = +p.skips || 0; best.dist = +p.dist || 0; } } catch (e) {}
+function saveBest() { try { localStorage.setItem(BEST_KEY, JSON.stringify(best)); } catch (e) {} }
+function showBest() { $('bestSkips').textContent = String(best.skips); $('bestDist').textContent = best.dist.toFixed(1) + ' m'; }
+showBest();
+
+/* ---------- Sound placeholders (synthesised, no files) ---------- */
+var Sound = (function () {
+  var ctx = null, muted = false, noiseBuf = null;
+  function ensure() {
+    if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ctx = null; } }
+    if (ctx && ctx.state === 'suspended') { try { ctx.resume(); } catch (e) {} }
+    return ctx;
+  }
+  function tone(f, dur, vol, slide) {
+    if (muted || !ensure()) return;
+    var o = ctx.createOscillator(), g = ctx.createGain(), n = ctx.currentTime;
+    o.type = 'sine'; o.frequency.setValueAtTime(f, n); o.frequency.linearRampToValueAtTime(Math.max(40, f + slide), n + dur);
+    g.gain.setValueAtTime(vol, n); g.gain.exponentialRampToValueAtTime(0.0008, n + dur);
+    o.connect(g); g.connect(ctx.destination); o.start(n); o.stop(n + dur + 0.02);
+  }
+  function noise(dur, vol, freq) {
+    if (muted || !ensure()) return;
+    if (!noiseBuf) { noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); var d = noiseBuf.getChannelData(0); for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+    var s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(), n = ctx.currentTime;
+    s.buffer = noiseBuf; f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 0.8;
+    g.gain.setValueAtTime(vol, n); g.gain.exponentialRampToValueAtTime(0.0008, n + dur);
+    s.connect(f); f.connect(g); g.connect(ctx.destination); s.start(n); s.stop(n + dur + 0.02);
+  }
+  return {
+    unlock: ensure,
+    throwIt: function () { noise(0.28, 0.12, 1400); },
+    skip: function (n, v) { tone(300 + Math.min(n, 14) * 38, 0.09, 0.10 + Math.min(v, 9) * 0.01, -90); noise(0.07, 0.05, 2400); },
+    sink: function () { tone(150, 0.3, 0.2, -80); noise(0.22, 0.09, 600); },
+    setMuted: function (m) { muted = m; }
+  };
+})();
+
+/* ---------- Game state ---------- */
+var stoneIdx = 0, aimAngle = 20, aimLocked = null, wind = 0;
+var state = 'ready'; // ready | flying | settling | returning
+var run = null, playT = 0, evIdx = 0, settleT = 0, firstThrow = false;
+var ripples = [], drops = [], trail = [], trailAcc = 0, swipePts = null;
+var scene = null;
+
+function pickWind() {
+  wind = Math.round((Math.random() * 4 - 2) * 10) / 10;
+  var el = $('wind');
+  if (Math.abs(wind) < 0.3) { wind = 0; el.textContent = 'Calm'; }
+  else el.textContent = (wind > 0 ? 'Tailwind ' : 'Headwind ') + Math.abs(wind).toFixed(1) + ' m/s';
+}
+pickWind();
+
+/* ---------- Controls ---------- */
+(function buildStones() {
+  var box = $('stones');
+  STONES.forEach(function (st, i) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'stone'; b.setAttribute('aria-pressed', i === stoneIdx ? 'true' : 'false');
+    var nm = document.createElement('span'); nm.className = 'nm';
+    var sw = document.createElement('span'); sw.className = 'sw'; sw.style.width = (st.w - 2) + 'px'; sw.style.height = Math.max(4, st.t) + 'px'; sw.style.background = st.css;
+    var tx = document.createElement('span'); tx.textContent = st.name;
+    nm.appendChild(sw); nm.appendChild(tx);
+    var nt = document.createElement('span'); nt.className = 'nt'; nt.textContent = st.note;
+    b.appendChild(nm); b.appendChild(nt);
+    b.addEventListener('click', function () {
+      Sound.unlock();
+      if (state === 'flying') return;
+      stoneIdx = i;
+      Array.prototype.forEach.call(box.children, function (c, j) { c.setAttribute('aria-pressed', j === i ? 'true' : 'false'); });
+    });
+    box.appendChild(b);
+  });
+})();
+
+function angleTag(a) { return a < 15 ? 'flat' : a <= 25 ? 'in the zone' : 'steep'; }
+function setAngle(a, fromSlider) {
+  aimAngle = clamp(a, 0, 45);
+  $('angleVal').textContent = aimAngle.toFixed(aimAngle % 1 ? 1 : 0);
+  $('angleTag').textContent = angleTag(aimAngle);
+  if (!fromSlider) $('angle').value = String(aimAngle);
+}
+$('angle').addEventListener('input', function (e) { Sound.unlock(); setAngle(parseFloat(e.target.value), true); });
+setAngle(20);
+
+$('mute').addEventListener('click', function () {
+  var m = $('mute').getAttribute('aria-pressed') !== 'true';
+  $('mute').setAttribute('aria-pressed', m ? 'true' : 'false');
+  $('mute').textContent = m ? 'Sound off' : 'Sound on';
+  Sound.setMuted(m); if (!m) Sound.unlock();
+});
+
+/* Tilt: phone tilt sets the throw angle. The pose held when tilt is switched on counts as 20 degrees. */
+var tilt = { on: false, seen: false, beta0: null, smooth: 20, timer: 0 };
+function onOrient(e) {
+  if (e.beta === null || e.beta === undefined) return;
+  tilt.seen = true;
+  if (tilt.beta0 === null) tilt.beta0 = e.beta;
+  var target = clamp(20 + (e.beta - tilt.beta0) * 0.6, 0, 45);
+  tilt.smooth += (target - tilt.smooth) * 0.25;
+  if (aimLocked === null) setAngle(Math.round(tilt.smooth * 2) / 2);
+}
+function tiltOff(msg) {
+  tilt.on = false; tilt.beta0 = null;
+  window.removeEventListener('deviceorientation', onOrient);
+  $('tilt').setAttribute('aria-pressed', 'false'); $('tilt').textContent = 'Use tilt';
+  $('tiltNote').textContent = msg;
+}
+function tiltOn() {
+  tilt.on = true; tilt.seen = false; tilt.beta0 = null; tilt.smooth = aimAngle;
+  $('tilt').setAttribute('aria-pressed', 'true'); $('tilt').textContent = 'Tilt on';
+  $('tiltNote').textContent = 'Tilt on. The angle you hold now counts as 20°. Tap again to turn off.';
+  window.addEventListener('deviceorientation', onOrient);
+  clearTimeout(tilt.timer);
+  tilt.timer = setTimeout(function () {
+    if (tilt.on && !tilt.seen) tiltOff('No motion data reached this page. The slider stays active.');
+  }, 1500);
+}
+$('tilt').addEventListener('click', function () {
+  Sound.unlock();
+  if (tilt.on) { tiltOff('Tilt off. Slider sets the angle.'); return; }
+  if (!('DeviceOrientationEvent' in window)) { tiltOff('This browser has no motion sensor. The slider stays active.'); return; }
+  var D = window.DeviceOrientationEvent;
+  if (typeof D.requestPermission === 'function') {
+    D.requestPermission().then(function (r) {
+      if (r === 'granted') tiltOn(); else tiltOff('Motion permission was declined. The slider stays active.');
+    }).catch(function () { tiltOff('Motion permission is blocked here. The slider stays active.'); });
+  } else tiltOn();
+});
+
+/* Keep the stage at an exact 3:4 box so the canvas fills it. */
+function fitFrame() {
+  var st = $('stage'), fr = $('frame');
+  var r = st.getBoundingClientRect();
+  var w = Math.min(r.width, r.height * 0.75), h = w / 0.75;
+  fr.style.width = Math.floor(w) + 'px'; fr.style.height = Math.floor(h) + 'px';
+  if (window.__skipGame && window.__skipGame.canvas) { try { window.__skipGame.scale.refresh(); } catch (e) {} }
+}
+if (window.ResizeObserver) new ResizeObserver(fitFrame).observe($('stage'));
+window.addEventListener('resize', fitFrame);
+fitFrame();
+
+/* ---------- Result card ---------- */
+function verdictAngle(a) {
+  if (a < 12) return ['Too flat. Speed bled off.', false];
+  if (a < 17) return ['A little flat.', false];
+  if (a <= 25) return ['In the zone.', true];
+  if (a <= 32) return ['A little steep.', false];
+  return ['Too steep. It dug in.', false];
+}
+function verdictPower(p) { return p < 30 ? ['Weak. Not enough speed.', false] : p < 60 ? ['Moderate.', false] : p <= 90 ? ['Strong.', true] : ['Full power.', true]; }
+function verdictSpin(s) { return s < 20 ? ['Wobbly. Curve the swipe.', false] : s < 55 ? ['Stable.', true] : ['Locked in.', true]; }
+function setRow(idV, idW, val, v) { $(idV).textContent = val; var w = $(idW); w.textContent = v[0]; w.className = 'w' + (v[1] ? ' ok' : ''); }
+
+function showResult(res, power, spin, stone) {
+  var skips = res.skips, d = res.distance;
+  var newSkips = skips > best.skips, newDist = d > best.dist + 0.05;
+  if (newSkips) best.skips = skips;
+  if (newDist) best.dist = Math.round(d * 10) / 10;
+  if (newSkips || newDist) { saveBest(); showBest(); }
+  $('cardHead').textContent = (skips === 0 ? 'No skips' : skips + (skips === 1 ? ' skip' : ' skips')) + ' · ' + d.toFixed(1) + ' m';
+  $('cardBadge').style.display = (newSkips || newDist) && skips > 0 ? '' : 'none';
+  var ea = res.entry === null ? 0 : res.entry;
+  setRow('dAngle', 'dAngleW', ea.toFixed(0) + '°', verdictAngle(ea));
+  setRow('dPower', 'dPowerW', Math.round(power * 100) + '%', verdictPower(Math.round(power * 100)));
+  setRow('dSpin', 'dSpinW', Math.round(spin * 100) + '%', verdictSpin(Math.round(spin * 100)));
+  $('cardFoot').textContent = stone.name + ' · entry angle measured at first contact with the water';
+  $('card').classList.add('show');
+}
+function hideResult() { $('card').classList.remove('show'); }
+
+/* ---------- Phaser scene ---------- */
+function rad(d) { return d * Math.PI / 180; }
+
+function create() {
+  var sc = this; scene = sc;
+  var cam = sc.cameras.main;
+  cam.setOrigin(0, 0); cam.setZoom(Z);
+
+  // Sky and water gradients as canvas textures
+  var skyT = sc.textures.createCanvas('sky', W, WATER_TOP + 6), c1 = skyT.getContext();
+  var g1 = c1.createLinearGradient(0, 0, 0, WATER_TOP + 6);
+  g1.addColorStop(0, '#86b2c6'); g1.addColorStop(0.55, '#bcd6d8'); g1.addColorStop(1, '#f0e4c9');
+  c1.fillStyle = g1; c1.fillRect(0, 0, W, WATER_TOP + 6); skyT.refresh();
+  sc.add.image(0, 0, 'sky').setOrigin(0, 0).setScrollFactor(0);
+
+  var sun = sc.add.graphics().setScrollFactor(0.03);
+  sun.fillStyle(0xfff4d6, 0.22); sun.fillCircle(350, WATER_TOP - 78, 50);
+  sun.fillStyle(0xfff6de, 0.85); sun.fillCircle(350, WATER_TOP - 78, 24);
+
+  function hills(factor, color, base, amp, seed) {
+    var g = sc.add.graphics().setScrollFactor(factor);
+    g.fillStyle(color, 1); g.beginPath(); g.moveTo(0, WATER_TOP + 2);
+    for (var x = 0; x <= 1500; x += 8) {
+      var y = base + Math.sin(x * 0.011 + seed) * amp + Math.sin(x * 0.027 + seed * 2.3) * amp * 0.45 + Math.sin(x * 0.061 + seed * 5) * amp * 0.12;
+      g.lineTo(x, WATER_TOP - y);
+    }
+    g.lineTo(1500, WATER_TOP + 2); g.closePath(); g.fillPath();
+  }
+  hills(0.06, 0x9dbcc0, 44, 20, 1.3);
+  hills(0.16, 0x7aa0a2, 20, 14, 4.1);
+
+  var wT = sc.textures.createCanvas('water', W, H - WATER_TOP), c2 = wT.getContext();
+  var g2 = c2.createLinearGradient(0, 0, 0, H - WATER_TOP);
+  g2.addColorStop(0, '#a6c9c6'); g2.addColorStop(0.22, '#5e929a'); g2.addColorStop(0.6, '#2b5866'); g2.addColorStop(1, '#173946');
+  c2.fillStyle = g2; c2.fillRect(0, 0, W, H - WATER_TOP); wT.refresh();
+  sc.add.image(0, WATER_TOP, 'water').setOrigin(0, 0).setScrollFactor(0);
+
+  sc.waterG = sc.add.graphics().setScrollFactor(0);
+
+  // Ruler along the foreground in metres (world space)
+  var ruler = sc.add.graphics();
+  ruler.lineStyle(1.5, 0xece6d6, 0.55); ruler.lineBetween(SHORE_X, H - 14, SHORE_X + MAXM * PPM, H - 14);
+  for (var m = 0; m <= MAXM; m += 5) {
+    var rx = SHORE_X + m * PPM, long = m % 10 === 0;
+    ruler.lineBetween(rx, H - 14, rx, H - 14 - (long ? 9 : 5));
+    if (long && m > 0) sc.add.text(rx, H - 25, String(m), { fontFamily: "'Big Shoulders Display','Arial Narrow',sans-serif", fontSize: '15px', color: '#ece6d6' }).setOrigin(0.5, 1).setAlpha(0.8).setResolution(Z);
+  }
+
+  // Bank and thrower
+  var land = sc.add.graphics();
+  land.fillStyle(0x3b3b30, 1);
+  land.beginPath(); land.moveTo(-800, GROUND_Y); land.lineTo(78, GROUND_Y); land.lineTo(92, GROUND_Y + 12); land.lineTo(104, GROUND_Y + 40); land.lineTo(112, H + 4); land.lineTo(-800, H + 4); land.closePath(); land.fillPath();
+  land.fillStyle(0x5e7a4e, 1);
+  land.beginPath(); land.moveTo(-800, GROUND_Y); land.lineTo(78, GROUND_Y); land.lineTo(92, GROUND_Y + 12); land.lineTo(90, GROUND_Y + 18); land.lineTo(72, GROUND_Y + 8); land.lineTo(-800, GROUND_Y + 8); land.closePath(); land.fillPath();
+  var th = sc.add.graphics();
+  th.lineStyle(8, 0x1a2a2e, 1);
+  th.beginPath(); th.moveTo(58, GROUND_Y); th.lineTo(68, GROUND_Y - 18); th.lineTo(56, GROUND_Y - 34); th.strokePath();
+  th.lineStyle(10, 0x1a2a2e, 1); th.lineBetween(56, GROUND_Y - 34, 66, GROUND_Y - 62);
+  th.lineStyle(6, 0x1a2a2e, 1); th.beginPath(); th.moveTo(66, GROUND_Y - 60); th.lineTo(88, GROUND_Y - 44); th.lineTo(112, GROUND_Y - 18); th.strokePath();
+  th.fillStyle(0x1a2a2e, 1); th.fillCircle(73, GROUND_Y - 74, 8);
+
+  sc.aimG = sc.add.graphics();
+  sc.shadow = sc.add.ellipse(0, LANE_Y + 3, 14, 3, 0x0b2530, 0.35).setVisible(false);
+  sc.trailG = sc.add.graphics();
+  sc.fxG = sc.add.graphics();
+  sc.stoneObjs = STONES.map(function (st) { return sc.add.ellipse(SHORE_X, LANE_Y - HAND_H * VPPM, st.w, st.t, st.color).setStrokeStyle(1, 0xffffff, 0.35); });
+  sc.swipeG = sc.add.graphics().setScrollFactor(0);
+
+  // Input: swipe to throw. Native pointer events carry exact timestamps, so swipe speed does not depend on the frame rate.
+  var cv = sc.game.canvas;
+  function toDesign(e) {
+    var r = cv.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H, t: e.timeStamp };
+  }
+  cv.addEventListener('pointerdown', function (e) {
+    Sound.unlock();
+    if (state === 'flying') return;
+    if (state !== 'ready') { state = 'ready'; cam.scrollX = 0; }
+    hideResult();
+    try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+    aimLocked = aimAngle;
+    swipePts = [toDesign(e)];
+    e.preventDefault();
+  });
+  cv.addEventListener('pointermove', function (e) {
+    if (!swipePts) return;
+    var list = e.getCoalescedEvents ? e.getCoalescedEvents() : null;
+    if (list && list.length) { for (var i = 0; i < list.length; i++) swipePts.push(toDesign(list[i])); }
+    else swipePts.push(toDesign(e));
+  });
+  function release(e) {
+    if (!swipePts) return;
+    swipePts.push(toDesign(e));
+    var pts = swipePts; swipePts = null;
+    var lockedAngle = aimLocked; aimLocked = null;
+    if (e.type === 'pointercancel') return;
+    var a = analyse(pts);
+    if (!a) return;
+    if (a.tap) { var h = $('hint'); h.textContent = 'Swipe across the screen, do not tap.'; h.classList.remove('gone'); return; }
+    launch(lockedAngle === null ? aimAngle : lockedAngle, a.power, a.spin);
+  }
+  cv.addEventListener('pointerup', release);
+  cv.addEventListener('pointercancel', release);
+}
+
+function analyse(pts) {
+  var n = pts.length; if (n < 3) return null;
+  var a = pts[0], b = pts[n - 1];
+  var dx = b.x - a.x, dy = b.y - a.y, chord = Math.hypot(dx, dy);
+  if (chord < 40) return { tap: true };
+  var peak = 0;
+  for (var j = 0; j < n - 1; j++) {
+    var k = j + 1;
+    while (k < n - 1 && pts[k].t - pts[j].t < 80) k++;
+    var dt = Math.max(pts[k].t - pts[j].t, 16) / 1000;
+    peak = Math.max(peak, Math.hypot(pts[k].x - pts[j].x, pts[k].y - pts[j].y) / dt / W);
+  }
+  var maxDev = 0;
+  for (var i = 0; i < n; i++) maxDev = Math.max(maxDev, Math.abs((pts[i].x - a.x) * dy - (pts[i].y - a.y) * dx) / chord);
+  return { power: clamp((peak - 1.0) / 5.0, 0.04, 1), spin: clamp((maxDev / chord - 0.02) / 0.2, 0, 1), tap: false };
+}
+
+function launch(angle, power, spin) {
+  var stone = STONES[stoneIdx];
+  run = simulate(stone, angle, power, spin, wind, Math.random);
+  run.power = power; run.spin = spin; run.stone = stone;
+  playT = 0; evIdx = 0; settleT = 0; trail.length = 0; trailAcc = 0;
+  state = 'flying'; firstThrow = true;
+  $('hint').classList.add('gone');
+  $('skips').textContent = '0'; $('dist').textContent = '0.0';
+  Sound.throwIt();
+}
+
+function update(time, delta) {
+  var sc = this, cam = sc.cameras.main, dt = Math.min(delta, 50) / 1000;
+  var stone = STONES[stoneIdx];
+  var sx = SHORE_X, sy = LANE_Y - HAND_H * VPPM, sAlpha = 1, tiltRot = 0, showShadow = false, shadowA = 0;
+
+  if (state === 'flying' && run) {
+    playT += dt;
+    var idx = Math.min(Math.floor(playT * 120), run.xs.length - 1);
+    while (evIdx < run.events.length && run.events[evIdx].i <= idx) {
+      var ev = run.events[evIdx++];
+      var ex = SHORE_X + ev.x * PPM;
+      if (ev.type === 'skip') {
+        ripples.push({ x: ex, age: 0, life: 1.9, p: Math.min(ev.v, 9) });
+        spawnDrops(ex, ev.v, 1);
+        Sound.skip(ev.n, ev.v);
+        $('skips').textContent = String(ev.n);
+        var el = $('skips'); el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+      } else {
+        ripples.push({ x: ex, age: 0, life: 2.4, p: 10 });
+        spawnDrops(ex, Math.max(ev.v, 3) + 2, 1.6);
+        Sound.sink();
+      }
+    }
+    var xm = run.xs[idx], hm = run.hs[idx], sm = run.ss[idx];
+    sx = SHORE_X + xm * PPM; sy = LANE_Y - Math.max(hm, 0) * VPPM - stone.t * 0.5;
+    if (hm < 0) { sy = LANE_Y - hm * VPPM * 0.9; sAlpha = clamp(1 + hm / 0.7, 0, 1); }
+    tiltRot = Math.sin(playT * 22) * (1 - Math.min(1, sm)) * 0.5;
+    showShadow = hm >= 0; shadowA = 0.35 * (1 - Math.min(hm / 1.8, 1));
+    $('dist').textContent = Math.max(0, xm).toFixed(1);
+    trailAcc += dt;
+    if (trailAcc > 0.03 && hm >= 0) { trailAcc = 0; trail.push({ x: sx, y: sy, a: 0 }); }
+    if (idx >= run.xs.length - 1) {
+      state = 'settling'; settleT = 0;
+      $('dist').textContent = run.distance.toFixed(1);
+      $('skips').textContent = String(run.skips);
+    }
+  } else if (state === 'settling') {
+    settleT += dt;
+    var last = run.xs.length - 1;
+    sx = SHORE_X + run.xs[last] * PPM; sy = LANE_Y + 30; sAlpha = 0;
+    if (!run.shown && settleT > 0.35) { run.shown = true; showResult(run, run.power, run.spin, run.stone); }
+    if (settleT > 1.5) { state = 'returning'; }
+  } else if (state === 'returning') {
+    sx = SHORE_X; sy = LANE_Y - HAND_H * VPPM;
+    if (Math.abs(cam.scrollX) < 3) { cam.scrollX = 0; state = 'ready'; pickWind(); }
+  }
+
+  // Camera
+  if (state === 'flying' || state === 'settling') {
+    var target = clamp(sx - 190, 0, WORLD_PX - W);
+    cam.scrollX += (target - cam.scrollX) * Math.min(1, 5 * dt);
+  } else if (state === 'returning') {
+    cam.scrollX += (0 - cam.scrollX) * Math.min(1, 7 * dt);
+  }
+
+  // Stones: only the chosen one is visible
+  sc.stoneObjs.forEach(function (o, i) { o.setVisible(i === stoneIdx); });
+  var so = sc.stoneObjs[stoneIdx];
+  if (state === 'ready' || state === 'returning') { so.setPosition(SHORE_X, LANE_Y - HAND_H * VPPM); so.setRotation(0); so.setAlpha(1); }
+  else { so.setPosition(sx, sy); so.setRotation(tiltRot); so.setAlpha(sAlpha); }
+  sc.shadow.setVisible(showShadow && state === 'flying').setPosition(sx, LANE_Y + 3).setAlpha(shadowA).setSize(stone.w * 0.9, 3);
+
+  drawWater(sc, cam.scrollX, time / 1000);
+  drawFx(sc, dt);
+  drawTrail(sc, dt);
+  drawAim(sc);
+  drawSwipe(sc);
+}
+
+function drawWater(sc, scrollX, t) {
+  var g = sc.waterG; g.clear();
+  var rows = 15;
+  for (var i = 0; i < rows; i++) {
+    var f = i / rows;
+    var y = WATER_TOP + 6 + (H - WATER_TOP - 40) * Math.pow(f, 1.5);
+    var depth = 0.25 + 0.75 * f;
+    var step = 26 + 40 * depth, len = 6 + 22 * depth;
+    var off = -((scrollX * (0.25 + 0.9 * depth) + t * 7 * depth) % step);
+    g.lineStyle(1 + depth, 0xffffff, 0.06 + 0.08 * depth);
+    for (var x = off - step; x < W + step; x += step) {
+      var w = Math.sin(t * 1.3 + i * 1.7 + x * 0.02) * 1.2 * depth;
+      g.lineBetween(x, y + w, x + len, y + w);
+    }
+  }
+}
+
+function spawnDrops(x, strength, scale) {
+  var n = Math.round((5 + strength * 1.5) * scale);
+  for (var i = 0; i < n; i++) {
+    drops.push({ x: x + (Math.random() - 0.5) * 6, y: LANE_Y + 1, vx: (Math.random() - 0.35) * 60 + strength * 6, vy: -(60 + Math.random() * 90) * (0.6 + strength * 0.08) * scale, life: 0.5 + Math.random() * 0.35, age: 0 });
+  }
+}
+function drawFx(sc, dt) {
+  var g = sc.fxG; g.clear();
+  for (var i = ripples.length - 1; i >= 0; i--) {
+    var r = ripples[i]; r.age += dt;
+    if (r.age > r.life) { ripples.splice(i, 1); continue; }
+    for (var k = 0; k < 3; k++) {
+      var a = r.age - k * 0.14; if (a <= 0) continue;
+      var p = a / r.life; if (p > 1) continue;
+      var rx = (5 + a * (16 + r.p * 4)) * (1 + k * 0.08), ry = rx * 0.24;
+      g.lineStyle(2 - p, 0xffffff, 0.6 * (1 - p) * (k === 0 ? 1 : 0.65));
+      g.strokeEllipse(r.x, LANE_Y + 3, rx * 2, ry * 2);
+    }
+  }
+  for (var j = drops.length - 1; j >= 0; j--) {
+    var d = drops[j]; d.age += dt;
+    d.vy += 700 * dt; d.x += d.vx * dt; d.y += d.vy * dt;
+    if (d.age > d.life || (d.y > LANE_Y + 3 && d.vy > 0)) { drops.splice(j, 1); continue; }
+    g.fillStyle(0xffffff, 0.85 * (1 - d.age / d.life)); g.fillCircle(d.x, d.y, 1.8);
+  }
+}
+function drawTrail(sc, dt) {
+  var g = sc.trailG; g.clear();
+  for (var i = trail.length - 1; i >= 0; i--) {
+    var p = trail[i]; p.a += dt;
+    if (p.a > 1.3) { trail.splice(i, 1); continue; }
+    g.fillStyle(0xffffff, 0.45 * (1 - p.a / 1.3)); g.fillCircle(p.x, p.y, 1.5);
+  }
+}
+function drawAim(sc) {
+  var g = sc.aimG; g.clear();
+  if (state !== 'ready' && state !== 'returning') return;
+  if (state === 'returning' && sc.cameras.main.scrollX > 30) return;
+  var hx = SHORE_X, hy = LANE_Y - HAND_H * VPPM, R = 66;
+  var a = aimLocked !== null ? aimLocked : aimAngle, t = rad(a);
+  g.fillStyle(0x7cc49a, 0.3); g.beginPath(); g.moveTo(hx, hy); g.arc(hx, hy, R, rad(15), rad(25), false); g.closePath(); g.fillPath();
+  g.lineStyle(1.5, 0xffffff, 0.5); g.lineBetween(hx, hy, hx + R + 14, hy);
+  var col = aimLocked !== null ? 0xffffff : 0xe2a553;
+  g.lineStyle(2.5, col, 1);
+  g.beginPath(); g.arc(hx, hy, R * 0.72, 0, t, false); g.strokePath();
+  g.lineBetween(hx, hy, hx + Math.cos(t) * (R + 14), hy + Math.sin(t) * (R + 14));
+  g.fillStyle(col, 1); g.fillCircle(hx + Math.cos(t) * (R + 14), hy + Math.sin(t) * (R + 14), 3);
+}
+function drawSwipe(sc) {
+  var g = sc.swipeG; g.clear();
+  if (!swipePts || swipePts.length < 2) return;
+  g.lineStyle(4, 0xffffff, 0.75);
+  g.beginPath(); g.moveTo(swipePts[0].x, swipePts[0].y);
+  for (var i = 1; i < swipePts.length; i++) g.lineTo(swipePts[i].x, swipePts[i].y);
+  g.strokePath();
+}
+
+window.__skipGame = new Phaser.Game({
+  type: Phaser.AUTO,
+  parent: 'game',
+  width: W * Z,
+  height: H * Z,
+  backgroundColor: '#86b2c6',
+  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+  audio: { noAudio: true },
+  input: { mouse: false, touch: false },
+  scene: { create: create, update: update }
+});
+window.__skipSim = { simulate: simulate, STONES: STONES };
+})();
+</script>
+
+</body></html>
