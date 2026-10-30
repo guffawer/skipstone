@@ -324,14 +324,14 @@ body { padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: ma
 .crow .ci { width: 100%; max-width: 48px; height: 44px; }
 .crow .cg em { font-size: 9px; max-width: 100%; overflow: hidden; text-overflow: clip; white-space: nowrap; }
 .crow { justify-content: flex-start; }
-.crow .cg, .crow .cg.new { flex: 0 0 calc((100% - 30px) / 6); border: 0; box-shadow: none; }
+.crow .cg, .crow .cg.new { flex: 0 0 calc((100% - 42px) / 8); border: 0; box-shadow: none; }
 </style>
 
 <div class="app">
   <header class="top">
     <div class="brand">
       <span class="word">Skipstone</span>
-      <span class="lbl">Prototype v2.0</span>
+      <span class="lbl">Prototype v2.1</span>
     </div>
     <span class="lvlab" id="streak"></span>
     <div class="bests">
@@ -784,6 +784,19 @@ var Sound = (function () {
         tone(t + 0.85, 466, 0, 0.16, 0.06, 'square'); tone(t + 0.85, 622, 0, 0.16, 0.05, 'square');
         tone(t + 1.08, 466, 0, 0.3, 0.06, 'square'); tone(t + 1.08, 622, 0, 0.3, 0.05, 'square');
         celebrate(t + 0.5);
+      } else if (type === 'swan') {
+        // Two goose-like honks and a flurry of wing beats
+        var sf0 = [700, 1200, 2500], sf1 = [560, 1050, 2300];
+        voice(t, 340, 270, 0.26, 0.95, sf0, sf1, { vib: 0, vibD: 0, am: 22, amD: 0.5, q: 6, att: 0.02 });
+        voice(t + 0.38, 380, 290, 0.3, 0.95, sf0, sf1, { vib: 0, vibD: 0, am: 22, amD: 0.5, q: 6, att: 0.02 });
+        for (i = 0; i < 7; i++) burst(t + 0.8 + i * 0.075, 0.06, 'bandpass', 700, 0, 1.2, 0.2 - i * 0.015);
+        celebrate(t + 0.5);
+      } else if (type === 'otter') {
+        // Squeaky chitter, a rising squeal and a happy splash
+        for (i = 0; i < 8; i++) tone(t + i * 0.06, i % 2 ? 2600 : 2000, i % 2 ? 2300 : 2700, 0.05, 0.09, 'triangle');
+        tone(t + 0.6, 1200, 2900, 0.35, 0.09, 'sine'); tone(t + 0.62, 1210, 2920, 0.35, 0.04, 'triangle');
+        burst(t + 1.0, 0.25, 'lowpass', 1400, 300, 0.8, 0.14);
+        celebrate(t + 0.4);
       } else {
         // Loch Ness: slide whistle, two bloops, a friendly deep hoot and a xylophone run
         tone(t, 300, 1500, 0.45, 0.1, 'sine'); tone(t + 0.02, 305, 1520, 0.45, 0.05, 'triangle');
@@ -997,15 +1010,16 @@ function streakNow() { var l = daily.last; return (l === todayStr() || l === yes
 function showStreak() {}
 showStreak();
 
-/* ---------- Levels: 30 levels over 5 lakes. Easy 13, Hard 13, Very hard 4. Pass a level to unlock the next. ---------- */
-var LAKES = ['Still Water', 'Birch Cove', 'Windy Reach', 'Highland Tarn', 'Storm Basin'];
-var TIERS = ['EEEEEE', 'EEEHEH', 'EHEHHH', 'EHHHHV', 'HHVHVV'].join('');
+/* ---------- Levels: 60 levels over 10 lakes (two packs of 30). Pass a level to unlock the next. ---------- */
+var LEVEL_COUNT = 60;
+var LAKES = ['Still Water', 'Birch Cove', 'Windy Reach', 'Highland Tarn', 'Storm Basin', 'Misty Fjord', 'Cedar Pool', 'Amber Lagoon', 'Frostmere', 'Thunder Loch'];
+var TIERS = ['EEEEEE', 'EEEHEH', 'EHEHHH', 'EHHHHV', 'HHVHVV', 'EEHEHH', 'EHEHHV', 'EHHEHV', 'EHHHVH', 'EHVHVV'].join('');
 var TIER_NAME = { E: 'Easy', H: 'Hard', V: 'Very hard' };
 var VSEC = { 24: [['targets', 3], ['creatures', 1]], 27: [['skips', 12], ['targets', 3]], 29: [['creatures', 2], ['far', 1]], 30: [['targets', 4], ['far', 1]] };
 var HKEYS = ['targets', 'skips', 'creatures'];
 var G_SHORT = { bonus: 'Bonus throws', score: 'Score', targets: 'Targets', skips: 'Best skips', creatures: 'Creatures', far: 'Far creatures' };
 function r50(x) { return Math.round(x / 50) * 50; }
-var CRT_ORDER = ['ball', 'jetski', 'croc', 'dolphin', 'nessie', 'grandma'], CRT_UNLOCK = { ball: 1, jetski: 3, croc: 6, dolphin: 10, nessie: 15, grandma: 20 };
+var CRT_ORDER = ['ball', 'jetski', 'croc', 'dolphin', 'nessie', 'grandma', 'swan', 'otter'], CRT_UNLOCK = { ball: 1, jetski: 3, croc: 6, dolphin: 10, nessie: 15, grandma: 20, swan: 31, otter: 46 };
 function pickCrt(L, rr) {
   var w = L.pool.map(function (c, i) { return c === L.newCrt ? 3 : i === L.pool.length - 1 ? 2 : 1; }), t = w.reduce(function (a, b) { return a + b; }, 0), u = rr() * t, i;
   for (i = 0; i < w.length; i++) { u -= w[i]; if (u < 0) return L.pool[i]; }
@@ -1041,20 +1055,50 @@ var LV_GOALS = {
   27: [['dist', 80], ['skips', 10], ['sweep', 1]],
   28: [['streak', 4], ['far', 1], ['score', 2050]],
   29: [['sweep', 2], ['chain', 1], ['far', 1]],
-  30: [['score', 3500], ['sweep', 2], ['far', 1], ['streak', 3]]
+  30: [['score', 3500], ['sweep', 2], ['far', 1], ['streak', 3]],
+  31: [['crt:swan', 1], ['score', 350]],
+  32: [['tgt:gate', 3]],
+  33: [['skips', 8], ['bonus', 3], ['score', 1500]],
+  34: [['dist', 50], ['targets', 2]],
+  35: [['chain', 1], ['creatures', 2]],
+  36: [['sweep', 1], ['streak', 2], ['score', 1600]],
+  37: [['tgt:ring', 3], ['score', 400]],
+  38: [['crt:nessie', 1], ['crt:swan', 1]],
+  39: [['crt:croc', 1], ['skips', 6]],
+  40: [['far', 1], ['bonus', 4], ['score', 1700]],
+  41: [['tgt:hoops', 3], ['dist', 60]],
+  42: [['sweep', 2], ['dist', 70], ['score', 3200]],
+  43: [['streak', 2], ['crt:ball', 1]],
+  44: [['skips', 9], ['crt:jetski', 1], ['score', 1700]],
+  45: [['stones', 1], ['targets', 4]],
+  46: [['crt:otter', 1], ['score', 450]],
+  47: [['tgt:hole', 2], ['crt:dolphin', 1], ['score', 1800]],
+  48: [['far', 2], ['streak', 3], ['score', 3400]],
+  49: [['big', 200], ['bonus', 3]],
+  50: [['chain', 1], ['sweep', 1], ['score', 1900]],
+  51: [['crt:grandma', 1], ['skips', 9], ['bonus', 5]],
+  52: [['crt:otter', 2], ['dist', 65], ['score', 1900]],
+  53: [['skips', 10], ['sweep', 2], ['far', 1]],
+  54: [['streak', 4], ['score', 2100]],
+  55: [['crt:swan', 2], ['score', 500]],
+  56: [['big', 350], ['creatures', 3], ['score', 2200]],
+  57: [['chain', 1], ['far', 1], ['stones', 1], ['score', 3500]],
+  58: [['tgt:gate', 3], ['crt:nessie', 1], ['score', 2200]],
+  59: [['sweep', 3], ['dist', 75], ['streak', 3]],
+  60: [['score', 4000], ['sweep', 3], ['far', 2], ['streak', 4]]
 };
 function levelDef(n) {
-  var t = TIERS.charAt(n - 1), p = (n - 1) / 29, L = { n: n, lake: Math.floor((n - 1) / 6), tier: t };
+  var t = TIERS.charAt(n - 1), pk = n > 30 ? 1 : 0, p = ((n - 1) % 30) / 29, L = { n: n, lake: Math.floor((n - 1) / 6), tier: t };
   L.name = LAKES[L.lake];
   if (t === 'E') {
-    L.wind = 0.3 + 0.5 * p; L.tsz = 1.3 - 0.3 * p; L.dmin = 18; L.dmax = 28 + 8 * p;
+    L.wind = 0.3 + 0.5 * p + 0.15 * pk; L.tsz = 1.3 - 0.3 * p - 0.1 * pk; L.dmin = 18; L.dmax = 28 + 8 * p + 3 * pk;
     L.mix = [['ring', 5], ['gate', 3], ['hole', 1], ['hoops', 1]]; L.driftP = 0; L.driftFrom = 99; L.cp = 0.8; L.farP = 0; L.farMax = 0; L.csz = 1.25;
   } else if (t === 'H') {
-    L.wind = 0.8 + 0.4 * p; L.tsz = 1.0 - 0.15 * p; L.dmin = 22; L.dmax = 38 + 6 * p;
-    L.mix = [['ring', 3], ['gate', 3], ['hole', 2], ['hoops', 3]]; L.driftP = 0.35; L.driftFrom = 3; L.cp = 0.85; L.farP = 0.3; L.farMax = 78; L.csz = 1.0;
+    L.wind = 0.8 + 0.4 * p + 0.1 * pk; L.tsz = 1.0 - 0.15 * p - 0.05 * pk; L.dmin = 22; L.dmax = 38 + 6 * p + 3 * pk;
+    L.mix = [['ring', 3], ['gate', 3], ['hole', 2], ['hoops', 3]]; L.driftP = 0.35; L.driftFrom = 3; L.cp = 0.85; L.farP = 0.3; L.farMax = 78 + 6 * pk; L.csz = 1.0;
   } else {
-    L.wind = 1.2 + 0.3 * p; L.tsz = 0.8; L.dmin = 26; L.dmax = 46;
-    L.mix = [['ring', 1], ['gate', 3], ['hole', 3], ['hoops', 3]]; L.driftP = 0.6; L.driftFrom = 2; L.cp = 0.9; L.farP = 0.5; L.farMax = 85; L.csz = 0.9;
+    L.wind = 1.2 + 0.3 * p + 0.1 * pk; L.tsz = 0.8 - 0.03 * pk; L.dmin = 26; L.dmax = 46;
+    L.mix = [['ring', 1], ['gate', 3], ['hole', 3], ['hoops', 3]]; L.driftP = 0.6; L.driftFrom = 2; L.cp = 0.9; L.farP = 0.5; L.farMax = 85 + 3 * pk; L.csz = 0.9;
   }
   L.stones = t === 'E' ? (n <= 6 ? 5 : 6) : t === 'H' ? 8 : 10;
   L.pool = CRT_ORDER.filter(function (c) { return CRT_UNLOCK[c] <= n; });
@@ -1062,7 +1106,7 @@ function levelDef(n) {
   L.goals = LV_GOALS[n];
   var m = null;
   L.goals.forEach(function (g) {
-    if (g[0].indexOf('crt:') === 0) L.crtBias = { type: g[0].slice(4), p: 0.5 };
+    if (g[0].indexOf('crt:') === 0) { if (!L.crtBias) L.crtBias = { types: [], p: 0.5 }; L.crtBias.types.push(g[0].slice(4)); }
     if (g[0].indexOf('tgt:') === 0) m = g[0].slice(4);
     if (g[0] === 'chain') m = 'hoops';
     if (g[0] === 'far') { L.farP = Math.max(L.farP, 0.6); L.cp = 0.95; }
@@ -1129,6 +1173,8 @@ var IC = {
   'crt:dolphin': '<path d="M4 27q8-22 27-12q-8 1-10 7q-4 7-17 5z" fill="#7aa7d9"/><circle cx="26" cy="16" r="1.5" fill="#0f232b"/><path d="M32 15l5-3-2 5z" fill="#7aa7d9"/>',
   'crt:nessie': '<path d="M2 31q4-10 8 0q4-10 8 0M24 31q-1-17 4-19q5 0 4 5" fill="none" stroke="#5fae7a" stroke-width="3.6" stroke-linecap="round"/><circle cx="31" cy="14" r="1.6" fill="#ece6d6"/>',
   'crt:grandma': '<circle cx="20" cy="22" r="11" fill="#f0c9a0"/><ellipse cx="20" cy="12" rx="14" ry="4" fill="#e2a553"/><path d="M13 9q7-8 14 0z" fill="#e2a553"/><circle cx="16" cy="21" r="1.4" fill="#0f232b"/><circle cx="24" cy="21" r="1.4" fill="#0f232b"/><path d="M15 27q5 4 10 0" fill="none" stroke="#0f232b" stroke-width="1.6"/>',
+  'crt:swan': '<path d="M5 30q14 6 28-3q2-6-4-7l-9 1z" fill="#f6f6f2"/><path d="M26 22q6-1 5-8q-1-6 3-6" fill="none" stroke="#f6f6f2" stroke-width="4" stroke-linecap="round"/><path d="M34 8l5 2-5 2z" fill="#e8943a"/><circle cx="33" cy="8" r="1" fill="#0f232b"/>',
+  'crt:otter': '<ellipse cx="18" cy="27" rx="15" ry="6" fill="#7a5232"/><circle cx="32" cy="20" r="7" fill="#8a6038"/><circle cx="36" cy="22" r="3" fill="#d9bc92"/><circle cx="33" cy="18" r="1" fill="#0f232b"/><ellipse cx="15" cy="23" rx="4" ry="2" fill="#9aa7ad"/>',
   swipe: '<path d="M20 35V8M11 17l9-9 9 9" fill="none" stroke="#e2a553" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="20" cy="35" r="3.5" fill="#ece6d6"/>',
   tilt: '<rect x="12" y="5" width="15" height="29" rx="3" fill="none" stroke="#ece6d6" stroke-width="2.4" transform="rotate(18 20 20)"/><path d="M31 8a15 15 0 0 1 5 11" fill="none" stroke="#e2a553" stroke-width="2.6" stroke-linecap="round"/>',
   wind: '<path d="M4 14h22a4 4 0 1 0-4-4M4 22h30a4 4 0 1 1-4 4M4 30h16" fill="none" stroke="#68e0ff" stroke-width="2.4" stroke-linecap="round"/>',
@@ -1208,15 +1254,15 @@ function fillBrief() {
   if (lvl.farP) c += '<span class="cd">' + ico('far', 20) + 'Far creatures</span>';
   $('tutCond').innerHTML = c;
   var cr = '';
-  lvl.pool.forEach(function (k) { cr += '<span class="cg' + (k === lvl.newCrt ? ' new' : '') + '"><span class="ci">' + ico('crt:' + k, 32) + '</span><em>' + (k === lvl.newCrt ? 'NEW' : CRT[k].name.split(' ')[0]) + '</em></span>'; });
+  lvl.pool.forEach(function (k) { cr += '<span class="cg' + (k === lvl.newCrt ? ' new' : '') + '"><span class="ci">' + ico('crt:' + k, 32) + '</span><em>' + (k === lvl.newCrt ? 'NEW' : ({ croc: 'Croc', grandma: 'Gran', nessie: 'Nessie', ball: 'Ball' }[k] || CRT[k].name.split(' ')[0])) + '</em></span>'; });
   $('tutCrt').innerHTML = cr;
   $('tutRules').innerHTML = '<div class="gc v">' + ico('swipe', 56) + '<small>Swipe up to throw</small></div><div class="gc v">' + ico('tilt', 56) + '<small>Tilt to set angle</small></div><div class="gc v">' + ico('sweep', 56) + '<small>Hit targets for bonuses</small></div>';
 }
 function showLevelMap() {
   resetClear(); tutOpen = true; $('tut').classList.remove('show'); $('round').classList.remove('show');
   var box = $('lvBody'), done = 0, i; box.textContent = '';
-  for (i = 1; i <= 30; i++) if (lvProg[i] !== undefined) done++;
-  $('lvSub').textContent = done + ' of 30 cleared. Clear a level to unlock the next. Bar colour: green easy, gold hard, red very hard.';
+  for (i = 1; i <= LEVEL_COUNT; i++) if (lvProg[i] !== undefined) done++;
+  $('lvSub').textContent = done + ' of ' + LEVEL_COUNT + ' cleared. Clear a level to unlock the next. Bar colour: green easy, gold hard, red very hard.';
   LAKES.forEach(function (nm, li) {
     var wrap = document.createElement('div'); wrap.className = 'lake';
     var h = document.createElement('div'); h.className = 'nm'; h.textContent = (li + 1) + '. ' + nm; wrap.appendChild(h);
@@ -1234,7 +1280,7 @@ function showLevelMap() {
   $('lvClose').style.display = lvl ? '' : 'none';
   $('lvmap').classList.add('show');
 }
-function nextLevel() { for (var n = 1; n <= 30; n++) if (lvProg[n] === undefined) return n; return 30; }
+function nextLevel() { for (var n = 1; n <= LEVEL_COUNT; n++) if (lvProg[n] === undefined) return n; return LEVEL_COUNT; }
 function startLevel(n) {
   resetClear(); $('failBars').style.display = 'none'; lvl = levelDef(n); mode = 'levels';
   $('mLevels').setAttribute('aria-pressed', 'false');
@@ -1276,18 +1322,18 @@ function startClear() {
   clrT1 = setTimeout(function () { showClear(n); }, 1100);
 }
 function showClear(n) {
-  var nx = n < 30 ? levelDef(n + 1) : null;
+  var nx = n < LEVEL_COUNT ? levelDef(n + 1) : null;
   hideResult(); $('tut').classList.remove('show');
   $('clearHead').textContent = 'Level ' + n + ' cleared';
-  $('clearSub').textContent = n >= 30 ? 'All 30 levels cleared.' : n % 5 === 0 ? 'Milestone reached. Summary next.' : 'All goals met. Next: Level ' + (n + 1) + ' · ' + nx.name + ' · ' + TIER_NAME[nx.tier];
+  $('clearSub').textContent = n >= LEVEL_COUNT ? 'All ' + LEVEL_COUNT + ' levels cleared.' : n % 5 === 0 ? 'Milestone reached. Summary next.' : 'All goals met. Next: Level ' + (n + 1) + ' · ' + nx.name + ' · ' + TIER_NAME[nx.tier];
   $('clear').classList.add('show'); confetti(); Sound.levelUp();
   clrT2 = setTimeout(function () { if (n % 5 === 0) showSummary(n); else startLevel(n + 1); }, 2800);
 }
 function showSummary(n) {
   $('clear').classList.remove('show'); $('tut').classList.remove('show');
   sumN = n;
-  var a = n >= 30 ? 1 : n - 4, i, k, g = { s: 0, sw: 0, ex: 0, sr: 0, bt: null, cr: {}, lv: 0, bs: 0, bd: 0 }, all = { bs: 0, bd: 0 }, cols = '', labs = '', mx = 1, best = a, thin = n - a + 1 > 8;
-  for (i = 1; i <= 30; i++) { var q0 = lvStats[i]; if (q0) { all.bs = Math.max(all.bs, q0.bs || 0); all.bd = Math.max(all.bd, q0.bd || 0); } }
+  var a = n >= LEVEL_COUNT ? 1 : n - 4, i, k, g = { s: 0, sw: 0, ex: 0, sr: 0, bt: null, cr: {}, lv: 0, bs: 0, bd: 0 }, all = { bs: 0, bd: 0 }, cols = '', labs = '', mx = 1, best = a, thin = n - a + 1 > 8;
+  for (i = 1; i <= LEVEL_COUNT; i++) { var q0 = lvStats[i]; if (q0) { all.bs = Math.max(all.bs, q0.bs || 0); all.bd = Math.max(all.bd, q0.bd || 0); } }
   for (i = a; i <= n; i++) { var q1 = lvStats[i]; if (q1 && q1.s > mx) mx = q1.s; }
   for (i = a; i <= n; i++) { var q2 = lvStats[i]; if (q2 && q2.s >= (lvStats[best] ? lvStats[best].s : 0)) best = i; }
   for (i = a; i <= n; i++) {
@@ -1308,12 +1354,12 @@ function showSummary(n) {
   var ck = Object.keys(g.cr).filter(function (c) { return CRT[c]; }), cm = 1; ck.forEach(function (c) { cm = Math.max(cm, g.cr[c]); });
   if (ck.length) { h += '<div class="crs">'; ck.forEach(function (c) { h += '<div class="r">' + ico('crt:' + c, 22) + '<span>' + CRT[c].name + ' x' + g.cr[c] + '</span><div style="height:6px;border-radius:3px;background:var(--deck-2);overflow:hidden"><div class="fl" style="width:' + Math.round(g.cr[c] / cm * 100) + '%"></div></div></div>'; }); h += '</div>'; }
   $('sumBody').innerHTML = h;
-  $('sumHead').textContent = n >= 30 ? 'All 30 levels cleared' : 'Levels ' + a + ' to ' + n + ' cleared';
-  $('sumSub').textContent = n >= 30 ? 'Final summary. Green easy, gold hard, red very hard. Outline marks your best level.' : 'Green easy, gold hard, red very hard. Outline marks your best level.';
-  $('sumGo').textContent = n >= 30 ? 'Play again from level 1' : 'Continue to level ' + (n + 1);
+  $('sumHead').textContent = n >= LEVEL_COUNT ? 'All ' + LEVEL_COUNT + ' levels cleared' : 'Levels ' + a + ' to ' + n + ' cleared';
+  $('sumSub').textContent = n >= LEVEL_COUNT ? 'Final summary. Green easy, gold hard, red very hard. Outline marks your best level.' : 'Green easy, gold hard, red very hard. Outline marks your best level.';
+  $('sumGo').textContent = n >= LEVEL_COUNT ? 'Play again from level 1' : 'Continue to level ' + (n + 1);
   $('sum').classList.add('show');
 }
-$('sumGo').addEventListener('click', function () { Sound.unlock(); if (sumN >= 30) startLevel(1); else startLevel(sumN + 1); });
+$('sumGo').addEventListener('click', function () { Sound.unlock(); if (sumN >= LEVEL_COUNT) startLevel(1); else startLevel(sumN + 1); });
 /* Basket used up without meeting every goal: stay on this level. */
 function showLevelResult(tot) {
   var L = lvl, st = levelStats(), h = '';
@@ -1333,7 +1379,7 @@ function showLevelResult(tot) {
 
 /* ---------- Basket, target and scoring ---------- */
 var TGT_NAME = { ring: 'Ring', hole: 'Hole', gate: 'Gate', hoops: 'Hoops' };
-var CRT = { ball: { name: 'Beach ball', r: 1.3, bonus: 100, v: 0 }, jetski: { name: 'Jetski', r: 2.0, bonus: 150, v: 2.0 }, croc: { name: 'Crocodile', r: 2.0, bonus: 175, v: 0.7 }, dolphin: { name: 'Dolphin', r: 1.9, bonus: 200, v: 0 }, nessie: { name: 'Loch Ness monster', r: 2.2, bonus: 250, v: 0 }, grandma: { name: 'Grandma', r: 1.7, bonus: 300, v: 0 } };
+var CRT = { ball: { name: 'Beach ball', r: 1.3, bonus: 100, v: 0 }, jetski: { name: 'Jetski', r: 2.0, bonus: 150, v: 2.0 }, croc: { name: 'Crocodile', r: 2.0, bonus: 175, v: 0.7 }, dolphin: { name: 'Dolphin', r: 1.9, bonus: 200, v: 0 }, nessie: { name: 'Loch Ness monster', r: 2.2, bonus: 250, v: 0 }, grandma: { name: 'Grandma', r: 1.7, bonus: 300, v: 0 }, swan: { name: 'Swan', r: 1.9, bonus: 225, v: 0.8 }, otter: { name: 'Otter', r: 1.6, bonus: 275, v: 0.5 } };
 var crt = null, JET_V = 2.0, floaters = [], tutOpen = false;
 function addFloat(x, z, h, txt, big) {
   var box = $('pops'), parts = String(txt).split(' '), d = document.createElement('div'), n = document.createElement('b'), l = document.createElement('span');
@@ -1367,7 +1413,7 @@ function pickRing() {
   var uc = rr(); if (lvl) uc = rr() < lvl.cp ? 0.15 + uc * 0.85 : 0;
   var ct0 = uc, ct = uc < 0.15 ? null : uc < 0.30 ? 'ball' : uc < 0.46 ? 'jetski' : uc < 0.58 ? 'nessie' : uc < 0.72 ? 'dolphin' : uc < 0.86 ? 'croc' : 'grandma';
   if (lvl && ct) ct = pickCrt(lvl, rr);
-  if (lvl && lvl.crtBias && rr() < lvl.crtBias.p) ct = lvl.crtBias.type;
+  if (lvl && lvl.crtBias && rr() < lvl.crtBias.p) ct = lvl.crtBias.types[Math.floor(rr() * lvl.crtBias.types.length)];
   crt = null;
   if (ct) {
     // About a third of creatures sit far out (62 to 110 m) as a distance challenge; they pay 50% more and have a wider hit zone
@@ -1429,7 +1475,7 @@ function newRound() {
 }
 $('again').addEventListener('click', function () {
   Sound.unlock();
-  if (mode === 'levels' && lvl) { if (lvlPassed && lvl.n >= 30) showLevelMap(); else startLevel(lvlPassed ? lvl.n + 1 : lvl.n); return; }
+  if (mode === 'levels' && lvl) { if (lvlPassed && lvl.n >= LEVEL_COUNT) showLevelMap(); else startLevel(lvlPassed ? lvl.n + 1 : lvl.n); return; }
   if (mode === 'daily') setMode('free'); else newRound();
 });
 function setMode() { showLevelMap(); }
@@ -2141,6 +2187,41 @@ function drawCreature(g, T, dt) {
     if (open > 0.25) { g.fillStyle(0x7a1f1f, 1); g.fillPoints([cp(1.0, 0.08), cp(2.0, 0.12 + open * 0.55 - 0.02), cp(2.0, 0.1), cp(1.0, 0.0)], true); g.fillStyle(0xffffff, 1); for (k = 0; k < 4; k++) g.fillPoints([cp(1.2 + k * 0.25, 0.1), cp(1.3 + k * 0.25, 0.1), cp(1.25 + k * 0.25, 0.0)], true); }
     g.fillStyle(0xf2e46a, 1); g.fillCircle(cp(0.85, 0.38).x, cp(0.85, 0.38).y, S * 0.1); g.fillStyle(0x10201a, 1); g.fillCircle(cp(0.88, 0.38).x, cp(0.88, 0.38).y, S * 0.045);
     g.fillStyle(0xffffff, 0.22); g.fillPoints(ellipsePts(bx, by, S * 1.8, S * 0.12, 0, 18), true);
+    return;
+  }
+  if (ty === 'swan') {
+    var wing = crt.hit && ht < 1.6 ? Math.abs(Math.sin(ht * 9)) : 0, sh = 0.05 * Math.sin(T * 1.6 + crt.x);
+    if (crt.hit && ht > 2.4) return;
+    ripple(0.35);
+    var sp = function (u, v) { return { x: bx + d * u * S, y: by - (v + 0.1 + sh) * S }; };
+    var sb = []; for (k = 0; k < 24; k++) { var as = k / 24 * Math.PI * 2; sb.push(sp(Math.cos(as) * 1.0, 0.24 + Math.sin(as) * 0.26)); }
+    g.fillStyle(0xf6f6f2, 1); g.fillPoints(sb, true);
+    g.fillPoints([sp(-0.9, 0.36), sp(-1.45, 0.58), sp(-0.8, 0.2)], true);
+    g.fillStyle(0xdde3e6, 1); g.fillPoints([sp(-0.55, 0.32), sp(0.25, 0.3), sp(-0.2, 0.55 + wing * 0.9), sp(-0.95, 0.5 + wing)], true);
+    g.lineStyle(Math.max(3, S * 0.2), 0xf6f6f2, 1); g.strokePoints([sp(0.7, 0.42), sp(0.98, 0.78), sp(0.82, 1.12), sp(0.98, 1.36)], false);
+    g.fillStyle(0xf6f6f2, 1); g.fillCircle(sp(1.0, 1.42).x, sp(1.0, 1.42).y, S * 0.15);
+    g.fillStyle(0xe8943a, 1); g.fillPoints([sp(1.1, 1.47), sp(1.42, 1.4), sp(1.1, 1.35)], true);
+    g.fillStyle(0x10202a, 1); g.fillCircle(sp(1.06, 1.46).x, sp(1.06, 1.46).y, Math.max(1.2, S * 0.035));
+    g.fillStyle(0xffffff, 0.22); g.fillPoints(ellipsePts(bx, by, S * 1.7, S * 0.12, 0, 18), true);
+    return;
+  }
+  if (ty === 'otter') {
+    var oh = crt.hit ? Math.max(0, 0.45 * Math.sin(ht * 5)) * Math.max(0, 1 - ht / 1.6) : 0.03 * Math.sin(T * 2 + crt.x), up = crt.hit && ht < 1.6 ? 0.45 : 0;
+    if (crt.hit && ht > 2.4) return;
+    ripple(0.35);
+    var op = function (u, v) { return { x: bx + d * u * S, y: by - (v + 0.12 + oh) * S }; };
+    var ob = [], ol = []; for (k = 0; k < 24; k++) { var ao = k / 24 * Math.PI * 2; ob.push(op(Math.cos(ao) * 1.05, 0.18 + Math.sin(ao) * 0.24)); ol.push(op(Math.cos(ao) * 0.8, 0.28 + Math.sin(ao) * 0.12)); }
+    g.fillStyle(0x7a5232, 1); g.fillPoints(ob, true);
+    g.fillStyle(0xc9a67a, 1); g.fillPoints(ol, true);
+    g.fillStyle(0x6a4527, 1); g.fillPoints([op(-1.0, 0.24), op(-1.9, 0.08), op(-1.0, 0.1)], true);
+    g.fillStyle(0x8a6038, 1); g.fillCircle(op(1.05, 0.52).x, op(1.05, 0.52).y, S * 0.28);
+    g.fillCircle(op(0.88, 0.76).x, op(0.88, 0.76).y, S * 0.09);
+    g.fillStyle(0xd9bc92, 1); g.fillCircle(op(1.27, 0.46).x, op(1.27, 0.46).y, S * 0.15);
+    g.fillStyle(0x10202a, 1); g.fillCircle(op(1.4, 0.5).x, op(1.4, 0.5).y, Math.max(1.2, S * 0.05)); g.fillCircle(op(1.1, 0.6).x, op(1.1, 0.6).y, Math.max(1.2, S * 0.04));
+    g.lineStyle(Math.max(2, S * 0.12), 0x6a4527, 1); g.lineBetween(op(0.45, 0.4).x, op(0.45, 0.4).y, op(0.75, 0.6 + up).x, op(0.75, 0.6 + up).y);
+    var tossH = crt.hit ? Math.max(0, 2.6 * ht - 3 * ht * ht) : 0;
+    g.fillStyle(0x9aa7ad, 1); g.fillPoints(ellipsePts(op(0.25, 0.46 + tossH).x, op(0.25, 0.46 + tossH).y, S * 0.2, S * 0.11, 0, 12), true);
+    g.fillStyle(0xffffff, 0.22); g.fillPoints(ellipsePts(bx, by, S * 1.6, S * 0.12, 0, 18), true);
     return;
   }
   // Grandma, floating in a pink ring with a sun hat and a parasol
