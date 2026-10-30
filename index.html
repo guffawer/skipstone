@@ -81,23 +81,23 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
 .metrics .ring b { color: var(--ochre); }
 
 .card {
-  position: absolute; left: 50%; top: 24%; transform: translate(-50%, 6px);
-  width: min(88%, 350px); box-sizing: border-box;
-  background: rgba(15, 35, 43, .92); color: var(--paper);
-  border-radius: 8px; padding: 12px 14px 10px;
-  opacity: 0; transition: opacity .18s ease, transform .18s ease; pointer-events: none;
+  position: absolute; left: 10px; top: 27%;
+  width: 152px; box-sizing: border-box;
+  background: rgba(15, 35, 43, .84); color: var(--paper);
+  border-radius: 8px; padding: 9px 10px 8px;
+  opacity: 0; transform: translateX(-8px); transition: opacity .18s ease, transform .18s ease; pointer-events: none;
 }
-.card.show { opacity: 1; transform: translate(-50%, 0); }
-.card h2 { margin: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-family: var(--font-display); font-weight: 800; font-size: 28px; line-height: 1.05; letter-spacing: .02em; }
-.card h2 .badge { font-family: var(--font-body); font-weight: 600; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink); background: var(--ochre); padding: 3px 6px; border-radius: 3px; }
-.card .score { margin-top: 2px; font-size: 12px; color: var(--ochre); font-variant-numeric: tabular-nums; }
-.diag { margin-top: 8px; display: grid; gap: 5px; }
-.diag div { display: grid; grid-template-columns: 50px 56px 1fr; align-items: baseline; gap: 6px; min-width: 0; }
-.diag .k { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--mute); }
-.diag .v { font-family: var(--font-display); font-weight: 600; font-size: 18px; font-variant-numeric: tabular-nums; }
-.diag .w { font-size: 12px; min-width: 0; }
+.card.show { opacity: 1; transform: none; }
+.card h2 { margin: 0; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; font-family: var(--font-display); font-weight: 800; font-size: 20px; line-height: 1.05; letter-spacing: .02em; }
+.card h2 .badge { font-family: var(--font-body); font-weight: 600; font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink); background: var(--ochre); padding: 2px 5px; border-radius: 3px; }
+.card .score { margin-top: 3px; font-size: 11px; color: var(--ochre); font-variant-numeric: tabular-nums; line-height: 1.3; }
+.card .extra { margin-top: 5px; font-size: 11px; font-weight: 600; color: var(--ink); background: var(--good); border-radius: 3px; padding: 3px 6px; display: none; }
+.diag { margin-top: 7px; display: grid; gap: 4px; }
+.diag div { display: grid; grid-template-columns: auto 1fr; align-items: baseline; column-gap: 8px; min-width: 0; }
+.diag .k { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--mute); }
+.diag .v { font-family: var(--font-display); font-weight: 600; font-size: 16px; font-variant-numeric: tabular-nums; text-align: right; }
+.diag .w { grid-column: 1 / -1; font-size: 10.5px; line-height: 1.2; min-width: 0; color: var(--mute); }
 .diag .w.ok { color: var(--good); }
-
 .round {
   position: absolute; inset: 0; box-sizing: border-box; padding: 14px 14px 12px; overflow: auto;
   background: rgba(15, 35, 43, .94); color: var(--paper);
@@ -169,7 +169,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
   <header class="top">
     <div class="brand">
       <span class="word">Skipstone</span>
-      <span class="lbl">Prototype v0.6</span>
+      <span class="lbl">Prototype v0.7</span>
     </div>
     <div class="bests">
       <div><span class="lbl">Best round</span><b id="bestRound">0</b></div>
@@ -196,6 +196,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
           <span id="windTxt">Calm</span>
         </div>
         <div class="chip tgt" id="tgtChip">Target 0 m</div>
+        <div class="chip tgt" id="comboChip">Combo x1</div>
         <button class="chip" id="mute" type="button" aria-pressed="false">Sound on</button>
         <button class="chip" id="haptic" type="button" aria-pressed="false">Haptics on</button>
       </div>
@@ -209,6 +210,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
       <div class="card" id="card" aria-live="polite">
         <h2><span id="cardHead">0 skips</span><span class="badge" id="cardBadge" style="display:none">New best</span></h2>
         <div class="score" id="cardScore"></div>
+        <div class="extra" id="cardExtra"></div>
         <div class="diag">
           <div><span class="k">Angle</span><span class="v" id="dAngle">-</span><span class="w" id="dAngleW"></span></div>
           <div><span class="k">Power</span><span class="v" id="dPower">-</span><span class="w" id="dPowerW"></span></div>
@@ -252,9 +254,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
    Every bounce uses entry angle, speed, spin and stone stats (STUDIO_BRIEF Section 5). Wind varies with time and pushes the stone. */
 var MAXM = 150, KW = 0.07;
 var STONES = [
-  { id: 'pebble',  name: 'River Pebble', note: 'Balanced',                 tol: 1.00, sens: 1.0,  flat: 0.60, mass: 0.50, spinRet: 0.94, drag: 0.050, launch: 1.00, vw: 0.46, vt: 0.13, sw: 16, sh: 5, color: 0x8c9b93, css: '#8c9b93' },
-  { id: 'slate',   name: 'Flat Slate',   note: 'Most skips, touchy angle', tol: 0.85, sens: 1.0,  flat: 0.95, mass: 0.30, spinRet: 0.96, drag: 0.090, launch: 1.04, vw: 0.50, vt: 0.08, sw: 15, sh: 3, color: 0x5d7688, css: '#5d7688' },
-  { id: 'granite', name: 'Granite Disc', note: 'Few skips, forgiving',     tol: 1.35, sens: 0.55, flat: 0.30, mass: 1.10, spinRet: 0.90, drag: 0.024, launch: 0.90, vw: 0.52, vt: 0.19, sw: 19, sh: 8, color: 0xb3a290, css: '#b3a290' }
+  { id: 'pebble',  name: 'River Pebble', note: 'Balanced',                 tol: 1.00, sens: 1.0,  flat: 0.60, mass: 0.50, spinRet: 0.94, drag: 0.050, launch: 1.00, vw: 0.46, vt: 0.13, sw: 16, sh: 5, color: 0xe0a03c, css: '#e0a03c' },
+  { id: 'slate',   name: 'Flat Slate',   note: 'Most skips, touchy angle', tol: 0.85, sens: 1.0,  flat: 0.95, mass: 0.30, spinRet: 0.96, drag: 0.090, launch: 1.04, vw: 0.50, vt: 0.08, sw: 15, sh: 3, color: 0xe0624a, css: '#e0624a' },
+  { id: 'granite', name: 'Granite Disc', note: 'Few skips, forgiving',     tol: 1.35, sens: 0.55, flat: 0.30, mass: 1.10, spinRet: 0.90, drag: 0.024, launch: 0.90, vw: 0.52, vt: 0.19, sw: 19, sh: 8, color: 0xf1ecdc, css: '#f1ecdc' }
 ];
 /* Wind as a pure function of time: speed gusts and direction drifts (x along the lake, z sideways). */
 function windAt(T) {
@@ -524,7 +526,7 @@ var Haptics = (function () {
 var BASKET0 = { pebble: 4, slate: 3, granite: 3 };
 var basket = {}, thrown = 0, total = 0, throws = [], ring = null, needsNext = false;
 var stoneIdx = 0, aimAngle = 10, aimLocked = null, yawLocked = null, yawMode = false, aimYaw = 0, yawRef = null, lastAlpha = null;
-var mode = 'free', curWind = null, dailyDone = false;
+var mode = 'free', curWind = null, dailyDone = false, maxThrows = 10, combo = 0, extras = 0;
 var state = 'ready'; // ready | flying | settling | returning | roundEnd
 var run = null, playT = 0, evIdx = 0, settleT = 0, swipePts = null, swipeYaw = null;
 var ripples = [], drops = [], trail = [], trailAcc = 0;
@@ -681,7 +683,8 @@ function pickRing() {
     lineBr = Math.atan2(hoops[1].z, hoops[1].x); farX = hoops[2].x;
   } else {
     var D = 18 + rr() * 24, lim = Math.min(10, D * 0.28);
-    ring = { type: type, x: D, z: (rr() * 2 - 1) * lim, r: type === 'ring' ? 3.2 : 1.7, flash: 0 };
+    ring = { type: type, x: D, z: (rr() * 2 - 1) * lim, r: type === 'ring' ? 3.2 : 1.7, flash: 0, drift: 0 };
+    if ((type === 'ring' || type === 'hole') && thrown >= 3 && rr() < 0.4) ring.drift = type === 'ring' ? 3 : 2.5;
     lineBr = Math.atan2(ring.z, ring.x); farX = ring.x;
   }
   // Bonus creature sits beyond the main target on the same line of fire, worth more because it needs more skips
@@ -695,9 +698,10 @@ function pickRing() {
   playT = 0;
   curWind = null;
   if (mode === 'daily') { var sp = 0.4 + rr() * 4.0, dr2 = (rr() * 2 - 1) * 0.9; curWind = { x: sp * Math.cos(dr2), z: sp * Math.sin(dr2), speed: sp, dir: dr2 }; }
-  $('tgtChip').textContent = TGT_NAME[type] + ' ' + Math.round(Math.hypot(ring.x, ring.z)) + ' m' + (crt ? ' + ' + crt.name + ' ' + Math.round(cx) + ' m' : '');
+  $('tgtChip').textContent = TGT_NAME[type] + ' ' + Math.round(Math.hypot(ring.x, ring.z)) + ' m' + (ring.drift ? ' drifting' : '') + (crt ? ' + ' + crt.name + ' ' + Math.round(cx) + ' m' : '');
   recentre();
 }
+function ringZAt(t) { return ring.z + (ring.drift || 0) * Math.sin(t * 1.1); }
 function crtT() { return state === 'ready' ? 0 : playT; }
 function crtAt(t) {
   if (!crt) return null;
@@ -706,13 +710,14 @@ function crtAt(t) {
 }
 function windNow() { return curWind || windAt(clockT()); }
 function updateHud() {
-  $('throwNo').textContent = Math.min(thrown + (state === 'flying' || state === 'settling' || state === 'returning' ? 0 : 1), 10) + '/10';
+  $('throwNo').textContent = Math.min(thrown + (state === 'flying' || state === 'settling' || state === 'returning' ? 0 : 1), maxThrows) + '/' + maxThrows;
+  var cm2 = 1 + 0.25 * Math.min(combo, 4); $('comboChip').textContent = 'Combo x' + cm2.toFixed(2).replace(/0$/, '').replace(/\.0$/, '');
   $('total').textContent = String(total);
 }
 function newRound() {
   $('hint').textContent = 'Swipe up toward the target. Speed is power. A shorter flick throws lower. Turn the phone or angle the swipe to aim.'; $('hint').classList.remove('gone');
   for (var k in BASKET0) basket[k] = BASKET0[k];
-  thrown = 0; total = 0; throws = []; needsNext = false;
+  thrown = 0; total = 0; throws = []; needsNext = false; maxThrows = 10; combo = 0; extras = 0;
   $('round').classList.remove('show'); hideResult(); $('metrics').classList.remove('show');
   $('skips').textContent = '0';
   state = 'ready'; stoneIdx = 0; refreshStones(); pickRing(); updateHud();
@@ -746,7 +751,7 @@ $('share').addEventListener('click', function () {
 
 function ringHits(events) {
   return events.map(function (ev) {
-    var d = Math.hypot(ev.x - ring.x, ev.z - ring.z);
+    var d = Math.hypot(ev.x - ring.x, ev.z - ringZAt(ev.t));
     if (ring.type === 'ring') return ev.type === 'skip' ? (d <= ring.r / 3 ? 40 : d <= ring.r ? 20 : 0) : 0;
     if (ring.type === 'hole') return ev.type === 'sink' ? (d <= ring.r ? 100 : d <= ring.r * 2 ? 25 : 0) : (d <= ring.r ? 40 : 0);
     return 0;
@@ -816,7 +821,16 @@ function setRow(idV, idW, val, v) { $(idV).textContent = val; var w = $(idW); w.
 function finishThrow() {
   var r = run, skips = r.skips, d = r.distance;
   var bonus = r.hits.reduce(function (a, b) { return a + b; }, 0) + r.extra;
-  var score = skips * 10 + Math.round(d) + bonus;
+  var base = skips * 10 + Math.round(d) + bonus, mult = 1 + 0.25 * Math.min(combo, 4);
+  var mainOK = ring.type === 'hoops' ? r.marks.filter(function (q) { return q.kind === 'hoop' && q.b > 0; }).length === 3
+    : ring.type === 'gate' ? r.marks.some(function (q) { return q.kind === 'gate' && q.b > 0; }) : r.hits.some(function (q) { return q > 0; });
+  var crtOK = r.marks.some(function (q) { return q.kind === 'crt'; });
+  var sweep = !!crt && mainOK && crtOK, marathon = skips >= 12, earned = null;
+  if (sweep) { base += 100; earned = 'Clean sweep: target and ' + crt.name + '. +100 and a bonus stone'; }
+  else if (marathon) earned = 'Marathon: ' + skips + ' skips. Bonus stone';
+  if (earned && extras < 3) { extras++; maxThrows++; basket[r.stone.id]++; refreshStones(); } else if (earned) earned += ' (extra stone cap reached)';
+  var score = Math.round(base * mult);
+  combo = bonus > 0 ? combo + 1 : 0;
   total += score;
   throws.push({ n: thrown, stone: r.stone.name, skips: skips, dist: d, ring: bonus, score: score });
   var newBest = skips > best.skips;
@@ -824,7 +838,8 @@ function finishThrow() {
   $('total').textContent = String(total);
   $('cardHead').textContent = (skips === 0 ? 'No skips' : skips + (skips === 1 ? ' skip' : ' skips')) + ' · ' + d.toFixed(1) + ' m';
   $('cardBadge').style.display = newBest && skips > 0 ? '' : 'none';
-  $('cardScore').textContent = 'Score +' + score + '  (skips ' + skips * 10 + ', distance ' + Math.round(d) + ', bonus ' + bonus + ')';
+  $('cardScore').textContent = '+' + score + ' (skips ' + skips * 10 + ', dist ' + Math.round(d) + ', bonus ' + (base - skips * 10 - Math.round(d)) + (mult > 1 ? ', combo x' + mult.toFixed(2).replace(/0$/, '') : '') + ')';
+  var ex = $('cardExtra'); ex.style.display = earned ? 'block' : 'none'; ex.textContent = earned || '';
   var ea = r.entry === null ? 0 : r.entry;
   setRow('dAngle', 'dAngleW', ea.toFixed(0) + '°', verdictAngle(ea));
   setRow('dPower', 'dPowerW', Math.round(r.power * 100) + '%', verdictPower(Math.round(r.power * 100)));
@@ -842,6 +857,16 @@ function finishThrow() {
 }
 function hideResult() { $('card').classList.remove('show'); }
 
+var BOARD_KEY = 'skipstone.v02.board';
+function updateBoard(score) {
+  var list = [];
+  try { list = JSON.parse(localStorage.getItem(BOARD_KEY) || '[]'); } catch (e) { list = []; }
+  if (!Array.isArray(list)) list = [];
+  list.push({ s: score, d: todayStr(), m: mode === 'daily' ? 'D' : 'F' });
+  list.sort(function (a, b) { return b.s - a.s; }); list = list.slice(0, 5);
+  try { localStorage.setItem(BOARD_KEY, JSON.stringify(list)); } catch (e) {}
+  return list;
+}
 function showRound() {
   var rows = $('rRows'); rows.textContent = '';
   var bestThrow = 0;
@@ -864,6 +889,8 @@ function showRound() {
     $('rTotal').textContent = String(total);
     $('rSub').textContent = (isBest ? 'New best round. ' : 'Best round ' + best.round + '. ') + 'Top throw ' + bestThrow + ' points.';
   }
+  var lb = updateBoard(total);
+  $('rSub').textContent += ' Bonus stones earned: ' + extras + '. Your top rounds: ' + lb.map(function (q) { return q.s + (q.m === 'D' ? ' (daily)' : ''); }).join(', ') + '.';
   $('round').classList.add('show');
   Sound.roundEnd();
 }
@@ -961,6 +988,7 @@ function create() {
   cv.addEventListener('pointerdown', function (e) {
     Sound.unlock();
     if (state === 'flying' || state === 'roundEnd') return;
+    if (thrown >= maxThrows) { if (run && !run.shown) { run.shown = true; finishThrow(); } state = 'roundEnd'; hideResult(); showRound(); return; }
     if (state !== 'ready') toReady(true);
     hideResult();
     try { cv.setPointerCapture(e.pointerId); } catch (err) {}
@@ -1021,7 +1049,7 @@ function analyse(pts) {
 
 function launch(angle, yaw, power, spin) {
   var stone = currentStone();
-  if (basket[stone.id] <= 0) return;
+  if (basket[stone.id] <= 0 || thrown >= maxThrows) return;
   basket[stone.id]--; thrown++;
   var cw = curWind; run = simulate(stone, angle, yaw, power, spin, cw ? function () { return cw; } : windAt, clockT(), Math.random);
   run.power = power; run.spin = spin; run.stone = stone; run.yaw = yaw; run.yawRad = rad(yaw); run.hits = ringHits(run.events); run.marks = buildMarks(run); run.extra = run.marks.reduce(function (a, mk) { return a + mk.b; }, 0); run.shown = false;
@@ -1095,8 +1123,8 @@ function update(time, delta) {
     slow += (1 - slow) * Math.min(1, 5 * dt);
     var li = run.xs.length - 1; sx = run.xs[li]; sz = run.zs[li]; sh = -0.8; sAlpha = 0; underwater = true;
     if (!run.shown && settleT > 0.45) { run.shown = true; finishThrow(); }
-    if (settleT > 2.0) {
-      if (thrown >= 10) { state = 'roundEnd'; hideResult(); showRound(); } else state = 'returning';
+    if (settleT > (thrown >= maxThrows ? 1.5 : 2.0)) {
+      if (thrown >= maxThrows) { state = 'roundEnd'; hideResult(); showRound(); } else state = 'returning';
     }
   } else if (state === 'returning') {
     if (Math.abs(cam.x + 2.2 * Math.cos(cam.yaw)) < 0.25 && Math.abs(cam.h - AIM.h) < 0.12 && Math.abs(cam.hy - HOR_AIM) < 3) toReady(true);
@@ -1179,15 +1207,16 @@ function drawWaves(g, T, sunX) {
 
 function drawRing(g, T, dt) {
   if (!ring) return;
+  var rz = ringZAt(crtT());
   if (ring.flash > 0) ring.flash = Math.max(0, ring.flash - dt * 1.4);
   var pulse = 0.75 + 0.25 * Math.sin(T * 3), i, ok = true, bx, by, s;
   if (ring.type === 'hoops') return;
   if (ring.type === 'gate') {
     var bs = [];
     for (var sg = -1; sg <= 1; sg += 2) {
-      if (!P(ring.x, ring.z + sg * ring.r, 0)) return;
+      if (!P(ring.x, rz + sg * ring.r, 0)) return;
       var b0x = po.x, b0y = po.y, ss = po.s;
-      if (!P(ring.x, ring.z + sg * ring.r, 1.5)) return;
+      if (!P(ring.x, rz + sg * ring.r, 1.5)) return;
       var tx = po.x, ty = po.y;
       g.lineStyle(clamp(ss * 0.05, 1.4, 4), 0xffffff, 0.95); g.lineBetween(b0x, b0y, tx, ty);
       g.fillStyle(ring.flash > 0 ? 0xffffff : 0xe0603a, 1); g.fillCircle(tx, ty, clamp(ss * 0.1, 2, 7));
@@ -1198,19 +1227,19 @@ function drawRing(g, T, dt) {
     return;
   }
   var pts = [], pts2 = [];
-  for (i = 0; i < 28; i++) { var a = i / 28 * Math.PI * 2; if (!P(ring.x + Math.cos(a) * ring.r, ring.z + Math.sin(a) * ring.r, 0)) { ok = false; break; } pts.push({ x: po.x, y: po.y }); }
+  for (i = 0; i < 28; i++) { var a = i / 28 * Math.PI * 2; if (!P(ring.x + Math.cos(a) * ring.r, rz + Math.sin(a) * ring.r, 0)) { ok = false; break; } pts.push({ x: po.x, y: po.y }); }
   var hole = ring.type === 'hole';
   if (ok) {
     g.fillStyle(hole ? 0x0b2530 : 0xf2b24c, hole ? 0.55 + ring.flash * 0.3 : 0.14 + ring.flash * 0.4); g.fillPoints(pts, true);
     g.lineStyle(clamp(po.s * 0.05, 1.4, 3.4), hole ? 0xffffff : 0xf2b24c, 0.95 * pulse); g.strokePoints(pts, true);
     if (!hole) {
-      for (i = 0; i < 20; i++) { var b = i / 20 * Math.PI * 2; if (!P(ring.x + Math.cos(b) * ring.r / 3, ring.z + Math.sin(b) * ring.r / 3, 0)) { pts2 = null; break; } pts2.push({ x: po.x, y: po.y }); }
+      for (i = 0; i < 20; i++) { var b = i / 20 * Math.PI * 2; if (!P(ring.x + Math.cos(b) * ring.r / 3, rz + Math.sin(b) * ring.r / 3, 0)) { pts2 = null; break; } pts2.push({ x: po.x, y: po.y }); }
       if (pts2) { g.lineStyle(clamp(po.s * 0.035, 1, 2.4), 0xffffff, 0.7); g.strokePoints(pts2, true); }
     }
   }
-  if (P(ring.x, ring.z, 0)) {
+  if (P(ring.x, rz, 0)) {
     bx = po.x; by = po.y; s = po.s;
-    if (P(ring.x, ring.z, hole ? 2.4 : 3.4)) {
+    if (P(ring.x, rz, hole ? 2.4 : 3.4)) {
       var ty2 = po.y;
       g.lineStyle(clamp(s * 0.05, 1.4, 4), hole ? 0xffffff : 0xf2b24c, 0.95); g.lineBetween(bx, by, bx, ty2);
       var fw = clamp(s * 0.9, 6, 70);
