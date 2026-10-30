@@ -169,7 +169,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
   <header class="top">
     <div class="brand">
       <span class="word">Skipstone</span>
-      <span class="lbl">Prototype v0.5</span>
+      <span class="lbl">Prototype v0.6</span>
     </div>
     <div class="bests">
       <div><span class="lbl">Best round</span><b id="bestRound">0</b></div>
@@ -607,8 +607,8 @@ function onOrient(e) {
     if (yawRef === null) yawRef = e.alpha;
     yawMode = true;
     if (yawLocked === null) {
-      var yt = clamp(ringBearing() + wrap180(yawRef - e.alpha), -50, 50);
-      aimYaw += (yt - aimYaw) * 0.3;
+      var yt = clamp(ringBearing() + wrap180(yawRef - e.alpha) * 0.6, -50, 50);
+      aimYaw += (yt - aimYaw) * 0.22;
     }
   }
 }
@@ -667,42 +667,41 @@ showStreak();
 
 /* ---------- Basket, target and scoring ---------- */
 var TGT_NAME = { ring: 'Ring', hole: 'Hole', gate: 'Gate', hoops: 'Hoops' };
-var CRT = { ball: { name: 'Beach ball', r: 0.9, bonus: 50 }, jetski: { name: 'Jetski', r: 1.7, bonus: 100 }, nessie: { name: 'Loch Ness monster', r: 1.8, bonus: 150 } };
-var crt = null;
+var CRT = { ball: { name: 'Beach ball', r: 1.0, bonus: 100 }, jetski: { name: 'Jetski', r: 1.8, bonus: 150 }, nessie: { name: 'Loch Ness monster', r: 2.0, bonus: 250 } };
+var crt = null, JET_V = 2.0;
 function pickRing() {
   var rr = mode === 'daily' ? rng32(seedFromStr(todayStr()) + thrown * 7919) : Math.random;
-  var D = 18 + rr() * 34, lim = Math.min(12, D * 0.28), u = rr();
-  var type = u < 0.3 ? 'ring' : u < 0.5 ? 'hole' : u < 0.7 ? 'gate' : 'hoops';
-  var pts;
+  var u = rr(), type = u < 0.3 ? 'ring' : u < 0.5 ? 'hole' : u < 0.7 ? 'gate' : 'hoops';
+  var lineBr, farX;
   if (type === 'hoops') {
-    var D2 = 26 + rr() * 26, bz = (rr() * 2 - 1) * Math.min(10, D2 * 0.22), br = Math.atan2(bz, D2), hr = [1.2, 1.0, 0.85], fr = [0.45, 0.72, 1.0], sg = rr() < 0.5 ? -1 : 1;
-    var hoops = fr.map(function (f, k) { return { x: D2 * f * Math.cos(br), z: D2 * f * Math.sin(br) + sg * (k % 2 ? 1 : -1) * (1.6 + rr() * 1.2), c: 0.6, r: hr[k], state: 'idle', flash: 0 }; });
+    // Three hoops one behind another on the same line, spaced down the lake: more skips reach the later, smaller hoops
+    var x0 = 16 + rr() * 10, sp0 = 9 + rr() * 3, bz = (rr() * 2 - 1) * Math.min(9, x0 * 0.3), tn = bz / x0, hr = [1.2, 1.0, 0.85];
+    var hoops = hr.map(function (rd, k) { var hx = x0 + k * sp0; return { x: hx, z: hx * tn, c: 0.6, r: rd, state: 'idle', flash: 0 }; });
     ring = { type: type, x: hoops[1].x, z: hoops[1].z, r: 3, flash: 0, hoops: hoops };
-    pts = hoops;
+    lineBr = Math.atan2(hoops[1].z, hoops[1].x); farX = hoops[2].x;
   } else {
+    var D = 18 + rr() * 24, lim = Math.min(10, D * 0.28);
     ring = { type: type, x: D, z: (rr() * 2 - 1) * lim, r: type === 'ring' ? 3.2 : 1.7, flash: 0 };
-    pts = [ring];
+    lineBr = Math.atan2(ring.z, ring.x); farX = ring.x;
   }
+  // Bonus creature sits beyond the main target on the same line of fire, worth more because it needs more skips
   var uc = rr(), ct = uc < 0.3 ? null : uc < 0.55 ? 'ball' : uc < 0.8 ? 'jetski' : 'nessie';
   crt = null;
   if (ct) {
-    var cx = 14 + rr() * 30, cz = (rr() * 2 - 1) * Math.min(10, cx * 0.3), dir = rr() < 0.5 ? -1 : 1;
-    var near = function () { return Math.min.apply(null, pts.map(function (q) { return Math.hypot(cx - q.x, cz - q.z); })); };
-    if (near() < 7) { cz = clamp(cz + (cz >= ring.z ? 9 : -9), -14, 14); if (near() < 6) cx = clamp(cx + 9, 10, 55); }
-    var info = CRT[ct];
+    var cx = farX + 8 + rr() * 6, cz = cx * Math.tan(lineBr) + (rr() * 2 - 1) * 1.2, dir = rr() < 0.5 ? -1 : 1, info = CRT[ct];
     crt = { type: ct, x: cx, z0: cz, dir: dir, r: info.r, bonus: info.bonus, name: info.name, hit: false, hitT: 0 };
-    if (ct === 'jetski') crt.z0 = cz - dir * 2.5 * 1.5;
+    if (ct === 'jetski') crt.z0 = cz - dir * JET_V * 2.6;
   }
   playT = 0;
   curWind = null;
   if (mode === 'daily') { var sp = 0.4 + rr() * 4.0, dr2 = (rr() * 2 - 1) * 0.9; curWind = { x: sp * Math.cos(dr2), z: sp * Math.sin(dr2), speed: sp, dir: dr2 }; }
-  $('tgtChip').textContent = TGT_NAME[type] + ' ' + Math.round(Math.hypot(ring.x, ring.z)) + ' m' + (crt ? ' + ' + crt.name : '');
+  $('tgtChip').textContent = TGT_NAME[type] + ' ' + Math.round(Math.hypot(ring.x, ring.z)) + ' m' + (crt ? ' + ' + crt.name + ' ' + Math.round(cx) + ' m' : '');
   recentre();
 }
 function crtT() { return state === 'ready' ? 0 : playT; }
 function crtAt(t) {
   if (!crt) return null;
-  if (crt.type === 'jetski') return { x: crt.x, z: crt.z0 + crt.dir * 2.5 * t };
+  if (crt.type === 'jetski') return { x: crt.x, z: crt.z0 + crt.dir * JET_V * t };
   return { x: crt.x, z: crt.z0 };
 }
 function windNow() { return curWind || windAt(clockT()); }
@@ -1257,7 +1256,7 @@ function drawCreature(g, T, dt) {
     var h = 0.26 + 0.05 * Math.sin(T * 2 + crt.x), bz = z, bx = x;
     if (crt.hit) { h += 5 * ht - 6 * ht * ht; bx += 3.5 * ht; bz += crt.dir * 2.2 * ht; if (h < 0.1) h = 0.1; if (ht > 1.6) return; }
     if (!P(bx, bz, h)) return;
-    var cx = po.x, cy = po.y, r = po.s * 0.45;
+    var cx = po.x, cy = po.y, r = Math.max(3, po.s * 0.7);
     if (P(bx, bz, 0)) { g.fillStyle(0xffffff, 0.2); g.fillPoints(ellipsePts(po.x, po.y, r * 1.3, r * 0.3, 0, 16), true); g.lineStyle(1.2, 0xffffff, 0.35); g.strokeEllipse(po.x, po.y, r * 3.2, r * 0.8); }
     g.fillStyle(0xffffff, 1); g.fillCircle(cx, cy, r);
     var cols = [0xe4483b, 0xffffff, 0x3b82c4, 0xffffff, 0xf2c14e, 0xffffff], rot = T * 0.7;
