@@ -331,7 +331,7 @@ body { padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: ma
   <header class="top">
     <div class="brand">
       <span class="word">Skipstone</span>
-      <span class="lbl">Prototype v2.1</span>
+      <span class="lbl">Prototype v2.2</span>
     </div>
     <span class="lvlab" id="streak"></span>
     <div class="bests">
@@ -2344,7 +2344,9 @@ function drawForeground(sc, T, stone, dt) {
   sc.gaugeTxt.setVisible(false); sc.gaugeLbl.setVisible(false);
 }
 
-startLevel(nextLevel());
+var qLevel = 0;
+try { qLevel = parseInt(new URLSearchParams(window.location.search).get('level'), 10) || 0; } catch (e) {}
+startLevel(qLevel >= 1 && qLevel <= LEVEL_COUNT ? qLevel : nextLevel());
 window.__skipGame = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
