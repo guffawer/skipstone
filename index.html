@@ -188,7 +188,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
   <header class="top">
     <div class="brand">
       <span class="word">Skipstone</span>
-      <span class="lbl">Prototype v1.0</span>
+      <span class="lbl">Prototype v1.1</span>
     </div>
     <div class="bests">
       <div><span class="lbl">Best round</span><b id="bestRound">0</b></div>
@@ -246,7 +246,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
         <table>
           <tr><td>Ring, Hole or Gate</td><td>+20 to +100</td></tr>
           <tr><td>Three Hoops in a line</td><td>+80 to +120 each, +100</td></tr>
-          <tr><td>Creature behind the target: Ball, Jetski, Loch Ness</td><td>+100 / +150 / +250</td></tr>
+          <tr><td>Creature behind the target: Ball, Jetski, Croc, Dolphin, Loch Ness, Grandma</td><td>+100 to +300</td></tr>
           <tr><td>Clean sweep: target and creature</td><td>+100 and a stone</td></tr>
           <tr><td>15 skips, or 100 m</td><td>+150 and a stone each</td></tr>
           <tr><td>Back-to-back bonuses: combo</td><td>up to x2</td></tr>
@@ -553,7 +553,10 @@ var Sound = (function () {
       var t = ctx.currentTime + 0.02, i;
       // Every creature hit ends on a bright rising chime, so it reads as a reward and not a miss
       var arp = [523, 659, 784, 1046, 1319];
-      if (type === 'ball') { tone(t, 260, 720, 0.2, 0.16, 'sine'); }
+      if (type === 'dolphin') { for (i = 0; i < 6; i++) tone(t + i * 0.06, 2200 + i * 160, 3500, 0.07, 0.07, 'sine'); tone(t + 0.4, 1700, 3300, 0.35, 0.07, 'sine'); }
+      else if (type === 'croc') { burst(t, 0.06, 'highpass', 1800, 900, 0.8, 0.3); burst(t + 0.16, 0.06, 'highpass', 1800, 900, 0.8, 0.3); tone(t, 110, 70, 0.3, 0.2, 'triangle'); }
+      else if (type === 'grandma') { tone(t, 392, 370, 0.17, 0.14, 'triangle'); tone(t + 0.21, 523, 500, 0.3, 0.14, 'triangle'); }
+      else if (type === 'ball') { tone(t, 260, 720, 0.2, 0.16, 'sine'); }
       else if (type === 'jetski') { burst(t, 0.45, 'lowpass', 500, 1400, 0.7, 0.1); tone(t, 180, 420, 0.4, 0.1, 'triangle'); burst(t + 0.15, 0.3, 'highpass', 2200, 1200, 0.7, 0.12); }
       else {
         // Playful monster: slide whistle up, two bloops, then a cheerful xylophone run
@@ -745,7 +748,7 @@ showStreak();
 
 /* ---------- Basket, target and scoring ---------- */
 var TGT_NAME = { ring: 'Ring', hole: 'Hole', gate: 'Gate', hoops: 'Hoops' };
-var CRT = { ball: { name: 'Beach ball', r: 1.0, bonus: 100 }, jetski: { name: 'Jetski', r: 1.8, bonus: 150 }, nessie: { name: 'Loch Ness monster', r: 2.0, bonus: 250 } };
+var CRT = { ball: { name: 'Beach ball', r: 1.3, bonus: 100, v: 0 }, jetski: { name: 'Jetski', r: 2.0, bonus: 150, v: 2.0 }, croc: { name: 'Crocodile', r: 2.0, bonus: 175, v: 0.7 }, dolphin: { name: 'Dolphin', r: 1.9, bonus: 200, v: 0 }, nessie: { name: 'Loch Ness monster', r: 2.2, bonus: 250, v: 0 }, grandma: { name: 'Grandma', r: 1.7, bonus: 300, v: 0 } };
 var crt = null, JET_V = 2.0, floaters = [], tutOpen = false;
 function addFloat(x, z, h, txt, big) {
   var box = $('pops'), parts = String(txt).split(' '), d = document.createElement('div'), n = document.createElement('b'), l = document.createElement('span');
@@ -776,12 +779,12 @@ function pickRing() {
     lineBr = Math.atan2(ring.z, ring.x); farX = ring.x;
   }
   // Bonus creature sits beyond the main target on the same line of fire, worth more because it needs more skips
-  var uc = rr(), ct = uc < 0.3 ? null : uc < 0.55 ? 'ball' : uc < 0.8 ? 'jetski' : 'nessie';
+  var uc = rr(), ct = uc < 0.15 ? null : uc < 0.30 ? 'ball' : uc < 0.46 ? 'jetski' : uc < 0.58 ? 'nessie' : uc < 0.72 ? 'dolphin' : uc < 0.86 ? 'croc' : 'grandma';
   crt = null;
   if (ct) {
     var cx = farX + 8 + rr() * 6, cz = cx * Math.tan(lineBr) + (rr() * 2 - 1) * 1.2, dir = rr() < 0.5 ? -1 : 1, info = CRT[ct];
-    crt = { type: ct, x: cx, z0: cz, dir: dir, r: info.r, bonus: info.bonus, name: info.name, hit: false, hitT: 0 };
-    if (ct === 'jetski') crt.z0 = cz - dir * JET_V * 2.6;
+    crt = { type: ct, x: cx, z0: cz, dir: dir, r: info.r, bonus: info.bonus, name: info.name, v: info.v, hit: false, hitT: 0 };
+    if (crt.v) crt.z0 = cz - dir * crt.v * 2.6;
   }
   playT = 0;
   curWind = null;
@@ -793,7 +796,7 @@ function ringZAt(t) { return ring.z + (ring.drift || 0) * Math.sin(t * 1.1); }
 function crtT() { return state === 'ready' ? 0 : playT; }
 function crtAt(t) {
   if (!crt) return null;
-  if (crt.type === 'jetski') return { x: crt.x, z: crt.z0 + crt.dir * JET_V * t };
+  if (crt.v) return { x: crt.x, z: crt.z0 + crt.dir * crt.v * t };
   return { x: crt.x, z: crt.z0 };
 }
 function windNow() { return curWind || windAt(clockT()); }
@@ -1386,60 +1389,115 @@ function wedge(cx, cy, r, a0, a1) {
 function drawCreature(g, T, dt) {
   if (!crt) return;
   if (crt.hit) crt.hitT += dt;
-  var p = crtAt(crtT()), x = p.x, z = p.z, ht = crt.hitT, k;
-  if (crt.type === 'ball') {
-    var h = 0.26 + 0.05 * Math.sin(T * 2 + crt.x), bz = z, bx = x;
-    if (crt.hit) { h += 5 * ht - 6 * ht * ht; bx += 3.5 * ht; bz += crt.dir * 2.2 * ht; if (h < 0.1) h = 0.1; if (ht > 1.6) return; }
-    if (!P(bx, bz, h)) return;
-    var cx = po.x, cy = po.y, r = Math.max(3, po.s * 0.7);
-    if (P(bx, bz, 0)) { g.fillStyle(0xffffff, 0.2); g.fillPoints(ellipsePts(po.x, po.y, r * 1.3, r * 0.3, 0, 16), true); g.lineStyle(1.2, 0xffffff, 0.35); g.strokeEllipse(po.x, po.y, r * 3.2, r * 0.8); }
+  var p = crtAt(crtT()), x = p.x, z = p.z, ht = crt.hitT, k, ty = crt.type, d = crt.dir;
+  var bx, by, S;
+  // Screen-space drawing around a base point. S is pixels per metre, boosted for far creatures so they stay visible.
+  function base(px, pz) { if (!P(px, pz, 0)) return false; bx = po.x; by = po.y; S = Math.max(po.s, 24); return true; }
+  function X(l) { return bx + l * S; }
+  function Y(h) { return by - h * S; }
+  function ripple(a) { g.lineStyle(1.4, 0xffffff, a); g.strokeEllipse(bx, by, S * 3.4, S * 0.7); }
+  if (!base(x, z)) return;
+  if (!crt.hit) { var my = by - S * 2.5 - 8 + Math.sin(T * 4) * 3; g.fillStyle(0xffd25a, 0.95); g.fillPoints([{ x: bx - 6, y: my - 9 }, { x: bx + 6, y: my - 9 }, { x: bx, y: my }], true); }
+  if (ty === 'ball') {
+    var h = 0.4 + 0.07 * Math.sin(T * 2 + crt.x), px = x, pz = z;
+    if (crt.hit) { h += 5 * ht - 6 * ht * ht; px += 3.5 * ht; pz += d * 2.2 * ht; if (h < 0.1) h = 0.1; if (ht > 1.6) return; if (!base(px, pz)) return; }
+    ripple(0.35); var r = 0.55 * S, cx = bx, cy = Y(h);
     g.fillStyle(0xffffff, 1); g.fillCircle(cx, cy, r);
     var cols = [0xe4483b, 0xffffff, 0x3b82c4, 0xffffff, 0xf2c14e, 0xffffff], rot = T * 0.7;
     for (k = 0; k < 6; k++) if (cols[k] !== 0xffffff) { g.fillStyle(cols[k], 1); g.fillPoints(wedge(cx, cy, r, rot + k * Math.PI / 3, rot + (k + 1) * Math.PI / 3), true); }
     g.fillStyle(0xffffff, 0.35); g.fillCircle(cx - r * 0.3, cy - r * 0.35, r * 0.28);
     return;
   }
-  if (crt.type === 'jetski') {
-    var d = crt.dir, hh = 0.12 + (crt.hit ? 0.25 * Math.abs(Math.sin(ht * 6)) * Math.max(0, 1 - ht) : 0.03 * Math.sin(T * 5));
-    if (!P(x, z, hh)) return;
-    var jx = po.x, jy = po.y, s = po.s;
-    if (P(x, z, 0)) {
-      for (k = 1; k <= 4; k++) { g.fillStyle(0xffffff, 0.28 - k * 0.05); g.fillPoints(ellipsePts(po.x - d * s * (0.9 + k * 0.7), po.y + 1, s * (0.7 + k * 0.15), s * 0.1, 0, 14), true); }
-      g.fillStyle(0xffffff, 0.45); g.fillPoints(ellipsePts(po.x - d * s * 1.3, po.y, s * 0.5, s * 0.14, 0, 14), true);
-    }
-    g.fillStyle(0x16233a, 1); g.fillPoints(ellipsePts(jx, jy, s * 1.25, s * 0.3, 0, 22), true);
-    g.fillStyle(0xf2c14e, 1); g.fillPoints(ellipsePts(jx - d * s * 0.1, jy - s * 0.17, s * 0.95, s * 0.17, 0, 22), true);
-    g.fillStyle(0xd9eaf2, 0.9); g.fillPoints([{ x: jx + d * s * 0.45, y: jy - s * 0.2 }, { x: jx + d * s * 0.8, y: jy - s * 0.2 }, { x: jx + d * s * 0.62, y: jy - s * 0.52 }], true);
-    g.lineStyle(Math.max(1.2, s * 0.06), 0x16233a, 1); g.lineBetween(jx + d * s * 0.5, jy - s * 0.22, jx + d * s * 0.42, jy - s * 0.46);
-    g.fillStyle(0xe0603a, 1); g.fillPoints(capsule(jx - d * s * 0.2, jy - s * 0.22, jx - d * s * 0.05, jy - s * 0.66, s * 0.14), true);
-    g.fillStyle(0xf1d2b5, 1); g.fillCircle(jx - d * s * 0.0, jy - s * 0.86, s * 0.14);
-    g.fillStyle(0x16233a, 1); g.fillPoints(wedge(jx, jy - s * 0.9, s * 0.16, Math.PI, 2 * Math.PI), true);
+  if (ty === 'jetski') {
+    var hh = 0.12 + (crt.hit ? 0.35 * Math.abs(Math.sin(ht * 6)) * Math.max(0, 1 - ht) : 0.03 * Math.sin(T * 5));
+    for (k = 1; k <= 4; k++) { g.fillStyle(0xffffff, 0.28 - k * 0.05); g.fillPoints(ellipsePts(bx - d * S * (0.9 + k * 0.7), by + 1, S * (0.7 + k * 0.15), S * 0.1, 0, 14), true); }
+    var jx = bx, jy = Y(hh);
+    g.fillStyle(0x16233a, 1); g.fillPoints(ellipsePts(jx, jy, S * 1.25, S * 0.3, 0, 22), true);
+    g.fillStyle(0xf2c14e, 1); g.fillPoints(ellipsePts(jx - d * S * 0.1, jy - S * 0.17, S * 0.95, S * 0.17, 0, 22), true);
+    g.fillStyle(0xd9eaf2, 0.9); g.fillPoints([{ x: jx + d * S * 0.45, y: jy - S * 0.2 }, { x: jx + d * S * 0.8, y: jy - S * 0.2 }, { x: jx + d * S * 0.62, y: jy - S * 0.52 }], true);
+    g.fillStyle(0xe0603a, 1); g.fillPoints(capsule(jx - d * S * 0.2, jy - S * 0.22, jx - d * S * 0.05, jy - S * 0.66, S * 0.14), true);
+    g.fillStyle(0xf1d2b5, 1); g.fillCircle(jx, jy - S * 0.86, S * 0.14);
+    g.fillStyle(0x16233a, 1); g.fillPoints(wedge(jx, jy - S * 0.9, S * 0.16, Math.PI, 2 * Math.PI), true);
     return;
   }
-  // Loch Ness monster: three humps, a neck and a head, bobbing in the water
-  var dive = crt.hit ? clamp(1 - (ht - 1.3) / 0.9, 0, 1) : 1;
-  if (dive <= 0) return;
-  var lift = crt.hit ? Math.min(1, ht * 3) : 0, hump = [];
-  for (k = 0; k < 3; k++) {
-    var hz = z + (k - 1) * 1.55, hr = (0.62 - Math.abs(k - 1) * 0.08) * dive, rise = (0.5 + 0.08 * Math.sin(T * 1.3 + k * 1.7)) * dive * (1 + 0.2 * lift);
-    if (!P(x, hz, 0)) return;
-    var wx = po.x, wy = po.y, s = po.s, pts = [];
-    for (var i = 0; i <= 14; i++) { var a = Math.PI + i / 14 * Math.PI; pts.push({ x: wx + Math.cos(a) * s * hr, y: wy + Math.sin(a) * s * rise }); }
-    g.fillStyle(0x2f5d4a, 1); g.fillPoints(pts, true);
-    g.fillStyle(0x4e8a6b, 0.6); g.fillPoints(pts.map(function (q) { return { x: q.x - s * 0.06, y: q.y + (wy - q.y) * 0.0 + s * 0.04 }; }).slice(2, 12), true);
-    g.lineStyle(Math.max(1, s * 0.04), 0xffffff, 0.5); g.strokeEllipse(wx, wy, s * hr * 2.5, s * 0.22);
-    hump.push({ x: wx, y: wy, s: s });
+  if (ty === 'nessie') {
+    var dive = crt.hit ? clamp(1 - (ht - 1.3) / 0.9, 0, 1) : 1;
+    if (dive <= 0) return;
+    var lift = crt.hit ? Math.min(1, ht * 3) : 0;
+    for (k = 0; k < 3; k++) {
+      var hx = X((k - 1) * 1.55), hr = (0.62 - Math.abs(k - 1) * 0.08) * dive * S, rise = (0.5 + 0.08 * Math.sin(T * 1.3 + k * 1.7)) * dive * (1 + 0.2 * lift) * S, pts = [];
+      for (var i = 0; i <= 14; i++) { var a = Math.PI + i / 14 * Math.PI; pts.push({ x: hx + Math.cos(a) * hr, y: by + Math.sin(a) * rise }); }
+      g.fillStyle(0x2f5d4a, 1); g.fillPoints(pts, true);
+      g.fillStyle(0x4e8a6b, 0.55); g.fillPoints(pts.slice(2, 12).map(function (q) { return { x: q.x - S * 0.06, y: q.y + S * 0.05 }; }), true);
+      g.lineStyle(1.2, 0xffffff, 0.5); g.strokeEllipse(hx, by, hr * 2.5, S * 0.22);
+    }
+    var nb = { x: X(1.55), y: Y(0.25) }, nh = (0.55 + 0.95 * dive + 0.5 * lift) * dive, hp = { x: X(2.55), y: Y(nh) };
+    g.fillStyle(0x2f5d4a, 1); g.fillPoints(capsule(nb.x, nb.y, hp.x, hp.y, S * 0.13), true);
+    g.fillPoints(ellipsePts(hp.x + S * 0.12, hp.y, S * 0.26, S * 0.14, 0, 16), true);
+    g.fillStyle(0xffffff, 1); g.fillCircle(hp.x + S * 0.08, hp.y - S * 0.04, Math.max(1.8, S * 0.05));
+    g.fillStyle(0x10201a, 1); g.fillCircle(hp.x + S * 0.09, hp.y - S * 0.04, Math.max(1, S * 0.025));
+    if (crt.hit && ht < 1.3) { g.fillStyle(0x7a1f1f, 1); g.fillPoints(wedge(hp.x + S * 0.3, hp.y + S * 0.02, S * 0.1, -0.5, 0.5), true); }
+    return;
   }
-  var nz = z + 1.55 * 1.0 + 0.9, nh = (0.5 + 0.9 * dive + 0.5 * lift) * dive;
-  if (P(x, z + 1.55, 0.25) && P(x, nz, nh)) {
-    var hx = po.x, hy = po.y, hs = po.s;
-    P(x, z + 1.55, 0.25); var bx0 = po.x, by0 = po.y;
-    g.fillStyle(0x2f5d4a, 1); g.fillPoints(capsule(bx0, by0, hx, hy, hs * 0.13), true);
-    g.fillStyle(0x2f5d4a, 1); g.fillPoints(ellipsePts(hx + hs * 0.12, hy, hs * 0.26, hs * 0.14, 0, 16), true);
-    g.fillStyle(0xffffff, 1); g.fillCircle(hx + hs * 0.08, hy - hs * 0.04, Math.max(1.5, hs * 0.045));
-    g.fillStyle(0x10201a, 1); g.fillCircle(hx + hs * 0.09, hy - hs * 0.04, Math.max(0.8, hs * 0.022));
-    if (crt.hit && ht < 1.3) { g.fillStyle(0x7a1f1f, 1); g.fillPoints(wedge(hx + hs * 0.3, hy + hs * 0.02, hs * 0.1, -0.5, 0.5), true); }
+  if (ty === 'dolphin') {
+    var cyc = ((T + crt.x) % 3.2) / 3.2, a2 = cyc < 0.45 ? cyc / 0.45 : -1, hgt = 0, ang = 0, shift = 0, flip = 0;
+    if (crt.hit && ht < 1.4) { var f = ht / 1.4; a2 = f; hgt = 2.4 * Math.sin(Math.PI * f); ang = (0.8 * (0.5 - f)) + f * Math.PI * 2; shift = (f - 0.5) * 3; }
+    else if (a2 >= 0) { hgt = 1.5 * Math.sin(Math.PI * a2); ang = 0.9 * (0.5 - a2); shift = (a2 - 0.5) * 3; }
+    var cx2 = bx + d * shift * S;
+    function dp(u, v) { var ca = Math.cos(ang), sa = Math.sin(ang); return { x: cx2 + d * (u * ca - v * sa) * S, y: by - (hgt + 0.3 + u * sa + v * ca) * S }; }
+    if (a2 < 0 || hgt < 0.08) {
+      ripple(0.4);
+      g.fillStyle(0x6f8fa8, 1); g.fillPoints([{ x: bx - d * S * 0.15, y: by }, { x: bx + d * S * 0.35, y: by }, { x: bx, y: by - S * 0.55 }], true);
+      return;
+    }
+    var body = [], bel = [], th;
+    for (th = 0; th < 24; th++) { var aa = th / 24 * Math.PI * 2; body.push(dp(Math.cos(aa) * 1.0, Math.sin(aa) * 0.3)); bel.push(dp(Math.cos(aa) * 0.85, Math.sin(aa) * 0.15 - 0.1)); }
+    g.fillStyle(0x6f8fa8, 1); g.fillPoints(body, true);
+    g.fillStyle(0xdbe7ee, 1); g.fillPoints(bel, true);
+    var beak = []; for (th = 0; th < 12; th++) { var ab = th / 12 * Math.PI * 2; beak.push(dp(1.18 + Math.cos(ab) * 0.28, Math.sin(ab) * 0.08)); }
+    g.fillStyle(0x6f8fa8, 1); g.fillPoints(beak, true);
+    g.fillPoints([dp(0.1, 0.25), dp(-0.35, 0.25), dp(-0.25, 0.65)], true);
+    g.fillPoints([dp(-0.95, 0), dp(-1.5, 0.35), dp(-1.3, 0), dp(-1.5, -0.35)], true);
+    var e = dp(0.7, 0.1); g.fillStyle(0x10202a, 1); g.fillCircle(e.x, e.y, Math.max(1.5, S * 0.05));
+    if (crt.hit && ht < 1.4) { g.fillStyle(0xffffff, 0.7); g.fillCircle(bx - d * S * 1.2, by - S * 0.2, S * 0.1); g.fillCircle(bx + d * S * 1.4, by - S * 0.1, S * 0.08); }
+    return;
   }
+  if (ty === 'croc') {
+    var open = crt.hit && ht < 1.2 ? 0.6 * Math.abs(Math.sin(ht * 7)) : 0.04 * Math.sin(T * 1.5) + 0.04;
+    function cp(u, v) { return { x: bx + d * u * S, y: by - (v + 0.1) * S }; }
+    ripple(0.3);
+    var bd = []; for (k = 0; k < 24; k++) { var ac = k / 24 * Math.PI * 2; bd.push(cp(-0.2 + Math.cos(ac) * 1.45, 0.12 + Math.sin(ac) * 0.22)); }
+    g.fillStyle(0x4f7a43, 1); g.fillPoints(bd, true);
+    g.fillPoints([cp(-1.5, 0.28), cp(-2.5, 0.02), cp(-1.5, -0.05)], true);
+    g.fillStyle(0x3c6335, 1); for (k = 0; k < 7; k++) { var ru = -1.2 + k * 0.33; g.fillPoints([cp(ru - 0.1, 0.3), cp(ru + 0.1, 0.3), cp(ru, 0.42)], true); }
+    g.fillStyle(0x4f7a43, 1); g.fillPoints([cp(1.0, 0.3), cp(2.0, 0.2 + open * 0.55), cp(2.0, 0.12 + open * 0.55), cp(1.0, 0.08)], true);
+    g.fillStyle(0x7aa05a, 1); g.fillPoints([cp(1.0, 0.08), cp(2.0, 0.1), cp(2.0, 0.0), cp(1.0, -0.05)], true);
+    if (open > 0.25) { g.fillStyle(0x7a1f1f, 1); g.fillPoints([cp(1.0, 0.08), cp(2.0, 0.12 + open * 0.55 - 0.02), cp(2.0, 0.1), cp(1.0, 0.0)], true); g.fillStyle(0xffffff, 1); for (k = 0; k < 4; k++) g.fillPoints([cp(1.2 + k * 0.25, 0.1), cp(1.3 + k * 0.25, 0.1), cp(1.25 + k * 0.25, 0.0)], true); }
+    g.fillStyle(0xf2e46a, 1); g.fillCircle(cp(0.85, 0.38).x, cp(0.85, 0.38).y, S * 0.1); g.fillStyle(0x10201a, 1); g.fillCircle(cp(0.88, 0.38).x, cp(0.88, 0.38).y, S * 0.045);
+    g.fillStyle(0xffffff, 0.22); g.fillPoints(ellipsePts(bx, by, S * 1.8, S * 0.12, 0, 18), true);
+    return;
+  }
+  // Grandma, floating in a pink ring with a sun hat and a parasol
+  var bob = 0.05 * Math.sin(T * 2 + crt.x), surprised = crt.hit && ht < 1.4, hatLift = surprised ? 3 * ht - 4 * ht * ht : 0;
+  ripple(0.3);
+  g.fillStyle(0xf06a9a, 1); g.fillPoints(ellipsePts(bx, Y(0.12 + bob), S * 1.0, S * 0.3, 0, 22), true);
+  g.fillStyle(0x15425a, 1); g.fillPoints(ellipsePts(bx, Y(0.16 + bob), S * 0.55, S * 0.14, 0, 18), true);
+  g.fillStyle(0xffffff, 0.35); g.fillPoints(ellipsePts(bx - S * 0.45, Y(0.2 + bob), S * 0.25, S * 0.06, 0, 10), true);
+  g.fillStyle(0x8a5fb0, 1); g.fillPoints(capsule(bx, Y(0.3 + bob), bx, Y(0.95 + bob), S * 0.26), true);
+  g.fillStyle(0xf0c8a0, 1);
+  var wave = Math.sin(T * 8) * 0.18 + (surprised ? 0.4 : 0);
+  g.fillPoints(capsule(X(0.2), Y(0.85 + bob), X(0.62), Y(1.3 + wave + bob), S * 0.07), true);
+  g.fillCircle(bx, Y(1.25 + bob), S * 0.26);
+  g.fillStyle(0xeeeeee, 1); g.fillCircle(X(-0.2), Y(1.45 + bob), S * 0.14); g.fillCircle(X(-0.05), Y(1.55 + bob), S * 0.13);
+  g.lineStyle(Math.max(1, S * 0.03), 0x222222, 1); g.strokeCircle(X(-0.1), Y(1.28 + bob), S * 0.08); g.strokeCircle(X(0.1), Y(1.28 + bob), S * 0.08);
+  if (surprised) { g.fillStyle(0x7a1f1f, 1); g.fillPoints(ellipsePts(bx, Y(1.1 + bob), S * 0.06, S * 0.08, 0, 10), true); }
+  else { g.lineStyle(Math.max(1, S * 0.03), 0x7a1f1f, 1); g.lineBetween(X(-0.08), Y(1.12 + bob), X(0.08), Y(1.12 + bob)); }
+  var hy = 1.5 + bob + hatLift, hrot = surprised ? ht * 6 : 0;
+  g.fillStyle(0xe8c872, 1); g.fillPoints(ellipsePts(bx + Math.sin(hrot) * S * 0.2, Y(hy), S * 0.55, S * 0.12, hrot * 0.3, 18), true);
+  g.fillPoints(wedge(bx + Math.sin(hrot) * S * 0.2, Y(hy), S * 0.27, Math.PI, 2 * Math.PI), true);
+  g.fillStyle(0xd23a3a, 1); g.fillPoints(ellipsePts(bx + Math.sin(hrot) * S * 0.2, Y(hy + 0.03), S * 0.27, S * 0.05, 0, 14), true);
+  g.lineStyle(Math.max(1, S * 0.035), 0x555555, 1); g.lineBetween(X(-0.6), Y(0.3 + bob), X(-0.6), Y(1.9 + bob));
+  g.fillStyle(0xf8a6c8, 1); g.fillPoints(wedge(X(-0.6), Y(1.9 + bob), S * 0.6, Math.PI, 2 * Math.PI), true);
 }
 
 function drawRipples(g, dt) {
