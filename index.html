@@ -269,23 +269,76 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
 .goalbar { display: flex; flex-wrap: wrap; gap: 6px; min-height: 22px; }
 .gp { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; background: var(--deck-2); border: 1px solid var(--line); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .gp.met { border-color: var(--good); color: var(--good); }
+
+/* v2.0 layout: maximum stage, compact controls */
+body { padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: max(6px, env(safe-area-inset-right, 0px)); }
+.app { gap: 5px; padding-block: 5px; max-width: 640px; }
+.top { gap: 8px; }
+.top .word { font-size: 20px; }
+.lvlab { flex: 1; text-align: center; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ochre); white-space: nowrap; }
+.bests b { font-size: 18px; }
+.deck { padding: 6px 8px 8px; gap: 6px; }
+.stones { gap: 5px; }
+.stone { flex-direction: row; align-items: center; padding: 6px 8px; gap: 6px; }
+.stone .nt { display: none; }
+.stone .nm { font-size: 12px; gap: 5px; }
+.stone .ct { font-size: 15px; }
+.angle { grid-template-columns: 1fr auto; gap: 4px 8px; align-items: center; }
+.angle .note { grid-row: 1; grid-column: 1; font-size: 11px; color: var(--mute); }
+.angle .btns { grid-row: 1; grid-column: 2; }
+.angle.tiltOn .note { display: none; }
+.angle.tiltOn .read { grid-row: 1; grid-column: 1; font-size: 22px; }
+.angle.tiltOn #angMeter { grid-row: 2; grid-column: 1 / -1; margin: 0; }
+#tilt { padding: 6px 10px; }
+/* v2.0 level briefing: larger, spaced out */
+.tut { gap: 12px; padding: 14px 14px 12px; }
+.bhead { padding: 2px 0; }
+.stk { font-size: 13px; gap: 4px; }
+.stk i { width: 16px; height: 7px; }
+.gcs { gap: 10px; }
+.gc { flex-direction: row; justify-content: flex-start; text-align: left; gap: 10px; padding: 10px 12px; }
+.gc svg { flex: none; }
+.gc .gt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gc b { font-size: 28px; }
+.gc small { font-size: 12.5px; line-height: 1.2; }
+.gcs.n1 .gc { justify-content: center; }
+.gc.v { flex-direction: column; justify-content: center; text-align: center; gap: 8px; padding: 12px 4px 10px; }
+.rules { gap: 10px; }
+.rules .gc small { font-size: 13px; }
+.conds { gap: 8px; }
+.cd { font-size: 13px; gap: 7px; padding: 5px 12px 5px 8px; border-radius: 16px; }
+.crow { gap: 8px 10px; }
+.crow .cg { width: auto; height: auto; background: none; border: 0; flex-direction: column; gap: 3px; }
+.crow .ci { width: 48px; height: 48px; border-radius: 10px; background: var(--deck-2); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; }
+.crow .cg.new .ci { border-color: var(--ochre); box-shadow: 0 0 0 1px var(--ochre); }
+.crow .cg em { position: static; background: none; padding: 0; border-radius: 0; font-style: normal; font-size: 10px; font-weight: 600; color: var(--mute); letter-spacing: .04em; }
+.crow .cg.new em { color: var(--ochre); font-weight: 800; }
+/* v2.0 fit: six creatures on one row */
+.tut { gap: 10px; }
+.gc { padding: 8px 10px; }
+.gc b { font-size: 26px; }
+.gc small { font-size: 12px; }
+.cd { font-size: 12px; padding: 4px 10px 4px 7px; gap: 6px; }
+.crow { flex-wrap: nowrap; gap: 6px; justify-content: space-between; }
+.crow .cg { flex: 1 1 0; min-width: 0; }
+.crow .ci { width: 100%; max-width: 48px; height: 44px; }
+.crow .cg em { font-size: 9px; max-width: 100%; overflow: hidden; text-overflow: clip; white-space: nowrap; }
+.crow { justify-content: flex-start; }
+.crow .cg, .crow .cg.new { flex: 0 0 calc((100% - 30px) / 6); border: 0; box-shadow: none; }
 </style>
 
 <div class="app">
   <header class="top">
     <div class="brand">
       <span class="word">Skipstone</span>
-      <span class="lbl">Prototype v1.9</span>
+      <span class="lbl">Prototype v2.0</span>
     </div>
+    <span class="lvlab" id="streak"></span>
     <div class="bests">
-      <div><span class="lbl">Best round</span><b id="bestRound">0</b></div>
       <div><span class="lbl">Best skips</span><b id="bestSkips">0</b></div>
     </div>
+    <div style="display:none"><b id="bestRound">0</b><button id="mLevels" type="button" aria-pressed="false" tabindex="-1"></button></div>
   </header>
-  <nav class="modes" aria-label="Level">
-    <button id="mLevels" type="button" aria-pressed="false">Level map</button>
-    <span class="lbl" id="streak"></span>
-  </nav>
   <div class="goalbar" id="goalBar" aria-live="polite"></div>
 
   <main class="stage" id="stage">
@@ -374,8 +427,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
       <span class="read"><span id="angleVal">10</span>&deg;<small id="angleTag">in the zone</small></span>
       <div id="angMeter" aria-hidden="true"><div class="bar"></div><div class="mk" id="angMk"></div></div>
       <div class="slider"><input id="angle" type="range" min="0" max="45" step="0.5" value="10" aria-label="Throw angle in degrees"></div>
-      <span class="note" id="tiltNote">Swipe length sets the throw height: a shorter flick throws lower. On a phone, Phone aim turns the phone into the direction control.</span>
-      <span class="btns"><button id="recentre" type="button">Recentre</button><button id="tilt" type="button" aria-pressed="false">Phone aim</button></span>
+      <span class="note" id="tiltNote">Phone aim: tilt sets angle, turning aims.</span>
+      <span class="btns"><button id="tilt" type="button" aria-pressed="false">Phone aim</button></span>
     </div>
   </section>
 </div>
@@ -801,7 +854,7 @@ var stoneBtns = [];
     b.type = 'button'; b.className = 'stone';
     var nm = document.createElement('span'); nm.className = 'nm';
     var sw = document.createElement('span'); sw.className = 'sw'; sw.style.width = st.sw + 'px'; sw.style.height = st.sh + 'px'; sw.style.background = st.css;
-    var tx = document.createElement('span'); tx.className = 't'; tx.textContent = st.name;
+    var tx = document.createElement('span'); tx.className = 't'; tx.textContent = st.id === 'rainbow' ? 'Lucky' : st.id.charAt(0).toUpperCase() + st.id.slice(1); b.title = st.name + ': ' + st.note;
     var ct = document.createElement('span'); ct.className = 'ct';
     nm.appendChild(sw); nm.appendChild(tx); nm.appendChild(ct);
     var nt = document.createElement('span'); nt.className = 'nt'; nt.textContent = st.note;
@@ -894,19 +947,18 @@ function onOrient(e) {
 function tiltOff(msg) {
   tilt.on = false; tilt.beta0 = null; tilt.auto = false; yawMode = false; yawRef = null; aimYaw = ringBearing(); document.querySelector('.angle').classList.remove('tiltOn');
   window.removeEventListener('deviceorientation', onOrient);
-  $('tilt').setAttribute('aria-pressed', 'false'); $('tilt').textContent = 'Phone aim'; $('recentre').classList.remove('on');
+  $('tilt').setAttribute('aria-pressed', 'false'); $('tilt').textContent = 'Phone aim';
   $('tiltNote').textContent = msg;
 }
 function tiltOn() {
   tilt.on = true; tilt.seen = false; tilt.beta0 = null; tilt.smooth = 10; setAngle(10); yawRef = null; tilt.auto = true; tilt.stillT = 0; tilt.autoT = 0; tilt.pa = null; tilt.pb = null; tilt.pt = 0;
   document.querySelector('.angle').classList.add('tiltOn');
-  $('tilt').setAttribute('aria-pressed', 'true'); $('tilt').textContent = 'Phone aim on'; $('recentre').classList.add('on');
-  $('tiltNote').textContent = 'Phone aim on. Turn the phone to aim and tilt it to set the throw angle. It recentres on its own before every throw; Recentre does it instantly.';
+  $('tilt').setAttribute('aria-pressed', 'true'); $('tilt').textContent = 'Phone aim on';
+  $('tiltNote').textContent = '';
   window.addEventListener('deviceorientation', onOrient);
   clearTimeout(tilt.timer);
   tilt.timer = setTimeout(function () { if (tilt.on && !tilt.seen) tiltOff('No motion data reached this page. Swipe direction aims.'); }, 1500);
 }
-$('recentre').addEventListener('click', function () { recentre(true); });
 $('tilt').addEventListener('click', function () {
   Sound.unlock();
   if (tilt.on) { tiltOff('Phone aim off. Swipe direction aims.'); return; }
@@ -1146,19 +1198,19 @@ function updateGoals() {
 function fillBrief() {
   var gs = goalList(lvl), box = $('tutGoals'), i, h = '';
   box.className = 'gcs' + (gs.length === 1 ? ' n1' : '');
-  gs.forEach(function (g) { var v = goalVisual(g.key, g.val); h += '<div class="gc">' + ico(goalIcon(g.key), 36) + '<b>' + v.big + '</b><small>' + v.lab + '</small></div>'; });
+  gs.forEach(function (g) { var v = goalVisual(g.key, g.val); h += '<div class="gc">' + ico(goalIcon(g.key), 40) + '<div class="gt"><b>' + v.big + '</b><small>' + v.lab + '</small></div></div>'; });
   box.innerHTML = h;
   $('tutTier').textContent = TIER_NAME[lvl.tier]; $('tutTier').className = 'tier ' + lvl.tier;
   var st = ''; for (i = 0; i < lvl.stones; i++) st += '<i></i>'; $('tutStones').innerHTML = st + '&nbsp;' + lvl.stones + ' stones';
-  var wk = windWord(lvl.wind), c = '<span class="cd">' + ico('wind', 18) + 'Wind ' + wk + '</span>';
-  c += '<span class="cd">' + ico('size', 18) + (lvl.tsz >= 1.15 ? 'Large' : lvl.tsz >= 0.95 ? 'Standard' : 'Small') + ' targets</span>';
-  if (lvl.driftP) c += '<span class="cd">' + ico('moving', 18) + 'Moving targets</span>';
-  if (lvl.farP) c += '<span class="cd">' + ico('far', 18) + 'Far creatures</span>';
+  var wk = windWord(lvl.wind), c = '<span class="cd">' + ico('wind', 20) + 'Wind ' + wk + '</span>';
+  c += '<span class="cd">' + ico('size', 20) + (lvl.tsz >= 1.15 ? 'Large' : lvl.tsz >= 0.95 ? 'Standard' : 'Small') + ' targets</span>';
+  if (lvl.driftP) c += '<span class="cd">' + ico('moving', 20) + 'Moving targets</span>';
+  if (lvl.farP) c += '<span class="cd">' + ico('far', 20) + 'Far creatures</span>';
   $('tutCond').innerHTML = c;
-  var cr = '<span class="lab">Creatures</span>';
-  lvl.pool.forEach(function (k) { cr += '<span class="cg' + (k === lvl.newCrt ? ' new' : '') + '" title="' + CRT[k].name + '">' + ico('crt:' + k, 26) + (k === lvl.newCrt ? '<em>NEW</em>' : '') + '</span>'; });
+  var cr = '';
+  lvl.pool.forEach(function (k) { cr += '<span class="cg' + (k === lvl.newCrt ? ' new' : '') + '"><span class="ci">' + ico('crt:' + k, 32) + '</span><em>' + (k === lvl.newCrt ? 'NEW' : CRT[k].name.split(' ')[0]) + '</em></span>'; });
   $('tutCrt').innerHTML = cr;
-  $('tutRules').innerHTML = '<div class="gc">' + ico('swipe', 40) + '<small>Swipe up to throw</small></div><div class="gc">' + ico('tilt', 40) + '<small>Tilt to set angle</small></div><div class="gc">' + ico('sweep', 40) + '<small>Hit targets for bonuses</small></div>';
+  $('tutRules').innerHTML = '<div class="gc v">' + ico('swipe', 56) + '<small>Swipe up to throw</small></div><div class="gc v">' + ico('tilt', 56) + '<small>Tilt to set angle</small></div><div class="gc v">' + ico('sweep', 56) + '<small>Hit targets for bonuses</small></div>';
 }
 function showLevelMap() {
   resetClear(); tutOpen = true; $('tut').classList.remove('show'); $('round').classList.remove('show');
@@ -1258,10 +1310,10 @@ function showSummary(n) {
   $('sumBody').innerHTML = h;
   $('sumHead').textContent = n >= 30 ? 'All 30 levels cleared' : 'Levels ' + a + ' to ' + n + ' cleared';
   $('sumSub').textContent = n >= 30 ? 'Final summary. Green easy, gold hard, red very hard. Outline marks your best level.' : 'Green easy, gold hard, red very hard. Outline marks your best level.';
-  $('sumGo').textContent = n >= 30 ? 'Level map' : 'Continue to level ' + (n + 1);
+  $('sumGo').textContent = n >= 30 ? 'Play again from level 1' : 'Continue to level ' + (n + 1);
   $('sum').classList.add('show');
 }
-$('sumGo').addEventListener('click', function () { Sound.unlock(); if (sumN >= 30) { resetClear(); showLevelMap(); } else startLevel(sumN + 1); });
+$('sumGo').addEventListener('click', function () { Sound.unlock(); if (sumN >= 30) startLevel(1); else startLevel(sumN + 1); });
 /* Basket used up without meeting every goal: stay on this level. */
 function showLevelResult(tot) {
   var L = lvl, st = levelStats(), h = '';
@@ -1275,7 +1327,7 @@ function showLevelResult(tot) {
   $('failBars').innerHTML = h; $('failBars').style.display = 'flex';
   $('rTotal').textContent = String(tot);
   $('rSub').textContent = 'Out of stones. Fill every bar to clear the level.';
-  $('again').textContent = 'Retry level'; $('share').textContent = 'Level map';
+  $('again').textContent = 'Retry level'; $('share').style.display = 'none';
   $('round').classList.add('show');
 }
 
@@ -1761,6 +1813,7 @@ function launch(angle, yaw, power, spin) {
   var stone = currentStone();
   if (basket[stone.id] <= 0 || thrown >= maxThrows) return;
   basket[stone.id]--; thrown++;
+  if (tilt.on) { tilt.auto = true; tilt.stillT = 0; tilt.autoT = 0; }
   var cw = curWind; run = simulate(stone, angle, yaw, power, spin, cw ? function () { return cw; } : (lvl ? levelWind : windAt), clockT(), Math.random);
   run.power = power; run.spin = spin; run.stone = stone; run.yaw = yaw; run.yawRad = rad(yaw); run.hits = ringHits(run.events); run.marks = buildMarks(run); run.extra = run.marks.reduce(function (a, mk) { return a + mk.b; }, 0); run.shown = false;
   playT = 0; evIdx = 0; settleT = 0; trail.length = 0; trailAcc = 0; punch = 1; slow = 1; needsNext = true;
