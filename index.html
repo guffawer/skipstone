@@ -200,6 +200,15 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
 .lv.done { box-shadow: inset 0 0 0 1px var(--good); }
 .lv:disabled { opacity: .35; cursor: default; }
 #lvClose { margin-top: auto; background: var(--deck-2); color: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; font-weight: 600; font-size: 14px; }
+.clear { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px; text-align: center; background: rgba(15, 35, 43, .8); z-index: 8; pointer-events: none; }
+.clear.show { display: flex; }
+.clear .ch { font-family: var(--font-display); font-weight: 800; font-size: 40px; line-height: 1.05; letter-spacing: .04em; text-transform: uppercase; color: var(--ochre); animation: clearpop .5s ease-out; }
+.clear .cs { font-size: 14px; color: var(--paper); max-width: 280px; }
+@keyframes clearpop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+#confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 9; }
+#confetti i { position: absolute; top: -20px; opacity: 0; border-radius: 1px; animation: conf linear forwards; }
+@keyframes conf { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 90% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), 640px) rotate(var(--rot)); } }
+#sum { z-index: 8; }
 .goalbar { display: flex; flex-wrap: wrap; gap: 6px; min-height: 22px; }
 .gp { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; background: var(--deck-2); border: 1px solid var(--line); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .gp.met { border-color: var(--good); color: var(--good); }
@@ -209,7 +218,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
   <header class="top">
     <div class="brand">
       <span class="word">Skipstone</span>
-      <span class="lbl">Prototype v1.5</span>
+      <span class="lbl">Prototype v1.6</span>
     </div>
     <div class="bests">
       <div><span class="lbl">Best round</span><b id="bestRound">0</b></div>
@@ -282,6 +291,14 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
         <p id="lvSub"></p>
         <div id="lvBody" style="display:grid;gap:12px"></div>
         <button id="lvClose" type="button">Close</button>
+      </div>
+      <div class="clear" id="clear"><div class="ch" id="clearHead"></div><div class="cs" id="clearSub"></div></div>
+      <div id="confetti" aria-hidden="true"></div>
+      <div class="round" id="sum">
+        <h2 id="sumHead"></h2>
+        <div class="sub" id="sumSub"></div>
+        <table><tbody id="sumRows"></tbody></table>
+        <div class="row"><button id="sumGo" type="button">Continue</button></div>
       </div>
       <div class="round" id="round" aria-live="polite">
         <h2>Basket complete</h2>
@@ -685,6 +702,12 @@ var Sound = (function () {
       var t = ctx.currentTime;
       [523, 659, 784, 1046].forEach(function (f, i) { tone(t + i * 0.2, f, 0, 0.9, 0.09, 'triangle'); });
     },
+    levelUp: function () {
+      if (muted || !ensure()) return;
+      var t = ctx.currentTime + 0.05;
+      [523, 659, 784, 1046, 1318].forEach(function (f, i) { tone(t + i * 0.11, f, 0, 0.7, 0.1, 'triangle'); });
+      celebrate(t + 0.2);
+    },
     setMuted: function (m) { muted = m; if (master) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.05); if (!m) ensure(); }
   };
 })();
@@ -704,7 +727,7 @@ var Haptics = (function () {
 var BASKET0 = { pebble: 4, slate: 3, granite: 3, rainbow: 0 };
 var basket = {}, thrown = 0, total = 0, throws = [], ring = null, needsNext = false;
 var stoneIdx = 0, aimAngle = 10, aimLocked = null, yawLocked = null, yawMode = false, aimYaw = 0, yawRef = null, lastAlpha = null;
-var mode = 'free', curWind = null, dailyDone = false, maxThrows = 10, combo = 0, extras = 0, lvl = null, lvlPassed = false;
+var mode = 'free', curWind = null, dailyDone = false, maxThrows = 10, combo = 0, extras = 0, lvl = null, lvlPassed = false, clearing = false, clrT1 = 0, clrT2 = 0, sumN = 0;
 var state = 'ready'; // ready | flying | settling | returning | roundEnd
 var run = null, playT = 0, evIdx = 0, settleT = 0, swipePts = null, swipeYaw = null;
 var ripples = [], drops = [], trail = [], trailAcc = 0;
@@ -854,24 +877,61 @@ var VSEC = { 24: [['targets', 3], ['creatures', 1]], 27: [['skips', 12], ['targe
 var HKEYS = ['targets', 'skips', 'creatures'];
 var G_SHORT = { bonus: 'Bonus throws', score: 'Score', targets: 'Targets', skips: 'Best skips', creatures: 'Creatures', far: 'Far creatures' };
 function r50(x) { return Math.round(x / 50) * 50; }
+var LV_GOALS = {
+  1: [['tgt:ring', 2]],
+  2: [['tgt:gate', 2]],
+  3: [['crt:ball', 1], ['score', 400]],
+  4: [['skips', 6], ['targets', 2]],
+  5: [['dist', 40], ['score', 500]],
+  6: [['sweep', 1]],
+  7: [['tgt:hole', 2]],
+  8: [['crt:croc', 1], ['score', 600]],
+  9: [['skips', 7], ['dist', 45]],
+  10: [['crt:jetski', 1], ['bonus', 4], ['score', 1400]],
+  11: [['streak', 2], ['score', 700]],
+  12: [['tgt:hoops', 3], ['creatures', 2], ['score', 1500]],
+  13: [['crt:dolphin', 1], ['tgt:gate', 2]],
+  14: [['skips', 9], ['targets', 3], ['score', 1600]],
+  15: [['big', 150], ['bonus', 3]],
+  16: [['chain', 1], ['score', 1700]],
+  17: [['far', 1], ['creatures', 2], ['score', 1800]],
+  18: [['sweep', 1], ['streak', 3]],
+  19: [['crt:nessie', 1], ['score', 800]],
+  20: [['dist', 70], ['targets', 4], ['score', 2000]],
+  21: [['crt:grandma', 1], ['tgt:hole', 2], ['score', 2000]],
+  22: [['stones', 1], ['bonus', 5], ['score', 2100]],
+  23: [['big', 250], ['streak', 3], ['score', 2100]],
+  24: [['sweep', 2], ['far', 1], ['score', 3000]],
+  25: [['skips', 10], ['creatures', 3], ['score', 2200]],
+  26: [['chain', 1], ['crt:dolphin', 1], ['score', 2300]],
+  27: [['dist', 85], ['skips', 11], ['sweep', 1]],
+  28: [['streak', 4], ['far', 1], ['score', 2400]],
+  29: [['sweep', 2], ['chain', 1], ['far', 1]],
+  30: [['score', 3500], ['sweep', 2], ['far', 1], ['streak', 3]]
+};
 function levelDef(n) {
   var t = TIERS.charAt(n - 1), p = (n - 1) / 29, L = { n: n, lake: Math.floor((n - 1) / 6), tier: t };
   L.name = LAKES[L.lake];
   if (t === 'E') {
     L.wind = 0.3 + 0.5 * p; L.tsz = 1.3 - 0.3 * p; L.dmin = 18; L.dmax = 28 + 8 * p;
     L.mix = [['ring', 5], ['gate', 3], ['hole', 1], ['hoops', 1]]; L.driftP = 0; L.driftFrom = 99; L.cp = 0.8; L.farP = 0; L.farMax = 0; L.csz = 1.25;
-    L.score = r50(500 + 700 * p); L.sec = []; L.bonus = n <= 12 ? 2 : 3;
   } else if (t === 'H') {
     L.wind = 0.8 + 0.4 * p; L.tsz = 1.0 - 0.15 * p; L.dmin = 22; L.dmax = 38 + 6 * p;
     L.mix = [['ring', 3], ['gate', 3], ['hole', 2], ['hoops', 3]]; L.driftP = 0.35; L.driftFrom = 3; L.cp = 0.85; L.farP = 0.3; L.farMax = 90; L.csz = 1.0;
-    L.score = r50(1300 + 1200 * p); L.bonus = n < 19 ? 4 : 5;
-    var hk = HKEYS[n % 3], late = p > 0.6;
-    L.sec = [[hk, hk === 'targets' ? (late ? 3 : 2) : hk === 'skips' ? (late ? 9 : 8) : (late ? 2 : 1)]];
   } else {
     L.wind = 1.2 + 0.3 * p; L.tsz = 0.8; L.dmin = 26; L.dmax = 46;
     L.mix = [['ring', 1], ['gate', 3], ['hole', 3], ['hoops', 3]]; L.driftP = 0.6; L.driftFrom = 2; L.cp = 0.9; L.farP = 0.5; L.farMax = 110; L.csz = 0.9;
-    L.score = r50(2600 + 1200 * p); L.sec = VSEC[n] || [['targets', 4]]; L.bonus = 6;
   }
+  L.goals = LV_GOALS[n];
+  var m = null;
+  L.goals.forEach(function (g) {
+    if (g[0].indexOf('crt:') === 0) L.crtBias = { type: g[0].slice(4), p: 0.5 };
+    if (g[0].indexOf('tgt:') === 0) m = g[0].slice(4);
+    if (g[0] === 'chain') m = 'hoops';
+    if (g[0] === 'far') { L.farP = Math.max(L.farP, 0.6); L.cp = 0.95; }
+    if (g[0] === 'sweep') L.cp = Math.max(L.cp, 0.95);
+  });
+  if (m) L.mix = [[m, 6]].concat(['ring', 'gate'].filter(function (q) { return q !== m; }).map(function (q) { return [q, 1]; }));
   return L;
 }
 function pickMix(mix, u) {
@@ -885,19 +945,52 @@ function levelWind(T) {
   return { x: x, z: z, speed: Math.hypot(x, z), dir: Math.atan2(z, x) };
 }
 function windWord(k) { return k < 0.5 ? 'calm' : k < 0.8 ? 'light' : k < 1.1 ? 'breezy' : k < 1.4 ? 'gusty' : 'strong'; }
-function goalList(L) {
-  var out = [{ key: 'score', val: L.score, text: 'Score ' + L.score, short: 'Score' }, { key: 'bonus', val: L.bonus, text: 'Hit a target or creature in ' + L.bonus + ' throws', short: 'Bonus throws' }];
-  L.sec.forEach(function (g) {
-    var k = g[0], v = g[1], tx = k === 'targets' ? 'Hit a target in ' + v + ' throw' + (v > 1 ? 's' : '') : k === 'skips' ? 'One throw with ' + v + ' or more skips' : k === 'creatures' ? 'Hit ' + v + ' creature' + (v > 1 ? 's' : '') : (v > 1 ? 'Hit ' + v + ' creatures' : 'Hit a creature') + ' 60 m or farther';
-    out.push({ key: k, val: v, text: tx, short: G_SHORT[k] });
-  });
-  return out;
+var TGN = { ring: 'Ring', hole: 'Hole', gate: 'Gate', hoops: 'Hoops' };
+function goalText(k, v) {
+  if (k.indexOf('crt:') === 0) { var nm = CRT[k.slice(4)].name; return v > 1 ? 'Hit ' + v + ' ' + nm + 's' : 'Hit the ' + nm; }
+  if (k.indexOf('tgt:') === 0) { var tg = k.slice(4); return tg === 'hoops' ? 'Pass a hoop in ' + v + ' throws' : tg === 'gate' ? 'Pass the Gate in ' + v + ' throws' : tg === 'hole' ? 'Hit the Hole in ' + v + ' throws' : 'Hit the Ring in ' + v + ' throws'; }
+  switch (k) {
+    case 'score': return 'Score ' + v;
+    case 'bonus': return 'Hit a target or creature in ' + v + ' throws';
+    case 'targets': return 'Hit a target in ' + v + ' throws';
+    case 'creatures': return 'Hit ' + v + ' creature' + (v > 1 ? 's' : '');
+    case 'far': return (v > 1 ? 'Hit ' + v + ' creatures' : 'Hit a creature') + ' 60 m or farther';
+    case 'skips': return 'One throw with ' + v + ' or more skips';
+    case 'dist': return 'One throw of ' + v + ' m or more';
+    case 'sweep': return v + ' clean sweep' + (v > 1 ? 's' : '') + ' (target and creature in one throw)';
+    case 'streak': return v + ' bonus throws in a row';
+    case 'chain': return 'Pass all three hoops in one throw';
+    case 'big': return 'One throw worth ' + v + ' points';
+    case 'stones': return 'Earn ' + v + ' bonus stone' + (v > 1 ? 's' : '');
+  }
+  return k;
 }
+function goalShort(k) {
+  if (k.indexOf('crt:') === 0) return CRT[k.slice(4)].name;
+  if (k.indexOf('tgt:') === 0) return TGN[k.slice(4)];
+  return { score: 'Score', bonus: 'Bonus', targets: 'Targets', creatures: 'Creatures', far: 'Far', skips: 'Skips', dist: 'Dist', sweep: 'Sweeps', streak: 'Streak', chain: 'Hoop chain', big: 'Big throw', stones: 'Stones' }[k] || k;
+}
+function goalList(L) { return L.goals.map(function (g) { return { key: g[0], val: g[1], text: goalText(g[0], g[1]), short: goalShort(g[0]) }; }); }
 function levelStats() {
-  var o = { bonus: 0, targets: 0, creatures: 0, far: 0, skips: 0 };
-  throws.forEach(function (t) { if (t.bon) o.bonus++; if (t.any) o.targets++; if (t.cre) o.creatures++; if (t.farHit) o.far++; o.skips = Math.max(o.skips, t.skips); });
+  var o = { bonus: 0, targets: 0, creatures: 0, far: 0, skips: 0, dist: 0, sweep: 0, streak: 0, chain: 0, big: 0, crt: {}, tgt: {} }, run = 0;
+  throws.forEach(function (t) {
+    if (t.bon) { o.bonus++; run++; o.streak = Math.max(o.streak, run); } else run = 0;
+    if (t.any) o.targets++; if (t.cre) o.creatures++; if (t.farHit) o.far++;
+    o.skips = Math.max(o.skips, t.skips); o.dist = Math.max(o.dist, Math.round(t.dist)); o.big = Math.max(o.big, t.score);
+    if (t.sw) o.sweep++; if (t.ch) o.chain++;
+    if (t.crtT) o.crt[t.crtT] = (o.crt[t.crtT] || 0) + 1;
+    if (t.tgtT) o.tgt[t.tgtT] = (o.tgt[t.tgtT] || 0) + 1;
+  });
   return o;
 }
+function goalHave(k, st) {
+  if (k === 'score') return total;
+  if (k === 'stones') return extras;
+  if (k.indexOf('crt:') === 0) return st.crt[k.slice(4)] || 0;
+  if (k.indexOf('tgt:') === 0) return st.tgt[k.slice(4)] || 0;
+  return st[k] || 0;
+}
+function goalsMet() { var st = levelStats(); return goalList(lvl).every(function (g) { return goalHave(g.key, st) >= g.val; }); }
 var LV_KEY = 'skipstone.v13.levels', RULES_KEY = 'skipstone.v13.rules', lvProg = {};
 try { var lpj = JSON.parse(localStorage.getItem(LV_KEY) || '{}'); if (lpj && typeof lpj === 'object') lvProg = lpj; } catch (e) {}
 function saveLv() { try { localStorage.setItem(LV_KEY, JSON.stringify(lvProg)); } catch (e) {} }
@@ -910,9 +1003,9 @@ function updateGoals() {
   if (!(mode === 'levels' && lvl)) return;
   var st = levelStats();
   goalList(lvl).forEach(function (g) {
-    var have = g.key === 'score' ? total : st[g.key], sp = document.createElement('span');
+    var have = goalHave(g.key, st), sp = document.createElement('span');
     sp.className = 'gp' + (have >= g.val ? ' met' : '');
-    sp.textContent = G_HUD[g.key] + ' ' + Math.min(have, g.val) + '/' + g.val;
+    sp.textContent = g.short + ' ' + Math.min(have, g.val) + '/' + g.val;
     bar.appendChild(sp);
   });
 }
@@ -920,10 +1013,10 @@ function fillBrief() {
   var ul = $('tutGoals'); ul.textContent = '';
   goalList(lvl).forEach(function (g) { var li = document.createElement('li'); li.textContent = g.text; ul.appendChild(li); });
   $('tutTier').textContent = TIER_NAME[lvl.tier]; $('tutTier').className = 'tier ' + lvl.tier;
-  $('tutCond').textContent = 'Wind ' + windWord(lvl.wind) + '. ' + (lvl.tsz >= 1.15 ? 'Large' : lvl.tsz >= 0.95 ? 'Standard' : 'Small') + ' targets.' + (lvl.driftP ? ' Moving targets.' : '') + (lvl.farP ? ' Far creatures.' : '') + ' Miss any goal and you replay this level.';
+  $('tutCond').textContent = 'Wind ' + windWord(lvl.wind) + '. ' + (lvl.tsz >= 1.15 ? 'Large' : lvl.tsz >= 0.95 ? 'Standard' : 'Small') + ' targets.' + (lvl.driftP ? ' Moving targets.' : '') + (lvl.farP ? ' Far creatures.' : '') + ' Reach every goal to clear the level.';
 }
 function showLevelMap() {
-  tutOpen = true; $('tut').classList.remove('show'); $('round').classList.remove('show');
+  resetClear(); tutOpen = true; $('tut').classList.remove('show'); $('round').classList.remove('show');
   var box = $('lvBody'), done = 0, i; box.textContent = '';
   for (i = 1; i <= 30; i++) if (lvProg[i] !== undefined) done++;
   $('lvSub').textContent = done + ' of 30 cleared. Clear a level to unlock the next. Bar colour: green easy, gold hard, red very hard.';
@@ -946,25 +1039,93 @@ function showLevelMap() {
 }
 function nextLevel() { for (var n = 1; n <= 30; n++) if (lvProg[n] === undefined) return n; return 30; }
 function startLevel(n) {
-  lvl = levelDef(n); mode = 'levels';
+  resetClear(); lvl = levelDef(n); mode = 'levels';
   $('mLevels').setAttribute('aria-pressed', 'false');
   newRound();
 }
+var STAT_KEY = 'skipstone.v15.stats', lvStats = {};
+try { var lsj = JSON.parse(localStorage.getItem(STAT_KEY) || '{}'); if (lsj && typeof lsj === 'object') lvStats = lsj; } catch (e) {}
+function saveStats() { try { localStorage.setItem(STAT_KEY, JSON.stringify(lvStats)); } catch (e) {} }
+function recordLevel(n) {
+  var st = levelStats(), bt = null;
+  throws.forEach(function (t) { if (!bt || t.score > bt.sc) bt = { sc: t.score, sk: t.skips, d: Math.round(t.dist), tg: t.tgtT || null, cr: t.crtT || null }; });
+  lvStats[n] = { s: total, th: throws.length, bt: bt, sw: st.sweep, sr: st.streak, cr: st.crt, ex: extras };
+  lvProg[n] = Math.max(lvProg[n] || 0, total);
+  saveLv(); saveStats();
+}
+function confetti() {
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var box = $('confetti'), cols = ['#ffd25a', '#ff6a5a', '#68e0ff', '#7cc49a', '#b583ff', '#ffffff'], i;
+  box.textContent = '';
+  for (i = 0; i < 70; i++) {
+    var d = document.createElement('i');
+    d.style.left = (Math.random() * 100) + '%'; d.style.background = cols[i % cols.length];
+    d.style.width = (6 + Math.random() * 6) + 'px'; d.style.height = (8 + Math.random() * 8) + 'px';
+    d.style.animationDuration = (1.8 + Math.random() * 1.6) + 's'; d.style.animationDelay = (Math.random() * 0.5) + 's';
+    d.style.setProperty('--dx', (Math.random() * 160 - 80) + 'px'); d.style.setProperty('--rot', (360 + Math.random() * 720) + 'deg');
+    box.appendChild(d);
+  }
+  setTimeout(function () { box.textContent = ''; }, 4200);
+}
+function resetClear() {
+  clearTimeout(clrT1); clearTimeout(clrT2); clearing = false;
+  $('clear').classList.remove('show'); $('sum').classList.remove('show'); $('confetti').textContent = '';
+}
+/* All goals met: stop play, record the clear, celebrate and move to the next level automatically. */
+function startClear() {
+  if (clearing) return;
+  clearing = true; tutOpen = true;
+  var n = lvl.n; recordLevel(n);
+  clrT1 = setTimeout(function () { showClear(n); }, 1100);
+}
+function showClear(n) {
+  var nx = n < 30 ? levelDef(n + 1) : null;
+  hideResult(); $('tut').classList.remove('show');
+  $('clearHead').textContent = 'Level ' + n + ' cleared';
+  $('clearSub').textContent = n >= 30 ? 'All 30 levels cleared.' : n % 5 === 0 ? 'Milestone reached. Summary next.' : 'All goals met. Next: Level ' + (n + 1) + ' · ' + nx.name + ' · ' + TIER_NAME[nx.tier];
+  $('clear').classList.add('show'); confetti(); Sound.levelUp();
+  clrT2 = setTimeout(function () { if (n % 5 === 0) showSummary(n); else startLevel(n + 1); }, 2800);
+}
+function showSummary(n) {
+  $('clear').classList.remove('show'); $('tut').classList.remove('show');
+  sumN = n;
+  var a = n >= 30 ? 1 : n - 4, g = { s: 0, th: 0, sw: 0, ex: 0, sr: 0, bt: null, cr: {}, lv: 0 }, i, k;
+  for (i = a; i <= n; i++) {
+    var q = lvStats[i]; if (!q) continue;
+    g.lv++; g.s += q.s; g.th += q.th; g.sw += q.sw; g.ex += q.ex; g.sr = Math.max(g.sr, q.sr);
+    if (q.bt && (!g.bt || q.bt.sc > g.bt.sc)) g.bt = q.bt;
+    for (k in q.cr) g.cr[k] = (g.cr[k] || 0) + q.cr[k];
+  }
+  var bt = g.bt, crs = Object.keys(g.cr).map(function (c) { return (CRT[c] ? CRT[c].name : c) + ' x' + g.cr[c]; }).join(', ');
+  var rows = [
+    ['Levels cleared', g.lv + ' (' + a + ' to ' + n + ')'],
+    ['Total score', String(g.s)],
+    ['Stones thrown', String(g.th)],
+    ['Best throw', bt ? bt.sc + ' points: ' + (bt.tg ? TGN[bt.tg] : 'no target') + (bt.cr && CRT[bt.cr] ? ' + ' + CRT[bt.cr].name : '') + ', ' + bt.sk + ' skips, ' + bt.d + ' m' : '-'],
+    ['Longest bonus streak', g.sr + ' throws'],
+    ['Clean sweeps', String(g.sw)],
+    ['Bonus stones earned', String(g.ex)],
+    ['Creatures hit', crs || 'None']
+  ];
+  var body = $('sumRows'); body.textContent = '';
+  rows.forEach(function (r) { var tr = document.createElement('tr'); r.forEach(function (v) { var td = document.createElement('td'); td.textContent = v; tr.appendChild(td); }); body.appendChild(tr); });
+  $('sumHead').textContent = n >= 30 ? 'All 30 levels cleared' : 'Levels ' + a + ' to ' + n + ' cleared';
+  $('sumSub').textContent = n >= 30 ? 'Final summary.' : 'Milestone summary. Next up: Level ' + (n + 1) + '.';
+  $('sumGo').textContent = n >= 30 ? 'Level map' : 'Continue to level ' + (n + 1);
+  $('sum').classList.add('show');
+}
+$('sumGo').addEventListener('click', function () { Sound.unlock(); if (sumN >= 30) { resetClear(); showLevelMap(); } else startLevel(sumN + 1); });
+/* Basket used up without meeting every goal: stay on this level. */
 function showLevelResult(tot) {
-  var L = lvl, st = levelStats(), ok = true, parts = [];
-  goalList(L).forEach(function (g) {
-    var have = g.key === 'score' ? tot : st[g.key], met = have >= g.val;
-    if (!met) ok = false;
-    parts.push(g.short + ' ' + g.val + ': ' + have + (met ? ' met' : ' not met'));
-  });
-  lvlPassed = ok;
-  if (ok) { lvProg[L.n] = Math.max(lvProg[L.n] || 0, tot); saveLv(); }
-  $('round').querySelector('h2').textContent = 'Level ' + L.n + (ok ? ' cleared' : ' not cleared');
+  var L = lvl, st = levelStats(), need = [];
+  goalList(L).forEach(function (g) { var have = goalHave(g.key, st); if (have < g.val) need.push(g.short + ' ' + have + ' of ' + g.val); });
+  lvlPassed = false;
+  $('round').querySelector('h2').textContent = 'Level ' + L.n + ' not cleared';
+  $('round').querySelector('table').style.display = 'none';
   $('rTotal').textContent = String(tot);
-  $('rSub').textContent = parts.join(' | ') + '.' + (ok ? (L.n < 30 ? ' Level ' + (L.n + 1) + ' is open.' : ' All 30 levels cleared.') : ' Not cleared: replay this level to move on.');
-  $('again').textContent = ok ? (L.n < 30 ? 'Next level' : 'Level map') : 'Retry level';
-  $('share').textContent = 'Level map';
-  $('round').classList.add('show'); Sound.roundEnd();
+  $('rSub').textContent = 'Out of stones. Still needed: ' + need.join(', ') + '. Replay this level to move on.';
+  $('again').textContent = 'Retry level'; $('share').textContent = 'Level map';
+  $('round').classList.add('show');
 }
 
 /* ---------- Basket, target and scoring ---------- */
@@ -1001,7 +1162,8 @@ function pickRing() {
   }
   // Bonus creature sits beyond the main target on the same line of fire, worth more because it needs more skips
   var uc = rr(); if (lvl) uc = rr() < lvl.cp ? 0.15 + uc * 0.85 : 0;
-  var ct = uc < 0.15 ? null : uc < 0.30 ? 'ball' : uc < 0.46 ? 'jetski' : uc < 0.58 ? 'nessie' : uc < 0.72 ? 'dolphin' : uc < 0.86 ? 'croc' : 'grandma';
+  var ct0 = uc, ct = uc < 0.15 ? null : uc < 0.30 ? 'ball' : uc < 0.46 ? 'jetski' : uc < 0.58 ? 'nessie' : uc < 0.72 ? 'dolphin' : uc < 0.86 ? 'croc' : 'grandma';
+  if (lvl && lvl.crtBias && rr() < lvl.crtBias.p) ct = lvl.crtBias.type;
   crt = null;
   if (ct) {
     // About a third of creatures sit far out (62 to 110 m) as a distance challenge; they pay 50% more and have a wider hit zone
@@ -1176,7 +1338,7 @@ function finishThrow() {
   var score = Math.round(base * mult);
   combo = bonus > 0 ? combo + 1 : 0;
   total += score;
-  throws.push({ n: thrown, stone: r.stone.name, skips: skips, dist: d, ring: bonus, score: score, any: anyMain, bon: anyMain || crtOK, cre: crtOK, farHit: crtOK && !!crt && !!crt.far });
+  throws.push({ n: thrown, stone: r.stone.name, skips: skips, dist: d, ring: bonus, score: score, any: anyMain, bon: anyMain || crtOK, sw: sweep, ch: r.marks.some(function (q) { return q.kind === 'chain'; }), tgtT: anyMain ? ring.type : null, crtT: crtOK && crt ? crt.type : null, cre: crtOK, farHit: crtOK && !!crt && !!crt.far });
   var newBest = skips > best.skips;
   if (newBest) { best.skips = skips; saveBest(); showBest(); }
   $('total').textContent = String(total);
@@ -1198,6 +1360,7 @@ function finishThrow() {
   $('card').classList.add('show');
   $('metrics').classList.remove('show');
   updateHud();
+  if (mode === 'levels' && lvl && !clearing && goalsMet()) startClear();
 }
 function hideResult() { $('card').classList.remove('show'); }
 
@@ -1212,6 +1375,7 @@ function updateBoard(score) {
   return list;
 }
 function showRound() {
+  if (clearing) return;
   var rows = $('rRows'); rows.textContent = '';
   var bestThrow = 0;
   throws.forEach(function (t) {
