@@ -880,32 +880,32 @@ function r50(x) { return Math.round(x / 50) * 50; }
 var LV_GOALS = {
   1: [['tgt:ring', 2]],
   2: [['tgt:gate', 2]],
-  3: [['crt:ball', 1], ['score', 400]],
+  3: [['crt:ball', 1], ['score', 300]],
   4: [['skips', 6], ['targets', 2]],
-  5: [['dist', 40], ['score', 500]],
+  5: [['dist', 40], ['score', 350]],
   6: [['sweep', 1]],
   7: [['tgt:hole', 2]],
-  8: [['crt:croc', 1], ['score', 600]],
+  8: [['crt:croc', 1], ['score', 450]],
   9: [['skips', 7], ['dist', 45]],
-  10: [['crt:jetski', 1], ['bonus', 4], ['score', 1400]],
-  11: [['streak', 2], ['score', 700]],
-  12: [['tgt:hoops', 3], ['creatures', 2], ['score', 1500]],
+  10: [['crt:jetski', 1], ['bonus', 4], ['score', 1200]],
+  11: [['streak', 2], ['score', 500]],
+  12: [['tgt:hoops', 3], ['creatures', 2], ['score', 1300]],
   13: [['crt:dolphin', 1], ['tgt:gate', 2]],
-  14: [['skips', 9], ['targets', 3], ['score', 1600]],
+  14: [['skips', 9], ['targets', 3], ['score', 1350]],
   15: [['big', 150], ['bonus', 3]],
-  16: [['chain', 1], ['score', 1700]],
-  17: [['far', 1], ['creatures', 2], ['score', 1800]],
+  16: [['chain', 1], ['score', 1450]],
+  17: [['far', 1], ['creatures', 2], ['score', 1550]],
   18: [['sweep', 1], ['streak', 3]],
-  19: [['crt:nessie', 1], ['score', 800]],
-  20: [['dist', 70], ['targets', 4], ['score', 2000]],
-  21: [['crt:grandma', 1], ['tgt:hole', 2], ['score', 2000]],
-  22: [['stones', 1], ['bonus', 5], ['score', 2100]],
-  23: [['big', 250], ['streak', 3], ['score', 2100]],
+  19: [['crt:nessie', 1], ['score', 600]],
+  20: [['dist', 70], ['targets', 4], ['score', 1700]],
+  21: [['crt:grandma', 1], ['tgt:hole', 2], ['score', 1700]],
+  22: [['stones', 1], ['bonus', 5], ['score', 1800]],
+  23: [['big', 250], ['streak', 3], ['score', 1800]],
   24: [['sweep', 2], ['far', 1], ['score', 3000]],
-  25: [['skips', 10], ['creatures', 3], ['score', 2200]],
-  26: [['chain', 1], ['crt:dolphin', 1], ['score', 2300]],
+  25: [['skips', 10], ['creatures', 3], ['score', 1900]],
+  26: [['chain', 1], ['crt:dolphin', 1], ['score', 1950]],
   27: [['dist', 85], ['skips', 11], ['sweep', 1]],
-  28: [['streak', 4], ['far', 1], ['score', 2400]],
+  28: [['streak', 4], ['far', 1], ['score', 2050]],
   29: [['sweep', 2], ['chain', 1], ['far', 1]],
   30: [['score', 3500], ['sweep', 2], ['far', 1], ['streak', 3]]
 };
@@ -922,6 +922,7 @@ function levelDef(n) {
     L.wind = 1.2 + 0.3 * p; L.tsz = 0.8; L.dmin = 26; L.dmax = 46;
     L.mix = [['ring', 1], ['gate', 3], ['hole', 3], ['hoops', 3]]; L.driftP = 0.6; L.driftFrom = 2; L.cp = 0.9; L.farP = 0.5; L.farMax = 110; L.csz = 0.9;
   }
+  L.stones = t === 'E' ? (n <= 6 ? 5 : 6) : t === 'H' ? 8 : 10;
   L.goals = LV_GOALS[n];
   var m = null;
   L.goals.forEach(function (g) {
@@ -1013,7 +1014,7 @@ function fillBrief() {
   var ul = $('tutGoals'); ul.textContent = '';
   goalList(lvl).forEach(function (g) { var li = document.createElement('li'); li.textContent = g.text; ul.appendChild(li); });
   $('tutTier').textContent = TIER_NAME[lvl.tier]; $('tutTier').className = 'tier ' + lvl.tier;
-  $('tutCond').textContent = 'Wind ' + windWord(lvl.wind) + '. ' + (lvl.tsz >= 1.15 ? 'Large' : lvl.tsz >= 0.95 ? 'Standard' : 'Small') + ' targets.' + (lvl.driftP ? ' Moving targets.' : '') + (lvl.farP ? ' Far creatures.' : '') + ' Reach every goal to clear the level.';
+  $('tutCond').textContent = 'Wind ' + windWord(lvl.wind) + '. ' + (lvl.tsz >= 1.15 ? 'Large' : lvl.tsz >= 0.95 ? 'Standard' : 'Small') + ' targets.' + (lvl.driftP ? ' Moving targets.' : '') + (lvl.farP ? ' Far creatures.' : '') + ' ' + lvl.stones + ' stones. Reach every goal to clear the level.';
 }
 function showLevelMap() {
   resetClear(); tutOpen = true; $('tut').classList.remove('show'); $('round').classList.remove('show');
@@ -1215,7 +1216,8 @@ function newRound() {
   basketNo++; theme = basketNo % 2 === 1 ? 'dusk' : 'dawn';
   $('hint').textContent = 'Swipe up toward the target. Speed is power. A shorter flick throws lower. Turn the phone or angle the swipe to aim.'; $('hint').classList.remove('gone');
   for (var k in BASKET0) basket[k] = BASKET0[k];
-  thrown = 0; total = 0; throws = []; needsNext = false; maxThrows = 10; combo = 0; extras = 0;
+  thrown = 0; total = 0; throws = []; needsNext = false; maxThrows = lvl ? lvl.stones : 10; combo = 0; extras = 0;
+  if (lvl) { var sn = lvl.stones, pb = Math.ceil(sn * 0.4), gr = Math.floor((sn - pb) / 2); basket.pebble = pb; basket.granite = gr; basket.slate = sn - pb - gr; }
   $('round').classList.remove('show'); hideResult(); $('metrics').classList.remove('show');
   $('skips').textContent = '0';
   state = 'ready'; stoneIdx = 0; refreshStones(); pickRing(); updateHud();
