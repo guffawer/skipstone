@@ -136,7 +136,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
 
 .angle { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 10px; }
 .angle .lbl, .angle .read, .angle .slider { display: none; }
-.angle.tiltOn .read { display: block; grid-column: 1; }
+.angle.tiltOn .read { display: block; grid-column: 1 / -1; }
+#angMeter { display: none; grid-column: 1 / -1; position: relative; height: 10px; margin: 2px 0 6px; }
+.angle.tiltOn #angMeter { display: block; }
+#angMeter .bar { position: absolute; left: 0; right: 0; top: 2px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #d9534f 0%, #d9534f 8%, #e8a838 8%, #e8a838 17%, #5fbf7f 17%, #5fbf7f 67%, #e8a838 67%, #e8a838 81%, #d9534f 81%, #d9534f 100%); }
+#angMeter .mk { position: absolute; top: 0; width: 4px; height: 10px; margin-left: -2px; border-radius: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.6); transition: left .08s linear; }
+#angMeter .tk { position: absolute; top: 12px; transform: translateX(-50%); font-size: 9px; color: var(--mute); }
 .angle { grid-template-columns: 1fr auto; }
 .angle .read { font-family: var(--font-display); font-weight: 800; font-size: 28px; line-height: 1; font-variant-numeric: tabular-nums; }
 .angle .read small { font-size: 12px; font-weight: 600; color: var(--mute); letter-spacing: .06em; margin-left: 6px; }
@@ -319,6 +324,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
     <div class="angle">
       <span class="lbl">Throw angle</span>
       <span class="read"><span id="angleVal">10</span>&deg;<small id="angleTag">in the zone</small></span>
+      <div id="angMeter" aria-hidden="true"><div class="bar"></div><div class="mk" id="angMk"></div></div>
       <div class="slider"><input id="angle" type="range" min="0" max="45" step="0.5" value="10" aria-label="Throw angle in degrees"></div>
       <span class="note" id="tiltNote">Swipe length sets the throw height: a shorter flick throws lower. On a phone, Phone aim turns the phone into the direction control.</span>
       <span class="btns"><button id="recentre" type="button">Recentre</button><button id="tilt" type="button" aria-pressed="false">Phone aim</button></span>
@@ -772,12 +778,13 @@ function refreshStones() {
   });
 }
 
-function angleTag(a) { return a < 5 ? 'too flat' : a <= 14 ? 'in the zone' : 'steep'; }
+function angleTag(a) { return a < 3.5 ? 'too flat' : a < 5 ? 'a little flat' : a <= 14 ? 'in the zone' : a <= 16.5 ? 'a little steep' : 'too steep'; }
 function setAngle(a, fromSlider) {
   aimAngle = clamp(a, 0, 45);
   $('angleVal').textContent = aimAngle.toFixed(aimAngle % 1 ? 1 : 0);
   $('angleTag').textContent = angleTag(aimAngle);
   if (!fromSlider) $('angle').value = String(aimAngle);
+  $('angMk').style.left = (clamp((aimAngle - 2) / 18, 0, 1) * 100) + '%';
 }
 $('angle').addEventListener('input', function (e) { Sound.unlock(); setAngle(parseFloat(e.target.value), true); });
 setAngle(10);
