@@ -200,25 +200,27 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
 .lv.done { box-shadow: inset 0 0 0 1px var(--good); }
 .lv:disabled { opacity: .35; cursor: default; }
 #lvClose { margin-top: auto; background: var(--deck-2); color: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; font-weight: 600; font-size: 14px; }
+.goalbar { display: flex; flex-wrap: wrap; gap: 6px; min-height: 22px; }
+.gp { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; background: var(--deck-2); border: 1px solid var(--line); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gp.met { border-color: var(--good); color: var(--good); }
 </style>
 
 <div class="app">
   <header class="top">
     <div class="brand">
       <span class="word">Skipstone</span>
-      <span class="lbl">Prototype v1.4</span>
+      <span class="lbl">Prototype v1.5</span>
     </div>
     <div class="bests">
       <div><span class="lbl">Best round</span><b id="bestRound">0</b></div>
       <div><span class="lbl">Best skips</span><b id="bestSkips">0</b></div>
     </div>
   </header>
-  <nav class="modes" aria-label="Game mode">
-    <button id="mFree" type="button" aria-pressed="true">Free play</button>
-    <button id="mDaily" type="button" aria-pressed="false">Daily challenge</button>
-    <button id="mLevels" type="button" aria-pressed="false">Levels</button>
-    <span class="lbl" id="streak">Streak 0</span>
+  <nav class="modes" aria-label="Level">
+    <button id="mLevels" type="button" aria-pressed="false">Level map</button>
+    <span class="lbl" id="streak"></span>
   </nav>
+  <div class="goalbar" id="goalBar" aria-live="polite"></div>
 
   <main class="stage" id="stage">
     <div class="frame" id="frame">
@@ -235,8 +237,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
         </div>
         <div class="chip tgt" id="tgtChip">Target 0 m</div>
         <div class="chip tgt" id="comboChip">Combo x1</div>
-        <div class="chip tgt" id="goalChip" style="display:none">Goal</div>
-        <div class="chip tgt" id="goal2Chip" style="display:none"></div>
         <button class="chip" id="mute" type="button" aria-pressed="false">Sound on</button>
         <button class="chip" id="haptic" type="button" aria-pressed="false">Haptics on</button>
       </div>
@@ -265,7 +265,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
         <h2 id="tutHead">How to play</h2>
         <div id="tutBrief" style="display:none">
           <p><span class="tier E" id="tutTier">Easy</span></p>
-          <p class="lbl" style="margin-top:8px">Goal</p>
+          <p class="lbl" style="margin-top:8px">To clear this level</p>
           <ul id="tutGoals"></ul>
           <p id="tutCond" style="margin-top:8px;color:var(--mute)"></p>
         </div>
@@ -843,7 +843,7 @@ function todayStr() { return dayStr(new Date()); }
 function yesterdayStr() { var d = new Date(); d.setDate(d.getDate() - 1); return dayStr(d); }
 function seedFromStr(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return h >>> 0; }
 function streakNow() { var l = daily.last; return (l === todayStr() || l === yesterdayStr()) ? daily.streak : 0; }
-function showStreak() { $('streak').textContent = 'Streak ' + streakNow() + (daily.last === todayStr() ? ' (done today)' : ''); }
+function showStreak() {}
 showStreak();
 
 /* ---------- Levels: 30 levels over 5 lakes. Easy 13, Hard 13, Very hard 4. Pass a level to unlock the next. ---------- */
@@ -852,7 +852,7 @@ var TIERS = ['EEEEEE', 'EEEHEH', 'EHEHHH', 'EHHHHV', 'HHVHVV'].join('');
 var TIER_NAME = { E: 'Easy', H: 'Hard', V: 'Very hard' };
 var VSEC = { 24: [['targets', 3], ['creatures', 1]], 27: [['skips', 12], ['targets', 3]], 29: [['creatures', 2], ['far', 1]], 30: [['targets', 4], ['far', 1]] };
 var HKEYS = ['targets', 'skips', 'creatures'];
-var G_SHORT = { score: 'Score', targets: 'Targets', skips: 'Best skips', creatures: 'Creatures', far: 'Far creatures' };
+var G_SHORT = { bonus: 'Bonus throws', score: 'Score', targets: 'Targets', skips: 'Best skips', creatures: 'Creatures', far: 'Far creatures' };
 function r50(x) { return Math.round(x / 50) * 50; }
 function levelDef(n) {
   var t = TIERS.charAt(n - 1), p = (n - 1) / 29, L = { n: n, lake: Math.floor((n - 1) / 6), tier: t };
@@ -860,17 +860,17 @@ function levelDef(n) {
   if (t === 'E') {
     L.wind = 0.3 + 0.5 * p; L.tsz = 1.3 - 0.3 * p; L.dmin = 18; L.dmax = 28 + 8 * p;
     L.mix = [['ring', 5], ['gate', 3], ['hole', 1], ['hoops', 1]]; L.driftP = 0; L.driftFrom = 99; L.cp = 0.8; L.farP = 0; L.farMax = 0; L.csz = 1.25;
-    L.score = r50(500 + 700 * p); L.sec = [];
+    L.score = r50(500 + 700 * p); L.sec = []; L.bonus = n <= 12 ? 2 : 3;
   } else if (t === 'H') {
     L.wind = 0.8 + 0.4 * p; L.tsz = 1.0 - 0.15 * p; L.dmin = 22; L.dmax = 38 + 6 * p;
     L.mix = [['ring', 3], ['gate', 3], ['hole', 2], ['hoops', 3]]; L.driftP = 0.35; L.driftFrom = 3; L.cp = 0.85; L.farP = 0.3; L.farMax = 90; L.csz = 1.0;
-    L.score = r50(1300 + 1200 * p);
+    L.score = r50(1300 + 1200 * p); L.bonus = n < 19 ? 4 : 5;
     var hk = HKEYS[n % 3], late = p > 0.6;
     L.sec = [[hk, hk === 'targets' ? (late ? 3 : 2) : hk === 'skips' ? (late ? 9 : 8) : (late ? 2 : 1)]];
   } else {
     L.wind = 1.2 + 0.3 * p; L.tsz = 0.8; L.dmin = 26; L.dmax = 46;
     L.mix = [['ring', 1], ['gate', 3], ['hole', 3], ['hoops', 3]]; L.driftP = 0.6; L.driftFrom = 2; L.cp = 0.9; L.farP = 0.5; L.farMax = 110; L.csz = 0.9;
-    L.score = r50(2600 + 1200 * p); L.sec = VSEC[n] || [['targets', 4]];
+    L.score = r50(2600 + 1200 * p); L.sec = VSEC[n] || [['targets', 4]]; L.bonus = 6;
   }
   return L;
 }
@@ -886,7 +886,7 @@ function levelWind(T) {
 }
 function windWord(k) { return k < 0.5 ? 'calm' : k < 0.8 ? 'light' : k < 1.1 ? 'breezy' : k < 1.4 ? 'gusty' : 'strong'; }
 function goalList(L) {
-  var out = [{ key: 'score', val: L.score, text: 'Score ' + L.score, short: 'Score' }];
+  var out = [{ key: 'score', val: L.score, text: 'Score ' + L.score, short: 'Score' }, { key: 'bonus', val: L.bonus, text: 'Hit a target or creature in ' + L.bonus + ' throws', short: 'Bonus throws' }];
   L.sec.forEach(function (g) {
     var k = g[0], v = g[1], tx = k === 'targets' ? 'Hit a target in ' + v + ' throw' + (v > 1 ? 's' : '') : k === 'skips' ? 'One throw with ' + v + ' or more skips' : k === 'creatures' ? 'Hit ' + v + ' creature' + (v > 1 ? 's' : '') : (v > 1 ? 'Hit ' + v + ' creatures' : 'Hit a creature') + ' 60 m or farther';
     out.push({ key: k, val: v, text: tx, short: G_SHORT[k] });
@@ -894,8 +894,8 @@ function goalList(L) {
   return out;
 }
 function levelStats() {
-  var o = { targets: 0, creatures: 0, far: 0, skips: 0 };
-  throws.forEach(function (t) { if (t.any) o.targets++; if (t.cre) o.creatures++; if (t.farHit) o.far++; o.skips = Math.max(o.skips, t.skips); });
+  var o = { bonus: 0, targets: 0, creatures: 0, far: 0, skips: 0 };
+  throws.forEach(function (t) { if (t.bon) o.bonus++; if (t.any) o.targets++; if (t.cre) o.creatures++; if (t.farHit) o.far++; o.skips = Math.max(o.skips, t.skips); });
   return o;
 }
 var LV_KEY = 'skipstone.v13.levels', RULES_KEY = 'skipstone.v13.rules', lvProg = {};
@@ -903,25 +903,30 @@ try { var lpj = JSON.parse(localStorage.getItem(LV_KEY) || '{}'); if (lpj && typ
 function saveLv() { try { localStorage.setItem(LV_KEY, JSON.stringify(lvProg)); } catch (e) {} }
 function lvOpen(n) { return n === 1 || lvProg[n - 1] !== undefined; }
 function seenRules() { try { return localStorage.getItem(RULES_KEY) === '1'; } catch (e) { return false; } }
+var G_HUD = { score: 'Score', bonus: 'Bonus', targets: 'Targets', skips: 'Skips', creatures: 'Creatures', far: 'Far' };
 function updateGoals() {
-  var on = mode === 'levels' && lvl;
-  $('goalChip').style.display = on ? '' : 'none'; $('goal2Chip').style.display = 'none';
-  if (!on) return;
-  var st = levelStats(), sec = goalList(lvl).slice(1);
-  $('goalChip').textContent = 'Goal ' + lvl.score;
-  if (sec.length) { $('goal2Chip').style.display = ''; $('goal2Chip').textContent = sec.map(function (g) { return g.short + ' ' + Math.min(st[g.key], g.val) + '/' + g.val; }).join(' · '); }
+  var bar = $('goalBar'); bar.textContent = '';
+  $('streak').textContent = lvl ? 'Level ' + lvl.n + ' · ' + TIER_NAME[lvl.tier] : '';
+  if (!(mode === 'levels' && lvl)) return;
+  var st = levelStats();
+  goalList(lvl).forEach(function (g) {
+    var have = g.key === 'score' ? total : st[g.key], sp = document.createElement('span');
+    sp.className = 'gp' + (have >= g.val ? ' met' : '');
+    sp.textContent = G_HUD[g.key] + ' ' + Math.min(have, g.val) + '/' + g.val;
+    bar.appendChild(sp);
+  });
 }
 function fillBrief() {
   var ul = $('tutGoals'); ul.textContent = '';
   goalList(lvl).forEach(function (g) { var li = document.createElement('li'); li.textContent = g.text; ul.appendChild(li); });
   $('tutTier').textContent = TIER_NAME[lvl.tier]; $('tutTier').className = 'tier ' + lvl.tier;
-  $('tutCond').textContent = 'Wind ' + windWord(lvl.wind) + '. ' + (lvl.tsz >= 1.15 ? 'Large' : lvl.tsz >= 0.95 ? 'Standard' : 'Small') + ' targets.' + (lvl.driftP ? ' Moving targets.' : '') + (lvl.farP ? ' Far creatures.' : '');
+  $('tutCond').textContent = 'Wind ' + windWord(lvl.wind) + '. ' + (lvl.tsz >= 1.15 ? 'Large' : lvl.tsz >= 0.95 ? 'Standard' : 'Small') + ' targets.' + (lvl.driftP ? ' Moving targets.' : '') + (lvl.farP ? ' Far creatures.' : '') + ' Miss any goal and you replay this level.';
 }
 function showLevelMap() {
   tutOpen = true; $('tut').classList.remove('show'); $('round').classList.remove('show');
   var box = $('lvBody'), done = 0, i; box.textContent = '';
   for (i = 1; i <= 30; i++) if (lvProg[i] !== undefined) done++;
-  $('lvSub').textContent = done + ' of 30 passed. Pass a level to unlock the next. Bar colour: green easy, gold hard, red very hard.';
+  $('lvSub').textContent = done + ' of 30 cleared. Clear a level to unlock the next. Bar colour: green easy, gold hard, red very hard.';
   LAKES.forEach(function (nm, li) {
     var wrap = document.createElement('div'); wrap.className = 'lake';
     var h = document.createElement('div'); h.className = 'nm'; h.textContent = (li + 1) + '. ' + nm; wrap.appendChild(h);
@@ -939,9 +944,10 @@ function showLevelMap() {
   $('lvClose').style.display = lvl ? '' : 'none';
   $('lvmap').classList.add('show');
 }
+function nextLevel() { for (var n = 1; n <= 30; n++) if (lvProg[n] === undefined) return n; return 30; }
 function startLevel(n) {
   lvl = levelDef(n); mode = 'levels';
-  $('mFree').setAttribute('aria-pressed', 'false'); $('mDaily').setAttribute('aria-pressed', 'false'); $('mLevels').setAttribute('aria-pressed', 'true');
+  $('mLevels').setAttribute('aria-pressed', 'false');
   newRound();
 }
 function showLevelResult(tot) {
@@ -953,9 +959,9 @@ function showLevelResult(tot) {
   });
   lvlPassed = ok;
   if (ok) { lvProg[L.n] = Math.max(lvProg[L.n] || 0, tot); saveLv(); }
-  $('round').querySelector('h2').textContent = 'Level ' + L.n + (ok ? ' passed' : ' not passed');
+  $('round').querySelector('h2').textContent = 'Level ' + L.n + (ok ? ' cleared' : ' not cleared');
   $('rTotal').textContent = String(tot);
-  $('rSub').textContent = parts.join(' | ') + '.' + (ok ? (L.n < 30 ? ' Level ' + (L.n + 1) + ' is open.' : ' All 30 levels passed.') : '');
+  $('rSub').textContent = parts.join(' | ') + '.' + (ok ? (L.n < 30 ? ' Level ' + (L.n + 1) + ' is open.' : ' All 30 levels cleared.') : ' Not cleared: replay this level to move on.');
   $('again').textContent = ok ? (L.n < 30 ? 'Next level' : 'Level map') : 'Retry level';
   $('share').textContent = 'Level map';
   $('round').classList.add('show'); Sound.roundEnd();
@@ -1059,16 +1065,7 @@ $('again').addEventListener('click', function () {
   if (mode === 'levels' && lvl) { if (lvlPassed && lvl.n >= 30) showLevelMap(); else startLevel(lvlPassed ? lvl.n + 1 : lvl.n); return; }
   if (mode === 'daily') setMode('free'); else newRound();
 });
-function setMode(m) {
-  if (m !== mode && thrown > 0 && state !== 'roundEnd') { var h = $('hint'); h.textContent = 'Finish this basket before switching mode.'; h.classList.remove('gone'); return; }
-  mode = m; if (m !== 'levels') lvl = null;
-  $('mFree').setAttribute('aria-pressed', m === 'free' ? 'true' : 'false');
-  $('mDaily').setAttribute('aria-pressed', m === 'daily' ? 'true' : 'false');
-  $('mLevels').setAttribute('aria-pressed', m === 'levels' ? 'true' : 'false');
-  if (m === 'levels') { showLevelMap(); return; }
-  newRound();
-  if (m === 'daily' && daily.last === todayStr()) showDailyDone();
-}
+function setMode() { showLevelMap(); }
 function showDailyDone() {
   state = 'roundEnd'; hideResult(); $('rRows').textContent = ''; tutOpen = false; $('tut').classList.remove('show');
   $('round').querySelector('h2').textContent = 'Daily challenge done';
@@ -1076,9 +1073,7 @@ function showDailyDone() {
   $('rSub').textContent = 'Already played today: ' + daily.score + ' points, ' + daily.skips + ' skips. Streak ' + daily.streak + '. A new challenge unlocks tomorrow.';
   $('again').textContent = 'Play free basket'; $('share').textContent = 'Copy result'; $('round').classList.add('show');
 }
-$('mFree').addEventListener('click', function () { Sound.unlock(); setMode('free'); });
-$('mDaily').addEventListener('click', function () { Sound.unlock(); setMode('daily'); });
-$('mLevels').addEventListener('click', function () { Sound.unlock(); setMode('levels'); });
+$('mLevels').addEventListener('click', function () { Sound.unlock(); showLevelMap(); });
 $('share').addEventListener('click', function () {
   if (mode === 'levels') { showLevelMap(); return; }
   var sk = throws.reduce(function (a, t2) { return a + t2.skips; }, 0);
@@ -1175,11 +1170,13 @@ function finishThrow() {
     earned = notes.join('. ') + (grant > 0 ? '. +' + grant + ' bonus stone' + (grant > 1 ? 's' : '') : '. Stone cap reached');
     Sound.bonus();
     showBanner(notes[0].split(' +')[0].toUpperCase() + (notes.length > 1 ? ' + ' + (notes.length - 1) + ' MORE' : ''), notes.join(' | ') + (grant > 0 ? '  |  +' + grant + ' LUCKY STONE' + (grant > 1 ? 'S' : '') : ''), grant > 0);
+  } else if (crt && mainOK !== crtOK) {
+    earned = (mainOK ? 'Target hit. Hit the creature in the same throw' : 'Creature hit. ' + (ring.type === 'hoops' ? 'Pass all three hoops' : 'Hit the target') + ' in the same throw') + ' for a clean sweep: +100 and a bonus stone.';
   }
   var score = Math.round(base * mult);
   combo = bonus > 0 ? combo + 1 : 0;
   total += score;
-  throws.push({ n: thrown, stone: r.stone.name, skips: skips, dist: d, ring: bonus, score: score, any: anyMain, cre: crtOK, farHit: crtOK && !!crt && !!crt.far });
+  throws.push({ n: thrown, stone: r.stone.name, skips: skips, dist: d, ring: bonus, score: score, any: anyMain, bon: anyMain || crtOK, cre: crtOK, farHit: crtOK && !!crt && !!crt.far });
   var newBest = skips > best.skips;
   if (newBest) { best.skips = skips; saveBest(); showBest(); }
   $('total').textContent = String(total);
@@ -1383,7 +1380,8 @@ function create() {
   cv.addEventListener('pointerdown', function (e) {
     Sound.unlock();
     if (tutOpen || state === 'flying' || state === 'roundEnd') return;
-    if (thrown >= maxThrows) { if (run && !run.shown) { run.shown = true; finishThrow(); } state = 'roundEnd'; hideResult(); showRound(); return; }
+    if (run && !run.shown && state === 'settling') { run.shown = true; finishThrow(); }
+    if (thrown >= maxThrows) { state = 'roundEnd'; hideResult(); showRound(); return; }
     if (state !== 'ready') toReady(true);
     hideResult();
     try { cv.setPointerCapture(e.pointerId); } catch (err) {}
@@ -1895,7 +1893,7 @@ function drawForeground(sc, T, stone, dt) {
   sc.gaugeTxt.setVisible(false); sc.gaugeLbl.setVisible(false);
 }
 
-newRound();
+startLevel(nextLevel());
 window.__skipGame = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
