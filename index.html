@@ -325,13 +325,30 @@ body { padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: ma
 .crow .cg em { font-size: 9px; max-width: 100%; overflow: hidden; text-overflow: clip; white-space: nowrap; }
 .crow { justify-content: flex-start; }
 .crow .cg, .crow .cg.new { flex: 0 0 calc((100% - 42px) / 8); border: 0; box-shadow: none; }
+
+/* v2.4 creature reveal */
+.reveal { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; text-align: center; background: radial-gradient(circle at 50% 42%, rgba(30, 59, 67, .98), rgba(8, 20, 26, .99) 70%); z-index: 7; overflow: hidden; }
+.reveal.show { display: flex; }
+.reveal .rays { position: absolute; left: 50%; top: 42%; width: 900px; height: 900px; margin: -450px 0 0 -450px; background: repeating-conic-gradient(rgba(226, 165, 83, .20) 0 9deg, transparent 9deg 18deg); -webkit-mask-image: radial-gradient(circle, #000 0, transparent 62%); mask-image: radial-gradient(circle, #000 0, transparent 62%); animation: revspin 16s linear infinite; pointer-events: none; }
+@keyframes revspin { to { transform: rotate(360deg); } }
+.reveal > :not(.rays) { position: relative; }
+.rtag { font-size: 13px; font-weight: 700; letter-spacing: .24em; text-transform: uppercase; color: var(--ochre); opacity: 0; animation: revfade .5s ease-out .1s forwards; }
+.rico { width: 176px; height: 176px; border-radius: 50%; background: var(--deck-2); border: 3px solid var(--ochre); box-shadow: 0 0 40px rgba(226, 165, 83, .45); display: flex; align-items: center; justify-content: center; transform: scale(0); animation: revpop .8s cubic-bezier(.2, 1.4, .4, 1) .3s forwards; }
+.rico svg { width: 128px; height: 128px; animation: revbob 2.4s ease-in-out 1.2s infinite; }
+.rname { font-family: var(--font-display); font-weight: 800; font-size: 46px; line-height: 1; letter-spacing: .04em; text-transform: uppercase; color: var(--paper); opacity: 0; animation: revfade .5s ease-out .9s forwards; }
+.rpts { font-family: var(--font-display); font-weight: 800; font-size: 30px; line-height: 1; color: var(--ochre); opacity: 0; animation: revfade .5s ease-out 1.2s forwards; }
+.reveal button { margin-top: 14px; min-width: 200px; background: var(--ochre); color: var(--ink); border: 0; border-radius: 6px; padding: 12px 18px; font-weight: 600; font-size: 15px; opacity: 0; animation: revfade .5s ease-out 1.5s forwards; }
+.reveal button:disabled { pointer-events: none; }
+@keyframes revfade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes revpop { 0% { transform: scale(0) rotate(-12deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes revbob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 </style>
 
 <div class="app">
   <header class="top">
     <div class="brand">
       <span class="word">Skipstone</span>
-      <span class="lbl">Prototype v2.3</span>
+      <span class="lbl">Prototype v2.4</span>
     </div>
     <span class="lvlab" id="streak"></span>
     <div class="bests">
@@ -397,6 +414,14 @@ body { padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: ma
         <p id="lvSub"></p>
         <div id="lvBody" style="display:grid;gap:12px"></div>
         <button id="lvClose" type="button">Close</button>
+      </div>
+      <div class="reveal" id="reveal">
+        <div class="rays"></div>
+        <div class="rtag">New lake creature</div>
+        <div class="rico" id="revIco"></div>
+        <div class="rname" id="revName"></div>
+        <div class="rpts" id="revPts"></div>
+        <button id="revGo" type="button">Continue</button>
       </div>
       <div class="clear" id="clear"><div class="ch" id="clearHead"></div><div class="cs" id="clearSub"></div></div>
       <div id="confetti" aria-hidden="true"></div>
@@ -1317,7 +1342,19 @@ function confetti() {
   }
   setTimeout(function () { box.textContent = ''; }, 4200);
 }
+var CRT_SEEN_KEY = 'skipstone.v15.crt', crtSeen = {};
+try { var csj = JSON.parse(localStorage.getItem(CRT_SEEN_KEY) || '{}'); if (csj && typeof csj === 'object') crtSeen = csj; } catch (e) {}
+function showReveal(k) {
+  var c = CRT[k], rv = $('reveal');
+  $('revIco').innerHTML = ico('crt:' + k, 128); $('revName').textContent = c.name; $('revPts').textContent = '+' + c.bonus + ' points';
+  rv.classList.remove('show'); void rv.offsetWidth; rv.classList.add('show');
+  $('revGo').disabled = true; setTimeout(function () { $('revGo').disabled = false; }, 1500);
+  confetti(); Sound.creature(k);
+  crtSeen[k] = 1; try { localStorage.setItem(CRT_SEEN_KEY, JSON.stringify(crtSeen)); } catch (e) {}
+}
+$('revGo').addEventListener('click', function () { Sound.unlock(); $('reveal').classList.remove('show'); });
 function resetClear() {
+  $('reveal').classList.remove('show');
   clearTimeout(clrT1); clearTimeout(clrT2); clearing = false;
   $('clear').classList.remove('show'); $('sum').classList.remove('show'); $('confetti').textContent = '';
 }
@@ -1332,7 +1369,7 @@ function showClear(n) {
   var nx = n < LEVEL_COUNT ? levelDef(n + 1) : null;
   hideResult(); $('tut').classList.remove('show');
   $('clearHead').textContent = 'Level ' + n + ' cleared';
-  $('clearSub').textContent = n >= LEVEL_COUNT ? 'All ' + LEVEL_COUNT + ' levels cleared.' : n % 5 === 0 ? 'Milestone reached. Summary next.' : 'All goals met. Next: Level ' + (n + 1) + ' · ' + nx.name + ' · ' + TIER_NAME[nx.tier];
+  $('clearSub').textContent = n >= LEVEL_COUNT ? 'All ' + LEVEL_COUNT + ' levels cleared.' : n % 5 === 0 ? 'Milestone reached. Summary next.' : 'All goals met. Next: Level ' + (n + 1) + ' · ' + nx.name + ' · ' + TIER_NAME[nx.tier] + (nx.newCrt && !crtSeen[nx.newCrt] ? ' · New creature: ' + CRT[nx.newCrt].name : '');
   $('clear').classList.add('show'); confetti(); Sound.levelUp();
   clrT2 = setTimeout(function () { if (n % 5 === 0) showSummary(n); else startLevel(n + 1); }, 2800);
 }
@@ -1456,6 +1493,7 @@ function showTut() {
   $('tutHead').textContent = lv ? 'Level ' + lvl.n + ' · ' + lvl.name : mode === 'daily' ? 'Daily challenge' : 'How to play';
   $('tutBrief').style.display = lv ? 'block' : 'none';
   if (lv) fillBrief();
+  if (lv && lvl.newCrt && lvl.newCrt !== 'ball' && !crtSeen[lvl.newCrt]) showReveal(lvl.newCrt);
   $('tutRules').style.display = (!lv || !seenRules()) ? 'grid' : 'none';
   $('tutDaily').style.display = mode === 'daily' ? 'block' : 'none';
   $('tut').classList.add('show');
