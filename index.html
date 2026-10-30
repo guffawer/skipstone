@@ -188,7 +188,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
   <header class="top">
     <div class="brand">
       <span class="word">Skipstone</span>
-      <span class="lbl">Prototype v1.2 Dusk</span>
+      <span class="lbl">Prototype v1.3</span>
     </div>
     <div class="bests">
       <div><span class="lbl">Best round</span><b id="bestRound">0</b></div>
@@ -247,6 +247,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
           <tr><td>Ring, Hole or Gate</td><td>+20 to +100</td></tr>
           <tr><td>Three Hoops in a line</td><td>+80 to +120 each, +100</td></tr>
           <tr><td>Creature behind the target: Ball, Jetski, Croc, Dolphin, Loch Ness, Grandma</td><td>+100 to +300</td></tr>
+          <tr><td>Far creature, 60 m or more</td><td>+50% bonus</td></tr>
           <tr><td>Clean sweep: target and creature</td><td>+100 and a stone</td></tr>
           <tr><td>15 skips, or 100 m</td><td>+150 and a stone each</td></tr>
           <tr><td>Back-to-back bonuses: combo</td><td>up to x2</td></tr>
@@ -363,6 +364,13 @@ var W = 480, H = 640, Z = 2;
 var HOR_AIM = 190, F0 = 600, HAND_H = 0.45;
 var AIM = { x: -2.2, z: 0, h: 1.8 };
 var BGW = 900, HBG = 340, SUNX = 330, SUNH = 70, SUN_BEARING = 0.14;
+/* Two looks that alternate between baskets: Painted Dawn and Dusk Neon. */
+var THEMES = {
+  dawn: { bg: '#47739b', frame: '#4f7fa6', glint: 0xfff0cc, wave: 0xffffff, hoopGlow: false, ringHalo: false, crtHalo: false, hole: 0x0b2530, holeA: 0.55, hand: 0x15191c, hand2: 0x1d2226 },
+  dusk: { bg: '#120b2e', frame: '#120b2e', glint: 0xffc89a, wave: 0xb9a2ff, hoopGlow: true, ringHalo: true, crtHalo: true, hole: 0x8a5cff, holeA: 0.3, hand: 0x0a0618, hand2: 0x120c26 }
+};
+var theme = 'dusk', basketNo = 0;
+function TH() { return THEMES[theme]; }
 
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 function $(id) { return document.getElementById(id); }
@@ -515,6 +523,39 @@ var Sound = (function () {
     if (!ctx) return;
     try { if (visible && !muted) ctx.resume(); else ctx.suspend(); } catch (e) {}
   });
+  // Human-like voice: a sawtooth through three moving formant filters. fa and fb are the vowel formants at start and end.
+  function voice(t, f0, f1, dur, vol, fa, fb, o) {
+    o = o || {};
+    var osc = ctx.createOscillator(); osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(f0, t); osc.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    var lf = ctx.createOscillator(); lf.frequency.value = o.vib || 5.5;
+    var lg = ctx.createGain(); lg.gain.value = o.vibD === undefined ? f0 * 0.015 : o.vibD; lf.connect(lg); lg.connect(osc.frequency);
+    var amp = ctx.createGain();
+    amp.gain.setValueAtTime(0.0001, t); amp.gain.linearRampToValueAtTime(vol, t + (o.att || 0.05));
+    amp.gain.setValueAtTime(vol, t + dur * 0.65); amp.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    if (o.am) { var al = ctx.createOscillator(); al.frequency.value = o.am; var ag = ctx.createGain(); ag.gain.value = vol * (o.amD || 0.5); al.connect(ag); ag.connect(amp.gain); al.start(t); al.stop(t + dur + 0.05); }
+    var gains = [1, 0.7, 0.35], k;
+    for (k = 0; k < 3; k++) {
+      var bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = o.q || 8;
+      bp.frequency.setValueAtTime(fa[k], t); bp.frequency.linearRampToValueAtTime(fb[k], t + dur * 0.8);
+      var fg = ctx.createGain(); fg.gain.value = gains[k]; osc.connect(bp); bp.connect(fg); fg.connect(amp);
+    }
+    amp.connect(sfx);
+    osc.start(t); lf.start(t); osc.stop(t + dur + 0.05); lf.stop(t + dur + 0.05);
+  }
+  function applause(t, dur, vol) {
+    var n = Math.floor(dur * 60), i;
+    for (i = 0; i < n; i++) { var tt = t + Math.random() * dur, env = Math.sin(Math.PI * (tt - t) / dur); burst(tt, 0.02 + Math.random() * 0.02, 'bandpass', 1500 + Math.random() * 3500, 0, 1.2, vol * env * (0.5 + Math.random())); }
+  }
+  // Shared reward layer: rising arpeggio, bright chord, sparkles and applause. Every creature adds its own sound on top.
+  function celebrate(t) {
+    var arp = [523, 659, 784, 1046, 1319, 1568], i;
+    for (i = 0; i < arp.length; i++) tone(t + i * 0.07, arp[i], 0, 0.55, 0.14, 'triangle');
+    [523, 659, 784, 1046].forEach(function (f) { tone(t + 0.5, f, 0, 1.0, 0.07, 'triangle'); });
+    tone(t + 0.5, 2093, 0, 1.2, 0.06, 'sine');
+    for (i = 0; i < 9; i++) tone(t + 0.1 + Math.random() * 1.0, 2400 + Math.random() * 2400, 0, 0.18, 0.04, 'sine');
+    applause(t + 0.3, 1.5, 0.12);
+  }
   return {
     unlock: ensure,
     setWind: function (sp) {
@@ -550,23 +591,54 @@ var Sound = (function () {
     },
     creature: function (type) {
       if (muted || !ensure()) return;
-      var t = ctx.currentTime + 0.02, i;
-      // Every creature hit ends on a bright rising chime, so it reads as a reward and not a miss
-      var arp = [523, 659, 784, 1046, 1319];
-      if (type === 'dolphin') { for (i = 0; i < 6; i++) tone(t + i * 0.06, 2200 + i * 160, 3500, 0.07, 0.07, 'sine'); tone(t + 0.4, 1700, 3300, 0.35, 0.07, 'sine'); }
-      else if (type === 'croc') { burst(t, 0.06, 'highpass', 1800, 900, 0.8, 0.3); burst(t + 0.16, 0.06, 'highpass', 1800, 900, 0.8, 0.3); tone(t, 110, 70, 0.3, 0.2, 'triangle'); }
-      else if (type === 'grandma') { tone(t, 392, 370, 0.17, 0.14, 'triangle'); tone(t + 0.21, 523, 500, 0.3, 0.14, 'triangle'); }
-      else if (type === 'ball') { tone(t, 260, 720, 0.2, 0.16, 'sine'); }
-      else if (type === 'jetski') { burst(t, 0.45, 'lowpass', 500, 1400, 0.7, 0.1); tone(t, 180, 420, 0.4, 0.1, 'triangle'); burst(t + 0.15, 0.3, 'highpass', 2200, 1200, 0.7, 0.12); }
-      else {
-        // Playful monster: slide whistle up, two bloops, then a cheerful xylophone run
+      var t = ctx.currentTime + 0.02, i, o;
+      if (type === 'grandma') {
+        // Delighted human cheer: "Yaaay!", a higher "Yay!", then a happy "woo-hoo"
+        var y0 = [320, 2200, 2800], y1 = [560, 1800, 2500];
+        voice(t, 300, 440, 0.62, 0.9, y0, y1, { vib: 6, q: 7 });
+        voice(t + 0.7, 340, 500, 0.55, 0.9, y0, y1, { vib: 6.5, q: 7 });
+        voice(t + 1.35, 380, 340, 0.2, 0.8, [320, 800, 2300], [420, 900, 2400], { vib: 7, q: 7 });
+        voice(t + 1.58, 400, 560, 0.4, 0.8, [320, 800, 2300], [380, 1000, 2400], { vib: 7, q: 7 });
+        celebrate(t + 0.3);
+      } else if (type === 'croc') {
+        // Two low reptile grunts and a pair of jaw snaps
+        var g0 = [640, 1190, 2390], g1 = [520, 1000, 2200];
+        voice(t, 95, 52, 0.36, 0.95, g0, g1, { vib: 0, vibD: 0, am: 30, amD: 0.6, q: 5, att: 0.03 });
+        voice(t + 0.44, 86, 48, 0.42, 1.0, g0, g1, { vib: 0, vibD: 0, am: 26, amD: 0.6, q: 5, att: 0.03 });
+        burst(t, 0.4, 'lowpass', 520, 140, 0.8, 0.12);
+        burst(t + 0.95, 0.05, 'highpass', 1800, 900, 0.8, 0.34); burst(t + 1.12, 0.05, 'highpass', 1800, 900, 0.8, 0.34);
+        tone(t + 0.95, 120, 70, 0.14, 0.2, 'triangle'); tone(t + 1.12, 120, 70, 0.14, 0.2, 'triangle');
+        celebrate(t + 0.5);
+      } else if (type === 'dolphin') {
+        // Excited dolphin laugh: rapid chirps, a click train and a long rising whistle
+        for (i = 0; i < 7; i++) tone(t + i * 0.09, i % 2 ? 3600 : 2000, i % 2 ? 2100 : 3800, 0.09, 0.1, 'sine');
+        for (i = 0; i < 16; i++) burst(t + 0.7 + i * 0.026, 0.012, 'bandpass', 4600, 0, 3, 0.14);
+        tone(t + 1.15, 1500, 3900, 0.5, 0.1, 'sine'); tone(t + 1.15, 1510, 3920, 0.5, 0.04, 'triangle');
+        celebrate(t + 0.4);
+      } else if (type === 'ball') {
+        // Rubber ball: two springy boings and a pop
+        vnote(t, 200, 700, 0.1, 0.3, 0, 0.1, 0); vnote(t + 0.1, 700, 150, 0.55, 0.34, 0, 17, 90);
+        vnote(t + 0.65, 160, 520, 0.09, 0.26, 0, 0.1, 0); vnote(t + 0.74, 520, 130, 0.42, 0.28, 0, 19, 70);
+        burst(t + 0.05, 0.05, 'bandpass', 1200, 0, 1.5, 0.2);
+        celebrate(t + 0.3);
+      } else if (type === 'jetski') {
+        // Engine rev, two horn honks and a splash
+        o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(60, t); o.frequency.exponentialRampToValueAtTime(260, t + 0.7);
+        var jf = ctx.createBiquadFilter(); jf.type = 'lowpass'; jf.frequency.setValueAtTime(500, t); jf.frequency.exponentialRampToValueAtTime(2200, t + 0.7);
+        var jg = ctx.createGain(); jg.gain.setValueAtTime(0.0001, t); jg.gain.linearRampToValueAtTime(0.13, t + 0.1); jg.gain.exponentialRampToValueAtTime(0.0001, t + 0.95);
+        o.connect(jf); jf.connect(jg); jg.connect(sfx); o.start(t); o.stop(t + 1.0);
+        burst(t + 0.2, 0.5, 'highpass', 2400, 1200, 0.7, 0.14);
+        tone(t + 0.85, 466, 0, 0.16, 0.06, 'square'); tone(t + 0.85, 622, 0, 0.16, 0.05, 'square');
+        tone(t + 1.08, 466, 0, 0.3, 0.06, 'square'); tone(t + 1.08, 622, 0, 0.3, 0.05, 'square');
+        celebrate(t + 0.5);
+      } else {
+        // Loch Ness: slide whistle, two bloops, a friendly deep hoot and a xylophone run
         tone(t, 300, 1500, 0.45, 0.1, 'sine'); tone(t + 0.02, 305, 1520, 0.45, 0.05, 'triangle');
         tone(t + 0.5, 420, 900, 0.14, 0.12, 'sine'); tone(t + 0.66, 520, 1100, 0.14, 0.12, 'sine');
+        voice(t + 0.85, 150, 105, 0.6, 0.9, [400, 900, 2300], [300, 700, 2300], { vib: 5, q: 6 });
         var run = [784, 988, 1175, 1568, 1319, 1568]; for (i = 0; i < run.length; i++) tone(t + 0.86 + i * 0.09, run[i], 0, 0.3, 0.1, 'triangle');
-        return;
+        celebrate(t + 0.6);
       }
-      for (i = 0; i < arp.length; i++) tone(t + 0.12 + i * 0.075, arp[i], 0, 0.5, 0.1, 'triangle');
-      tone(t + 0.12 + arp.length * 0.075, 1568, 0, 0.8, 0.08, 'sine');
     },
     bonus: function () {
       if (muted || !ensure()) return;
@@ -782,9 +854,12 @@ function pickRing() {
   var uc = rr(), ct = uc < 0.15 ? null : uc < 0.30 ? 'ball' : uc < 0.46 ? 'jetski' : uc < 0.58 ? 'nessie' : uc < 0.72 ? 'dolphin' : uc < 0.86 ? 'croc' : 'grandma';
   crt = null;
   if (ct) {
-    var cx = farX + 8 + rr() * 6, cz = cx * Math.tan(lineBr) + (rr() * 2 - 1) * 1.2, dir = rr() < 0.5 ? -1 : 1, info = CRT[ct];
-    crt = { type: ct, x: cx, z0: cz, dir: dir, r: info.r, bonus: info.bonus, name: info.name, v: info.v, hit: false, hitT: 0 };
-    if (crt.v) crt.z0 = cz - dir * crt.v * 2.6;
+    // About a third of creatures sit far out (62 to 110 m) as a distance challenge; they pay 50% more and have a wider hit zone
+    var far = rr() < 0.34, cx = far ? 62 + rr() * 48 : farX + 8 + rr() * 6, info = CRT[ct];
+    var tn = Math.tan(lineBr); if (far) tn = clamp(tn, -0.2, 0.2);
+    var cz = cx * tn + (rr() * 2 - 1) * 1.2, dir = rr() < 0.5 ? -1 : 1;
+    crt = { type: ct, x: cx, z0: cz, dir: dir, r: info.r * (far ? 1 + (cx - 60) / 100 : 1), bonus: far ? Math.round(info.bonus * 1.5 / 25) * 25 : info.bonus, name: info.name, v: info.v, hit: false, hitT: 0, far: far };
+    if (crt.v) crt.z0 = cz - dir * crt.v * Math.max(2.6, cx / 16);
   }
   playT = 0;
   curWind = null;
@@ -811,6 +886,7 @@ function showTut() {
 }
 $('tutGo').addEventListener('click', function () { Sound.unlock(); tutOpen = false; $('tut').classList.remove('show'); $('hint').classList.add('gone'); });
 function newRound() {
+  basketNo++; theme = basketNo % 2 === 1 ? 'dusk' : 'dawn';
   $('hint').textContent = 'Swipe up toward the target. Speed is power. A shorter flick throws lower. Turn the phone or angle the swipe to aim.'; $('hint').classList.remove('gone');
   for (var k in BASKET0) basket[k] = BASKET0[k];
   thrown = 0; total = 0; throws = []; needsNext = false; maxThrows = 10; combo = 0; extras = 0;
@@ -1023,7 +1099,43 @@ function shade(c, k) { var r = ((c >> 16) & 255) * k, g = ((c >> 8) & 255) * k, 
 function rng32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
 /* Static dawn scenery painted once at double resolution: sky, sun, clouds, three ridges, tree line, mist. */
-function paintScenery(c, S) {
+function paintDawn(c, S) {
+  c.scale(S, S);
+  var hor = HBG, r = rng32(7), i, x;
+  var g = c.createLinearGradient(0, 0, 0, hor);
+  g.addColorStop(0, '#47739b'); g.addColorStop(0.5, '#93b9cf'); g.addColorStop(0.82, '#e6d8c2'); g.addColorStop(1, '#f5d8b2');
+  c.fillStyle = g; c.fillRect(0, 0, BGW, hor);
+  var sx = SUNX, sy = hor - SUNH;
+  for (i = 0; i < 11; i++) {
+    var cx = r() * BGW, cy = 30 + r() * (hor - 150), rx = 60 + r() * 120, ry = 8 + r() * 14, near = 1 - Math.min(1, Math.hypot(cx - sx, (cy - sy) * 2) / 360);
+    c.save(); c.translate(cx, cy); c.scale(1, ry / rx);
+    var cg = c.createRadialGradient(0, 0, 0, 0, 0, rx);
+    cg.addColorStop(0, 'rgba(255,' + (240 - near * 40 | 0) + ',' + (230 - near * 80 | 0) + ',.62)'); cg.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = cg; c.beginPath(); c.arc(0, 0, rx, 0, Math.PI * 2); c.fill(); c.restore();
+  }
+  function ridge(base, amp, top, bot, seed, f1) {
+    var q = rng32(seed), p1 = q() * 6, p2 = q() * 6, p3 = q() * 6;
+    c.beginPath(); c.moveTo(0, hor);
+    for (x = 0; x <= BGW; x += 3) c.lineTo(x, hor - base - Math.sin(x * f1 + p1) * amp - Math.sin(x * f1 * 2.3 + p2) * amp * 0.45 - Math.sin(x * f1 * 5.1 + p3) * amp * 0.14);
+    c.lineTo(BGW, hor); c.closePath();
+    var rg = c.createLinearGradient(0, hor - base - amp * 1.6, 0, hor); rg.addColorStop(0, top); rg.addColorStop(1, bot);
+    c.fillStyle = rg; c.fill();
+  }
+  ridge(52, 26, '#a9c2cc', '#d5d9cf', 11, 0.0085);
+  ridge(32, 20, '#7f9fa8', '#b7c7c3', 23, 0.012);
+  ridge(15, 11, '#5d8186', '#8fa9a5', 31, 0.019);
+  var t = rng32(5);
+  for (x = -4; x < BGW + 4; x += 2.4) {
+    var hh = 5 + t() * 8 * (0.6 + 0.4 * Math.sin(x * 0.03 + 1)), w2 = 2.2 + t() * 1.6;
+    c.fillStyle = t() < 0.5 ? '#2c4a44' : '#355650';
+    c.beginPath(); c.moveTo(x - w2, hor); c.lineTo(x, hor - hh); c.lineTo(x + w2, hor); c.closePath(); c.fill();
+  }
+  var mist = c.createLinearGradient(0, hor - 34, 0, hor);
+  mist.addColorStop(0, 'rgba(240,226,204,0)'); mist.addColorStop(1, 'rgba(240,226,204,.55)');
+  c.fillStyle = mist; c.fillRect(0, hor - 34, BGW, 34);
+}
+
+function paintDusk(c, S) {
   c.scale(S, S);
   var hor = HBG, r = rng32(7), i, x;
   var g = c.createLinearGradient(0, 0, 0, hor);
@@ -1063,22 +1175,31 @@ function create() {
   var cm = sc.cameras.main;
   cm.setOrigin(0, 0); cm.setZoom(Z); cm.setBackgroundColor('#120b2e');
 
-  var S = 2, st = sc.textures.createCanvas('scenery', BGW * S, HBG * S);
-  paintScenery(st.getContext(), S); st.refresh();
-  sc.bgTiles = [0, 1].map(function () { return sc.add.image(0, HOR_AIM, 'scenery').setOrigin(0, 1).setScale(1 / S); });
-  var sunT = sc.textures.createCanvas('sun', 400, 400), sg = sunT.getContext();
-  var gl = sg.createRadialGradient(200, 200, 0, 200, 200, 190);
-  gl.addColorStop(0, 'rgba(255,190,130,.9)'); gl.addColorStop(0.18, 'rgba(255,170,110,.45)'); gl.addColorStop(1, 'rgba(255,150,100,0)');
-  sg.fillStyle = gl; sg.fillRect(0, 0, 400, 400);
-  var dc = sg.createRadialGradient(200, 200, 0, 200, 200, 22); dc.addColorStop(0, '#ffe9c8'); dc.addColorStop(1, 'rgba(255,217,160,.95)');
-  sg.fillStyle = dc; sg.beginPath(); sg.arc(200, 200, 22, 0, Math.PI * 2); sg.fill(); sunT.refresh();
-  sc.sunImg = sc.add.image(0, 0, 'sun').setOrigin(0.5, 0.5).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.9);
-
-  var wt = sc.textures.createCanvas('water', 4, 760), wc = wt.getContext();
-  var wg = wc.createLinearGradient(0, 0, 0, 760);
-  wg.addColorStop(0, '#6a3a6e'); wg.addColorStop(0.03, '#4a2a72'); wg.addColorStop(0.14, '#2e1a58'); wg.addColorStop(0.4, '#1a1038'); wg.addColorStop(1, '#07050f');
-  wc.fillStyle = wg; wc.fillRect(0, 0, 4, 760); wt.refresh();
-  sc.waterImg = sc.add.image(0, HOR_AIM, 'water').setOrigin(0, 0).setDisplaySize(W, 760);
+  var S = 2;
+  var SUNS = {
+    dawn: [['rgba(255,238,200,.95)', 'rgba(255,226,170,.5)', 'rgba(255,214,150,0)'], ['#fffbe8', 'rgba(255,244,210,.92)']],
+    dusk: [['rgba(255,190,130,.9)', 'rgba(255,170,110,.45)', 'rgba(255,150,100,0)'], ['#ffe9c8', 'rgba(255,217,160,.95)']]
+  };
+  var WATS = {
+    dawn: [[0, '#d3d7c8'], [0.03, '#a7c3c2'], [0.14, '#5f949d'], [0.4, '#2d5e6d'], [1, '#10303e']],
+    dusk: [[0, '#6a3a6e'], [0.03, '#4a2a72'], [0.14, '#2e1a58'], [0.4, '#1a1038'], [1, '#07050f']]
+  };
+  ['dawn', 'dusk'].forEach(function (k) {
+    var st = sc.textures.createCanvas('scenery_' + k, BGW * S, HBG * S);
+    (k === 'dawn' ? paintDawn : paintDusk)(st.getContext(), S); st.refresh();
+    var sunT = sc.textures.createCanvas('sun_' + k, 400, 400), sg = sunT.getContext(), sk = SUNS[k];
+    var gl = sg.createRadialGradient(200, 200, 0, 200, 200, 190);
+    gl.addColorStop(0, sk[0][0]); gl.addColorStop(0.18, sk[0][1]); gl.addColorStop(1, sk[0][2]);
+    sg.fillStyle = gl; sg.fillRect(0, 0, 400, 400);
+    var dc = sg.createRadialGradient(200, 200, 0, 200, 200, 22); dc.addColorStop(0, sk[1][0]); dc.addColorStop(1, sk[1][1]);
+    sg.fillStyle = dc; sg.beginPath(); sg.arc(200, 200, 22, 0, Math.PI * 2); sg.fill(); sunT.refresh();
+    var wt = sc.textures.createCanvas('water_' + k, 4, 760), wc = wt.getContext(), wg = wc.createLinearGradient(0, 0, 0, 760);
+    WATS[k].forEach(function (q) { wg.addColorStop(q[0], q[1]); });
+    wc.fillStyle = wg; wc.fillRect(0, 0, 4, 760); wt.refresh();
+  });
+  sc.bgTiles = [0, 1].map(function () { return sc.add.image(0, HOR_AIM, 'scenery_' + theme).setOrigin(0, 1).setScale(1 / S); });
+  sc.sunImg = sc.add.image(0, 0, 'sun_' + theme).setOrigin(0.5, 0.5).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.9);
+  sc.waterImg = sc.add.image(0, HOR_AIM, 'water_' + theme).setOrigin(0, 0).setDisplaySize(W, 760);
 
   sc.g = sc.add.graphics();
   sc.fg = sc.add.graphics();
@@ -1183,6 +1304,12 @@ function spawnDrops(x, z, strength, scale) {
 
 function update(time, delta) {
   var sc = this, dt = Math.min(delta, 50) / 1000, T = time / 1000;
+  if (sc.curTheme !== theme) {
+    sc.curTheme = theme;
+    sc.bgTiles.forEach(function (b) { b.setTexture('scenery_' + theme); });
+    sc.sunImg.setTexture('sun_' + theme); sc.waterImg.setTexture('water_' + theme);
+    sc.cameras.main.setBackgroundColor(TH().bg); $('frame').style.background = TH().frame;
+  }
   var stone = state === 'flying' || state === 'settling' ? run.stone : currentStone();
   var sx = 0, sz = 0, sh = HAND_H, sAlpha = 1, tiltRot = 0, shadowA = 0, inWorld = true, underwater = false;
   var wnow = windNow();
@@ -1306,7 +1433,7 @@ function drawWaves(g, T, sunX) {
         var dy = ay - cam.hy, glit = Math.exp(-Math.pow((mx - sunX) / (12 + 0.4 * dy), 2)) * (dy < 260 ? 1 : 0.35);
         var sh = 0.5 + 0.5 * Math.sin(T * 1.7 + h1 * 40);
         var alpha = 0.05 + 0.07 * (1 - Math.min(dy / 300, 1)) + glit * (0.25 + 0.4 * sh);
-        g.lineStyle(clamp(sA * 0.035, 0.7, 3.2), glit > 0.25 ? 0xffc89a : 0xb9a2ff, Math.min(alpha, 0.9));
+        g.lineStyle(clamp(sA * 0.035, 0.7, 3.2), glit > 0.25 ? TH().glint : TH().wave, Math.min(alpha, 0.9));
         g.lineBetween(ax, ay, bx, ay);
       }
     }
@@ -1338,8 +1465,8 @@ function drawRing(g, T, dt) {
   for (i = 0; i < 28; i++) { var a = i / 28 * Math.PI * 2; if (!P(ring.x + Math.cos(a) * ring.r, rz + Math.sin(a) * ring.r, 0)) { ok = false; break; } pts.push({ x: po.x, y: po.y }); }
   var hole = ring.type === 'hole';
   if (ok) {
-    g.fillStyle(hole ? 0x8a5cff : 0xf2b24c, hole ? 0.3 + ring.flash * 0.3 : 0.14 + ring.flash * 0.4); g.fillPoints(pts, true);
-    g.lineStyle(clamp(po.s * 0.13, 3, 9), hole ? 0xb69cff : 0xf2b24c, 0.16 * pulse); g.strokePoints(pts, true);
+    g.fillStyle(hole ? TH().hole : 0xf2b24c, hole ? TH().holeA + ring.flash * 0.3 : 0.14 + ring.flash * 0.4); g.fillPoints(pts, true);
+    if (TH().ringHalo) { g.lineStyle(clamp(po.s * 0.13, 3, 9), hole ? 0xb69cff : 0xf2b24c, 0.16 * pulse); g.strokePoints(pts, true); }
     g.lineStyle(clamp(po.s * 0.05, 1.4, 3.4), hole ? 0xffffff : 0xf2b24c, 0.95 * pulse); g.strokePoints(pts, true);
     if (!hole) {
       for (i = 0; i < 20; i++) { var b = i / 20 * Math.PI * 2; if (!P(ring.x + Math.cos(b) * ring.r / 3, rz + Math.sin(b) * ring.r / 3, 0)) { pts2 = null; break; } pts2.push({ x: po.x, y: po.y }); }
@@ -1369,7 +1496,7 @@ function drawHoops(g, T, dt) {
     var col = h.state === 'hit' ? 0xffd25a : h.state === 'miss' ? 0xff6a5a : 0x68e0ff;
     var al = h.state === 'miss' ? 0.55 : 0.95 * (h.state === 'idle' ? pulse : 1);
     g.fillStyle(col, h.state === 'hit' ? 0.2 : 0.07); g.fillPoints(pts, true);
-    g.lineStyle(w * 5, col, h.state === 'miss' ? 0.04 : 0.1 + 0.06 * pulse); g.strokePoints(pts, true);
+    if (TH().hoopGlow) { g.lineStyle(w * 5, col, h.state === 'miss' ? 0.04 : 0.1 + 0.06 * pulse); g.strokePoints(pts, true); }
     g.lineStyle(w * 2.6, col, (h.state === 'miss' ? 0.08 : 0.2) + (h.state === 'hit' ? 0.2 * (0.5 + h.flash) : 0.1 * pulse)); g.strokePoints(pts, true);
     g.lineStyle(w, col, al); g.strokePoints(pts, true);
     g.lineStyle(Math.max(1, w * 0.3), 0xffffff, 0.55 * al); g.strokePoints(pts, true);
@@ -1393,12 +1520,12 @@ function drawCreature(g, T, dt) {
   var p = crtAt(crtT()), x = p.x, z = p.z, ht = crt.hitT, k, ty = crt.type, d = crt.dir;
   var bx, by, S;
   // Screen-space drawing around a base point. S is pixels per metre, boosted for far creatures so they stay visible.
-  function base(px, pz) { if (!P(px, pz, 0)) return false; bx = po.x; by = po.y; S = Math.max(po.s, 24); return true; }
+  function base(px, pz) { if (!P(px, pz, 0)) return false; bx = po.x; by = po.y; S = Math.max(po.s, crt.far ? 24 + (crt.x - 60) * 0.3 : 24); return true; }
   function X(l) { return bx + l * S; }
   function Y(h) { return by - h * S; }
   function ripple(a) { g.lineStyle(1.4, 0xffffff, a); g.strokeEllipse(bx, by, S * 3.4, S * 0.7); }
   if (!base(x, z)) return;
-  if (!crt.hit || crt.hitT < 1.5) { g.fillStyle(0x7de3ff, 0.10); g.fillPoints(ellipsePts(bx, by - S * 0.7, S * 2.1, S * 1.0, 0, 26), true); g.fillStyle(0x7de3ff, 0.10); g.fillPoints(ellipsePts(bx, by - S * 0.7, S * 1.4, S * 0.65, 0, 22), true); }
+  if (TH().crtHalo && (!crt.hit || crt.hitT < 1.5)) { g.fillStyle(0x7de3ff, 0.10); g.fillPoints(ellipsePts(bx, by - S * 0.7, S * 2.1, S * 1.0, 0, 26), true); g.fillStyle(0x7de3ff, 0.10); g.fillPoints(ellipsePts(bx, by - S * 0.7, S * 1.4, S * 0.65, 0, 22), true); }
   if (!crt.hit) { var my = by - S * 2.5 - 8 + Math.sin(T * 4) * 3; g.fillStyle(0xffd25a, 0.95); g.fillPoints([{ x: bx - 6, y: my - 9 }, { x: bx + 6, y: my - 9 }, { x: bx, y: my }], true); }
   if (ty === 'ball') {
     var h = 0.4 + 0.07 * Math.sin(T * 2 + crt.x), px = x, pz = z;
@@ -1555,14 +1682,14 @@ function drawStoneScene(g, T, sx, sz, sh, stone, alpha, rot, shadowA, underwater
   if (handA > 0.01 && (state === 'ready' || state === 'returning')) drawHandFront(g, px, py, sw, handA);
 }
 function drawHandBack(g, x, y, sw, a) {
-  g.fillStyle(0x0a0618, a * 0.97);
+  g.fillStyle(TH().hand, a * 0.97);
   g.fillPoints(ellipsePts(x + sw * 0.04, y + sw * 0.7, sw * 0.82, sw * 0.4, 0, 28), true);
   g.fillPoints(capsule(x - sw * 0.46, y + sw * 0.62, x - sw * 0.38, y + sw * 0.06, sw * 0.085), true);
   g.fillPoints(capsule(x - sw * 0.2, y + sw * 0.68, x - sw * 0.14, y + sw * 0.1, sw * 0.085), true);
   g.fillPoints(capsule(x + sw * 0.06, y + sw * 0.7, x + sw * 0.07, y + sw * 0.12, sw * 0.085), true);
 }
 function drawHandFront(g, x, y, sw, a) {
-  g.fillStyle(0x120c26, a); g.fillPoints(capsule(x + sw * 0.66, y + sw * 0.66, x + sw * 0.2, y - sw * 0.04, sw * 0.105), true);
+  g.fillStyle(TH().hand2, a); g.fillPoints(capsule(x + sw * 0.66, y + sw * 0.66, x + sw * 0.2, y - sw * 0.04, sw * 0.105), true);
   g.lineStyle(1.2, 0x4a5a63, a * 0.7); g.strokePoints(capsule(x + sw * 0.66, y + sw * 0.66, x + sw * 0.2, y - sw * 0.04, sw * 0.105), true);
 }
 
