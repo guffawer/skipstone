@@ -182,13 +182,31 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
 .tut td { padding: 3px 4px; border-top: 1px solid var(--line); vertical-align: top; }
 .tut td:last-child { text-align: right; font-variant-numeric: tabular-nums; color: var(--ochre); white-space: nowrap; padding-left: 8px; }
 .tut button { position: sticky; bottom: 0; margin-top: auto; background: var(--ochre); color: var(--ink); border: 0; border-radius: 6px; padding: 11px 14px; font-weight: 600; font-size: 14px; }
+
+.tut ol, .tut ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.35; }
+.tut li { margin: 4px 0; }
+.tier { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; color: var(--ink); }
+.tier.E { background: var(--good); } .tier.H { background: var(--ochre); } .tier.V { background: #e0624a; }
+.lvmap { position: absolute; inset: 0; box-sizing: border-box; padding: 12px; overflow: auto; background: rgba(15, 35, 43, .985); color: var(--paper); display: none; flex-direction: column; gap: 10px; z-index: 5; }
+.lvmap.show { display: flex; }
+.lvmap h2 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: .06em; text-transform: uppercase; }
+.lvmap p { margin: 0; font-size: 12px; color: var(--mute); }
+.lake { display: grid; gap: 5px; }
+.lake .nm { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ochre); }
+.lvrow { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.lv { background: var(--deck-2); border: 1px solid var(--line); border-radius: 6px; padding: 7px 0 5px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: var(--font-display); font-weight: 800; font-size: 20px; line-height: 1; min-width: 0; }
+.lv small { font-family: var(--font-body); font-weight: 600; font-size: 9px; color: var(--mute); min-height: 11px; }
+.lv.E { border-bottom: 3px solid var(--good); } .lv.H { border-bottom: 3px solid var(--ochre); } .lv.V { border-bottom: 3px solid #e0624a; }
+.lv.done { box-shadow: inset 0 0 0 1px var(--good); }
+.lv:disabled { opacity: .35; cursor: default; }
+#lvClose { margin-top: auto; background: var(--deck-2); color: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; font-weight: 600; font-size: 14px; }
 </style>
 
 <div class="app">
   <header class="top">
     <div class="brand">
       <span class="word">Skipstone</span>
-      <span class="lbl">Prototype v1.3</span>
+      <span class="lbl">Prototype v1.4</span>
     </div>
     <div class="bests">
       <div><span class="lbl">Best round</span><b id="bestRound">0</b></div>
@@ -198,6 +216,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
   <nav class="modes" aria-label="Game mode">
     <button id="mFree" type="button" aria-pressed="true">Free play</button>
     <button id="mDaily" type="button" aria-pressed="false">Daily challenge</button>
+    <button id="mLevels" type="button" aria-pressed="false">Levels</button>
     <span class="lbl" id="streak">Streak 0</span>
   </nav>
 
@@ -216,6 +235,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
         </div>
         <div class="chip tgt" id="tgtChip">Target 0 m</div>
         <div class="chip tgt" id="comboChip">Combo x1</div>
+        <div class="chip tgt" id="goalChip" style="display:none">Goal</div>
+        <div class="chip tgt" id="goal2Chip" style="display:none"></div>
         <button class="chip" id="mute" type="button" aria-pressed="false">Sound on</button>
         <button class="chip" id="haptic" type="button" aria-pressed="false">Haptics on</button>
       </div>
@@ -242,18 +263,25 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
       <div class="banner" id="banner" aria-live="polite"><span class="gem" id="bannerGem"></span><h3 id="bannerHead"></h3><p id="bannerSub"></p></div>
       <div class="tut" id="tut">
         <h2 id="tutHead">How to play</h2>
-        <p>Skip stones across a quiet lake with a basket of 10. Score skips, distance and bonuses. <b>Swipe up</b> to throw: speed is power, a shorter flick throws lower, and turning the phone or angling the swipe aims.</p>
-        <table>
-          <tr><td>Ring, Hole or Gate</td><td>+20 to +100</td></tr>
-          <tr><td>Three Hoops in a line</td><td>+80 to +120 each, +100</td></tr>
-          <tr><td>Creature behind the target: Ball, Jetski, Croc, Dolphin, Loch Ness, Grandma</td><td>+100 to +300</td></tr>
-          <tr><td>Far creature, 60 m or more</td><td>+50% bonus</td></tr>
-          <tr><td>Clean sweep: target and creature</td><td>+100 and a stone</td></tr>
-          <tr><td>15 skips, or 100 m</td><td>+150 and a stone each</td></tr>
-          <tr><td>Back-to-back bonuses: combo</td><td>up to x2</td></tr>
-        </table>
-        <p id="tutDaily">Daily Challenge: same targets and wind for everyone each day. Play once and keep your streak.</p>
+        <div id="tutBrief" style="display:none">
+          <p><span class="tier E" id="tutTier">Easy</span></p>
+          <p class="lbl" style="margin-top:8px">Goal</p>
+          <ul id="tutGoals"></ul>
+          <p id="tutCond" style="margin-top:8px;color:var(--mute)"></p>
+        </div>
+        <ol id="tutRules">
+          <li><b>Swipe up</b> to throw. A faster flick is more power; curve the swipe for spin.</li>
+          <li><b>Aim</b> by angling the swipe or turning your phone. Low and fast skips farthest.</li>
+          <li><b>Score</b> skips and distance, plus bonuses for targets and the creatures behind them. Back-to-back bonuses build a combo.</li>
+        </ol>
+        <p id="tutDaily">Daily: same targets and wind for everyone, one scored attempt per day.</p>
         <button id="tutGo" type="button">Start throwing</button>
+      </div>
+      <div class="lvmap" id="lvmap">
+        <h2>Levels</h2>
+        <p id="lvSub"></p>
+        <div id="lvBody" style="display:grid;gap:12px"></div>
+        <button id="lvClose" type="button">Close</button>
       </div>
       <div class="round" id="round" aria-live="polite">
         <h2>Basket complete</h2>
@@ -676,7 +704,7 @@ var Haptics = (function () {
 var BASKET0 = { pebble: 4, slate: 3, granite: 3, rainbow: 0 };
 var basket = {}, thrown = 0, total = 0, throws = [], ring = null, needsNext = false;
 var stoneIdx = 0, aimAngle = 10, aimLocked = null, yawLocked = null, yawMode = false, aimYaw = 0, yawRef = null, lastAlpha = null;
-var mode = 'free', curWind = null, dailyDone = false, maxThrows = 10, combo = 0, extras = 0;
+var mode = 'free', curWind = null, dailyDone = false, maxThrows = 10, combo = 0, extras = 0, lvl = null, lvlPassed = false;
 var state = 'ready'; // ready | flying | settling | returning | roundEnd
 var run = null, playT = 0, evIdx = 0, settleT = 0, swipePts = null, swipeYaw = null;
 var ripples = [], drops = [], trail = [], trailAcc = 0;
@@ -818,6 +846,121 @@ function streakNow() { var l = daily.last; return (l === todayStr() || l === yes
 function showStreak() { $('streak').textContent = 'Streak ' + streakNow() + (daily.last === todayStr() ? ' (done today)' : ''); }
 showStreak();
 
+/* ---------- Levels: 30 levels over 5 lakes. Easy 13, Hard 13, Very hard 4. Pass a level to unlock the next. ---------- */
+var LAKES = ['Still Water', 'Birch Cove', 'Windy Reach', 'Highland Tarn', 'Storm Basin'];
+var TIERS = ['EEEEEE', 'EEEHEH', 'EHEHHH', 'EHHHHV', 'HHVHVV'].join('');
+var TIER_NAME = { E: 'Easy', H: 'Hard', V: 'Very hard' };
+var VSEC = { 24: [['targets', 3], ['creatures', 1]], 27: [['skips', 12], ['targets', 3]], 29: [['creatures', 2], ['far', 1]], 30: [['targets', 4], ['far', 1]] };
+var HKEYS = ['targets', 'skips', 'creatures'];
+var G_SHORT = { score: 'Score', targets: 'Targets', skips: 'Best skips', creatures: 'Creatures', far: 'Far creatures' };
+function r50(x) { return Math.round(x / 50) * 50; }
+function levelDef(n) {
+  var t = TIERS.charAt(n - 1), p = (n - 1) / 29, L = { n: n, lake: Math.floor((n - 1) / 6), tier: t };
+  L.name = LAKES[L.lake];
+  if (t === 'E') {
+    L.wind = 0.3 + 0.5 * p; L.tsz = 1.3 - 0.3 * p; L.dmin = 18; L.dmax = 28 + 8 * p;
+    L.mix = [['ring', 5], ['gate', 3], ['hole', 1], ['hoops', 1]]; L.driftP = 0; L.driftFrom = 99; L.cp = 0.8; L.farP = 0; L.farMax = 0; L.csz = 1.25;
+    L.score = r50(500 + 700 * p); L.sec = [];
+  } else if (t === 'H') {
+    L.wind = 0.8 + 0.4 * p; L.tsz = 1.0 - 0.15 * p; L.dmin = 22; L.dmax = 38 + 6 * p;
+    L.mix = [['ring', 3], ['gate', 3], ['hole', 2], ['hoops', 3]]; L.driftP = 0.35; L.driftFrom = 3; L.cp = 0.85; L.farP = 0.3; L.farMax = 90; L.csz = 1.0;
+    L.score = r50(1300 + 1200 * p);
+    var hk = HKEYS[n % 3], late = p > 0.6;
+    L.sec = [[hk, hk === 'targets' ? (late ? 3 : 2) : hk === 'skips' ? (late ? 9 : 8) : (late ? 2 : 1)]];
+  } else {
+    L.wind = 1.2 + 0.3 * p; L.tsz = 0.8; L.dmin = 26; L.dmax = 46;
+    L.mix = [['ring', 1], ['gate', 3], ['hole', 3], ['hoops', 3]]; L.driftP = 0.6; L.driftFrom = 2; L.cp = 0.9; L.farP = 0.5; L.farMax = 110; L.csz = 0.9;
+    L.score = r50(2600 + 1200 * p); L.sec = VSEC[n] || [['targets', 4]];
+  }
+  return L;
+}
+function pickMix(mix, u) {
+  var tot = 0, i; mix.forEach(function (m) { tot += m[1]; });
+  var x = u * tot;
+  for (i = 0; i < mix.length; i++) { x -= mix[i][1]; if (x < 0) return mix[i][0]; }
+  return mix[mix.length - 1][0];
+}
+function levelWind(T) {
+  var w = windAt(T), k = lvl ? lvl.wind : 1, x = w.x * k * 0.4, z = w.z * k * 1.3;
+  return { x: x, z: z, speed: Math.hypot(x, z), dir: Math.atan2(z, x) };
+}
+function windWord(k) { return k < 0.5 ? 'calm' : k < 0.8 ? 'light' : k < 1.1 ? 'breezy' : k < 1.4 ? 'gusty' : 'strong'; }
+function goalList(L) {
+  var out = [{ key: 'score', val: L.score, text: 'Score ' + L.score, short: 'Score' }];
+  L.sec.forEach(function (g) {
+    var k = g[0], v = g[1], tx = k === 'targets' ? 'Hit a target in ' + v + ' throw' + (v > 1 ? 's' : '') : k === 'skips' ? 'One throw with ' + v + ' or more skips' : k === 'creatures' ? 'Hit ' + v + ' creature' + (v > 1 ? 's' : '') : (v > 1 ? 'Hit ' + v + ' creatures' : 'Hit a creature') + ' 60 m or farther';
+    out.push({ key: k, val: v, text: tx, short: G_SHORT[k] });
+  });
+  return out;
+}
+function levelStats() {
+  var o = { targets: 0, creatures: 0, far: 0, skips: 0 };
+  throws.forEach(function (t) { if (t.any) o.targets++; if (t.cre) o.creatures++; if (t.farHit) o.far++; o.skips = Math.max(o.skips, t.skips); });
+  return o;
+}
+var LV_KEY = 'skipstone.v13.levels', RULES_KEY = 'skipstone.v13.rules', lvProg = {};
+try { var lpj = JSON.parse(localStorage.getItem(LV_KEY) || '{}'); if (lpj && typeof lpj === 'object') lvProg = lpj; } catch (e) {}
+function saveLv() { try { localStorage.setItem(LV_KEY, JSON.stringify(lvProg)); } catch (e) {} }
+function lvOpen(n) { return n === 1 || lvProg[n - 1] !== undefined; }
+function seenRules() { try { return localStorage.getItem(RULES_KEY) === '1'; } catch (e) { return false; } }
+function updateGoals() {
+  var on = mode === 'levels' && lvl;
+  $('goalChip').style.display = on ? '' : 'none'; $('goal2Chip').style.display = 'none';
+  if (!on) return;
+  var st = levelStats(), sec = goalList(lvl).slice(1);
+  $('goalChip').textContent = 'Goal ' + lvl.score;
+  if (sec.length) { $('goal2Chip').style.display = ''; $('goal2Chip').textContent = sec.map(function (g) { return g.short + ' ' + Math.min(st[g.key], g.val) + '/' + g.val; }).join(' · '); }
+}
+function fillBrief() {
+  var ul = $('tutGoals'); ul.textContent = '';
+  goalList(lvl).forEach(function (g) { var li = document.createElement('li'); li.textContent = g.text; ul.appendChild(li); });
+  $('tutTier').textContent = TIER_NAME[lvl.tier]; $('tutTier').className = 'tier ' + lvl.tier;
+  $('tutCond').textContent = 'Wind ' + windWord(lvl.wind) + '. ' + (lvl.tsz >= 1.15 ? 'Large' : lvl.tsz >= 0.95 ? 'Standard' : 'Small') + ' targets.' + (lvl.driftP ? ' Moving targets.' : '') + (lvl.farP ? ' Far creatures.' : '');
+}
+function showLevelMap() {
+  tutOpen = true; $('tut').classList.remove('show'); $('round').classList.remove('show');
+  var box = $('lvBody'), done = 0, i; box.textContent = '';
+  for (i = 1; i <= 30; i++) if (lvProg[i] !== undefined) done++;
+  $('lvSub').textContent = done + ' of 30 passed. Pass a level to unlock the next. Bar colour: green easy, gold hard, red very hard.';
+  LAKES.forEach(function (nm, li) {
+    var wrap = document.createElement('div'); wrap.className = 'lake';
+    var h = document.createElement('div'); h.className = 'nm'; h.textContent = (li + 1) + '. ' + nm; wrap.appendChild(h);
+    var row = document.createElement('div'); row.className = 'lvrow';
+    for (var k = 1; k <= 6; k++) (function (n) {
+      var b = document.createElement('button'), nn = document.createElement('span'), sm = document.createElement('small'), pr = lvProg[n] !== undefined;
+      b.type = 'button'; b.className = 'lv ' + TIERS.charAt(n - 1) + (pr ? ' done' : ''); b.disabled = !lvOpen(n);
+      nn.textContent = String(n); sm.textContent = pr ? String(lvProg[n]) : '';
+      b.appendChild(nn); b.appendChild(sm);
+      b.addEventListener('click', function () { Sound.unlock(); startLevel(n); });
+      row.appendChild(b);
+    })(li * 6 + k);
+    wrap.appendChild(row); box.appendChild(wrap);
+  });
+  $('lvClose').style.display = lvl ? '' : 'none';
+  $('lvmap').classList.add('show');
+}
+function startLevel(n) {
+  lvl = levelDef(n); mode = 'levels';
+  $('mFree').setAttribute('aria-pressed', 'false'); $('mDaily').setAttribute('aria-pressed', 'false'); $('mLevels').setAttribute('aria-pressed', 'true');
+  newRound();
+}
+function showLevelResult(tot) {
+  var L = lvl, st = levelStats(), ok = true, parts = [];
+  goalList(L).forEach(function (g) {
+    var have = g.key === 'score' ? tot : st[g.key], met = have >= g.val;
+    if (!met) ok = false;
+    parts.push(g.short + ' ' + g.val + ': ' + have + (met ? ' met' : ' not met'));
+  });
+  lvlPassed = ok;
+  if (ok) { lvProg[L.n] = Math.max(lvProg[L.n] || 0, tot); saveLv(); }
+  $('round').querySelector('h2').textContent = 'Level ' + L.n + (ok ? ' passed' : ' not passed');
+  $('rTotal').textContent = String(tot);
+  $('rSub').textContent = parts.join(' | ') + '.' + (ok ? (L.n < 30 ? ' Level ' + (L.n + 1) + ' is open.' : ' All 30 levels passed.') : '');
+  $('again').textContent = ok ? (L.n < 30 ? 'Next level' : 'Level map') : 'Retry level';
+  $('share').textContent = 'Level map';
+  $('round').classList.add('show'); Sound.roundEnd();
+}
+
 /* ---------- Basket, target and scoring ---------- */
 var TGT_NAME = { ring: 'Ring', hole: 'Hole', gate: 'Gate', hoops: 'Hoops' };
 var CRT = { ball: { name: 'Beach ball', r: 1.3, bonus: 100, v: 0 }, jetski: { name: 'Jetski', r: 2.0, bonus: 150, v: 2.0 }, croc: { name: 'Crocodile', r: 2.0, bonus: 175, v: 0.7 }, dolphin: { name: 'Dolphin', r: 1.9, bonus: 200, v: 0 }, nessie: { name: 'Loch Ness monster', r: 2.2, bonus: 250, v: 0 }, grandma: { name: 'Grandma', r: 1.7, bonus: 300, v: 0 } };
@@ -836,29 +979,30 @@ function showBanner(head, sub, gem) {
 }
 function pickRing() {
   var rr = mode === 'daily' ? rng32(seedFromStr(todayStr()) + thrown * 7919) : Math.random;
-  var u = rr(), type = u < 0.3 ? 'ring' : u < 0.5 ? 'hole' : u < 0.7 ? 'gate' : 'hoops';
+  var u = rr(), type = lvl ? pickMix(lvl.mix, u) : (u < 0.3 ? 'ring' : u < 0.5 ? 'hole' : u < 0.7 ? 'gate' : 'hoops'), ts = lvl ? lvl.tsz : 1;
   var lineBr, farX;
   if (type === 'hoops') {
     // Three hoops one behind another on the same line, spaced down the lake: more skips reach the later, smaller hoops
-    var x0 = 16 + rr() * 10, sp0 = 9 + rr() * 3, bz = (rr() * 2 - 1) * Math.min(9, x0 * 0.3), tn = bz / x0, hr = [1.2, 1.0, 0.85];
+    var x0 = 16 + rr() * 10, sp0 = 9 + rr() * 3, bz = (rr() * 2 - 1) * Math.min(9, x0 * 0.3), tn = bz / x0, hr = [1.2, 1.0, 0.85].map(function (q) { return q * ts; });
     var hoops = hr.map(function (rd, k) { var hx = x0 + k * sp0; return { x: hx, z: hx * tn, c: 0.6, r: rd, state: 'idle', flash: 0 }; });
     ring = { type: type, x: hoops[1].x, z: hoops[1].z, r: 3, flash: 0, hoops: hoops };
     lineBr = Math.atan2(hoops[1].z, hoops[1].x); farX = hoops[2].x;
   } else {
-    var D = 18 + rr() * 24, lim = Math.min(10, D * 0.28);
-    ring = { type: type, x: D, z: (rr() * 2 - 1) * lim, r: type === 'ring' ? 3.2 : 1.7, flash: 0, drift: 0 };
-    if ((type === 'ring' || type === 'hole') && thrown >= 3 && rr() < 0.4) ring.drift = type === 'ring' ? 3 : 2.5;
+    var D = lvl ? lvl.dmin + rr() * (lvl.dmax - lvl.dmin) : 18 + rr() * 24, lim = Math.min(10, D * 0.28);
+    ring = { type: type, x: D, z: (rr() * 2 - 1) * lim, r: (type === 'ring' ? 3.2 : 1.7) * ts, flash: 0, drift: 0 };
+    if ((type === 'ring' || type === 'hole') && thrown >= (lvl ? lvl.driftFrom : 3) && rr() < (lvl ? lvl.driftP : 0.4)) ring.drift = type === 'ring' ? 3 : 2.5;
     lineBr = Math.atan2(ring.z, ring.x); farX = ring.x;
   }
   // Bonus creature sits beyond the main target on the same line of fire, worth more because it needs more skips
-  var uc = rr(), ct = uc < 0.15 ? null : uc < 0.30 ? 'ball' : uc < 0.46 ? 'jetski' : uc < 0.58 ? 'nessie' : uc < 0.72 ? 'dolphin' : uc < 0.86 ? 'croc' : 'grandma';
+  var uc = rr(); if (lvl) uc = rr() < lvl.cp ? 0.15 + uc * 0.85 : 0;
+  var ct = uc < 0.15 ? null : uc < 0.30 ? 'ball' : uc < 0.46 ? 'jetski' : uc < 0.58 ? 'nessie' : uc < 0.72 ? 'dolphin' : uc < 0.86 ? 'croc' : 'grandma';
   crt = null;
   if (ct) {
     // About a third of creatures sit far out (62 to 110 m) as a distance challenge; they pay 50% more and have a wider hit zone
-    var far = rr() < 0.34, cx = far ? 62 + rr() * 48 : farX + 8 + rr() * 6, info = CRT[ct];
+    var far = rr() < (lvl ? lvl.farP : 0.34), cx = far ? 62 + rr() * ((lvl ? lvl.farMax : 110) - 62) : farX + 8 + rr() * 6, info = CRT[ct];
     var tn = Math.tan(lineBr); if (far) tn = clamp(tn, -0.2, 0.2);
     var cz = cx * tn + (rr() * 2 - 1) * 1.2, dir = rr() < 0.5 ? -1 : 1;
-    crt = { type: ct, x: cx, z0: cz, dir: dir, r: info.r * (far ? 1 + (cx - 60) / 100 : 1), bonus: far ? Math.round(info.bonus * 1.5 / 25) * 25 : info.bonus, name: info.name, v: info.v, hit: false, hitT: 0, far: far };
+    crt = { type: ct, x: cx, z0: cz, dir: dir, r: info.r * (far ? 1 + (cx - 60) / 100 : 1) * (lvl ? lvl.csz : 1), bonus: far ? Math.round(info.bonus * 1.5 / 25) * 25 : info.bonus, name: info.name, v: info.v, hit: false, hitT: 0, far: far };
     if (crt.v) crt.z0 = cz - dir * crt.v * Math.max(2.6, cx / 16);
   }
   playT = 0;
@@ -874,18 +1018,32 @@ function crtAt(t) {
   if (crt.v) return { x: crt.x, z: crt.z0 + crt.dir * crt.v * t };
   return { x: crt.x, z: crt.z0 };
 }
-function windNow() { return curWind || windAt(clockT()); }
+function windNow() { return curWind || (lvl ? levelWind(clockT()) : windAt(clockT())); }
 function updateHud() {
+  updateGoals();
   $('throwNo').textContent = Math.min(thrown + (state === 'flying' || state === 'settling' || state === 'returning' ? 0 : 1), maxThrows) + '/' + maxThrows;
   var cm2 = 1 + 0.25 * Math.min(combo, 4); $('comboChip').textContent = 'Combo x' + cm2.toFixed(2).replace(/0$/, '').replace(/\.0$/, '');
   $('total').textContent = String(total);
 }
 function showTut() {
-  tutOpen = true; $('tutHead').textContent = mode === 'daily' ? 'Daily challenge' : 'How to play';
+  tutOpen = true;
+  var lv = mode === 'levels' && lvl;
+  $('tutHead').textContent = lv ? 'Level ' + lvl.n + ' · ' + lvl.name : mode === 'daily' ? 'Daily challenge' : 'How to play';
+  $('tutBrief').style.display = lv ? 'block' : 'none';
+  if (lv) fillBrief();
+  $('tutRules').style.display = (!lv || !seenRules()) ? 'block' : 'none';
+  $('tutDaily').style.display = mode === 'daily' ? 'block' : 'none';
   $('tut').classList.add('show');
 }
-$('tutGo').addEventListener('click', function () { Sound.unlock(); tutOpen = false; $('tut').classList.remove('show'); $('hint').classList.add('gone'); });
+$('tutGo').addEventListener('click', function () { Sound.unlock(); tutOpen = false; $('tut').classList.remove('show'); $('hint').classList.add('gone'); try { localStorage.setItem(RULES_KEY, '1'); } catch (e) {} });
+$('lvClose').addEventListener('click', function () {
+  $('lvmap').classList.remove('show');
+  if (state === 'roundEnd') $('round').classList.add('show');
+  else if (thrown === 0) showTut();
+  else tutOpen = false;
+});
 function newRound() {
+  $('lvmap').classList.remove('show');
   basketNo++; theme = basketNo % 2 === 1 ? 'dusk' : 'dawn';
   $('hint').textContent = 'Swipe up toward the target. Speed is power. A shorter flick throws lower. Turn the phone or angle the swipe to aim.'; $('hint').classList.remove('gone');
   for (var k in BASKET0) basket[k] = BASKET0[k];
@@ -896,12 +1054,18 @@ function newRound() {
   showTut();
   cam.x = AIM.x; cam.z = AIM.z; cam.h = AIM.h; cam.yaw = rad(aimYaw); cam.f = F0; cam.hy = HOR_AIM; punch = 1; slow = 1; handA = 1;
 }
-$('again').addEventListener('click', function () { Sound.unlock(); if (mode === 'daily') setMode('free'); else newRound(); });
+$('again').addEventListener('click', function () {
+  Sound.unlock();
+  if (mode === 'levels' && lvl) { if (lvlPassed && lvl.n >= 30) showLevelMap(); else startLevel(lvlPassed ? lvl.n + 1 : lvl.n); return; }
+  if (mode === 'daily') setMode('free'); else newRound();
+});
 function setMode(m) {
   if (m !== mode && thrown > 0 && state !== 'roundEnd') { var h = $('hint'); h.textContent = 'Finish this basket before switching mode.'; h.classList.remove('gone'); return; }
-  mode = m;
+  mode = m; if (m !== 'levels') lvl = null;
   $('mFree').setAttribute('aria-pressed', m === 'free' ? 'true' : 'false');
   $('mDaily').setAttribute('aria-pressed', m === 'daily' ? 'true' : 'false');
+  $('mLevels').setAttribute('aria-pressed', m === 'levels' ? 'true' : 'false');
+  if (m === 'levels') { showLevelMap(); return; }
   newRound();
   if (m === 'daily' && daily.last === todayStr()) showDailyDone();
 }
@@ -910,11 +1074,13 @@ function showDailyDone() {
   $('round').querySelector('h2').textContent = 'Daily challenge done';
   $('rTotal').textContent = String(daily.score);
   $('rSub').textContent = 'Already played today: ' + daily.score + ' points, ' + daily.skips + ' skips. Streak ' + daily.streak + '. A new challenge unlocks tomorrow.';
-  $('again').textContent = 'Play free basket'; $('round').classList.add('show');
+  $('again').textContent = 'Play free basket'; $('share').textContent = 'Copy result'; $('round').classList.add('show');
 }
 $('mFree').addEventListener('click', function () { Sound.unlock(); setMode('free'); });
 $('mDaily').addEventListener('click', function () { Sound.unlock(); setMode('daily'); });
+$('mLevels').addEventListener('click', function () { Sound.unlock(); setMode('levels'); });
 $('share').addEventListener('click', function () {
+  if (mode === 'levels') { showLevelMap(); return; }
   var sk = throws.reduce(function (a, t2) { return a + t2.skips; }, 0);
   var txt = 'Skipstone ' + (mode === 'daily' ? 'Daily ' + todayStr() : 'basket') + ': ' + total + ' points, ' + sk + ' skips' + (mode === 'daily' ? ', streak ' + streakNow() : '');
   if (!throws.length) txt = 'Skipstone Daily ' + daily.last + ': ' + daily.score + ' points, ' + daily.skips + ' skips, streak ' + daily.streak;
@@ -998,6 +1164,7 @@ function finishThrow() {
   var mainOK = ring.type === 'hoops' ? r.marks.filter(function (q) { return q.kind === 'hoop' && q.b > 0; }).length === 3
     : ring.type === 'gate' ? r.marks.some(function (q) { return q.kind === 'gate' && q.b > 0; }) : r.hits.some(function (q) { return q > 0; });
   var crtOK = r.marks.some(function (q) { return q.kind === 'crt'; });
+  var anyMain = ring.type === 'hoops' ? r.marks.some(function (q) { return q.kind === 'hoop' && q.b > 0; }) : mainOK;
   var sweep = !!crt && mainOK && crtOK, marathon = skips >= 15, far = d >= 100, notes = [], want = 0;
   if (sweep) { base += 100; want++; notes.push('Clean sweep +100'); }
   if (marathon) { base += 150; want++; notes.push(skips + ' skips +150'); }
@@ -1012,7 +1179,7 @@ function finishThrow() {
   var score = Math.round(base * mult);
   combo = bonus > 0 ? combo + 1 : 0;
   total += score;
-  throws.push({ n: thrown, stone: r.stone.name, skips: skips, dist: d, ring: bonus, score: score });
+  throws.push({ n: thrown, stone: r.stone.name, skips: skips, dist: d, ring: bonus, score: score, any: anyMain, cre: crtOK, farHit: crtOK && !!crt && !!crt.far });
   var newBest = skips > best.skips;
   if (newBest) { best.skips = skips; saveBest(); showBest(); }
   $('total').textContent = String(total);
@@ -1057,6 +1224,8 @@ function showRound() {
     rows.appendChild(tr);
   });
   var skipsAll = throws.reduce(function (a, t2) { return a + t2.skips; }, 0);
+  $('share').textContent = 'Copy result';
+  if (mode === 'levels' && lvl) { showLevelResult(total); return; }
   $('round').querySelector('h2').textContent = mode === 'daily' ? 'Daily challenge complete' : 'Basket complete';
   $('again').textContent = mode === 'daily' ? 'Play free basket' : 'New basket';
   if (mode === 'daily') {
@@ -1277,7 +1446,7 @@ function launch(angle, yaw, power, spin) {
   var stone = currentStone();
   if (basket[stone.id] <= 0 || thrown >= maxThrows) return;
   basket[stone.id]--; thrown++;
-  var cw = curWind; run = simulate(stone, angle, yaw, power, spin, cw ? function () { return cw; } : windAt, clockT(), Math.random);
+  var cw = curWind; run = simulate(stone, angle, yaw, power, spin, cw ? function () { return cw; } : (lvl ? levelWind : windAt), clockT(), Math.random);
   run.power = power; run.spin = spin; run.stone = stone; run.yaw = yaw; run.yawRad = rad(yaw); run.hits = ringHits(run.events); run.marks = buildMarks(run); run.extra = run.marks.reduce(function (a, mk) { return a + mk.b; }, 0); run.shown = false;
   playT = 0; evIdx = 0; settleT = 0; trail.length = 0; trailAcc = 0; punch = 1; slow = 1; needsNext = true;
   state = 'flying';
