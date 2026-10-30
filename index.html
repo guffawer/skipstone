@@ -169,7 +169,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
   <header class="top">
     <div class="brand">
       <span class="word">Skipstone</span>
-      <span class="lbl">Prototype v0.7</span>
+      <span class="lbl">Prototype v0.8</span>
     </div>
     <div class="bests">
       <div><span class="lbl">Best round</span><b id="bestRound">0</b></div>
@@ -372,14 +372,18 @@ var Sound = (function () {
   }
   function startAmbient() {
     started = true;
-    // Breeze in leaves: soft, high-passed noise, no low rumble (a low rumble reads as surf)
-    var hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 520;
-    wFilt = ctx.createBiquadFilter(); wFilt.type = 'bandpass'; wFilt.frequency.value = 900; wFilt.Q.value = 0.5;
-    wGain = ctx.createGain(); wGain.gain.value = 0.01;
-    loopSrc(noiseW, 0.8).connect(hp); hp.connect(wFilt); wFilt.connect(wGain); wGain.connect(master);
+    // Very soft, low-passed breeze in the canopy. No broadband hiss and no surf-like swell.
+    var lp0 = ctx.createBiquadFilter(); lp0.type = 'lowpass'; lp0.frequency.value = 650; lp0.Q.value = 0.3;
+    wFilt = lp0;
+    wGain = ctx.createGain(); wGain.gain.value = 0.004;
+    loopSrc(noiseB, 0.7).connect(lp0); lp0.connect(wGain); wGain.connect(master);
     whGain = ctx.createGain(); whGain.gain.value = 0;
-    var wh = ctx.createBiquadFilter(); wh.type = 'bandpass'; wh.frequency.value = 2100; wh.Q.value = 4;
-    loopSrc(noiseW, 1).connect(wh); wh.connect(whGain); whGain.connect(master);
+    // Faint insect hum of a tropical lakeside, very low in the mix
+    var ins = ctx.createOscillator(); ins.type = 'sine'; ins.frequency.value = 3900;
+    var insG = ctx.createGain(); insG.gain.value = 0.0012;
+    var am = ctx.createOscillator(); am.frequency.value = 31; var amG = ctx.createGain(); amG.gain.value = 0.0012; am.connect(amG); amG.connect(insG.gain);
+    var swell = ctx.createOscillator(); swell.frequency.value = 0.06; var swG = ctx.createGain(); swG.gain.value = 0.0008; swell.connect(swG); swG.connect(insG.gain);
+    ins.connect(insG); insG.connect(master); ins.start(); am.start(); swell.start();
     scheduleLap(); scheduleBird();
   }
   function ensure() {
@@ -412,43 +416,68 @@ var Sound = (function () {
     if (ctx.createStereoPanner) { var p = ctx.createStereoPanner(); p.pan.value = pan; lp.connect(p); p.connect(sfx); } else lp.connect(sfx);
     o.start(t); o.stop(t + dur + 0.05);
   }
+  // Warbling note: a sine with vibrato, so calls sound like a bird and not a beep
+  function vnote(t, f0, f1, dur, vol, pan, vibHz, vibDepth) {
+    var o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur * 0.85);
+    var lf = ctx.createOscillator(); lf.frequency.value = vibHz; var lg = ctx.createGain(); lg.gain.value = vibDepth; lf.connect(lg); lg.connect(o.frequency);
+    var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + Math.min(0.04, dur * 0.3)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 5200;
+    o.connect(g); g.connect(lp);
+    if (ctx.createStereoPanner) { var p = ctx.createStereoPanner(); p.pan.value = pan; lp.connect(p); p.connect(sfx); } else lp.connect(sfx);
+    o.start(t); lf.start(t); o.stop(t + dur + 0.05); lf.stop(t + dur + 0.05);
+  }
+  var PENTA = [1, 1.125, 1.25, 1.5, 1.667, 2];
   function chirp() {
     if (!ctx || muted || !visible) return;
-    var t = ctx.currentTime + 0.03, pan = Math.random() * 1.6 - 0.8, f0 = 2300 + Math.random() * 2000, i;
-    var kind = Math.random();
-    if (kind < 0.2) {
-      note(t, 1250 + Math.random() * 300, 1180, 0.22, 0.014, pan); note(t + 0.3, 980 + Math.random() * 200, 930, 0.28, 0.013, pan);
-    } else if (kind < 0.62) {
-      var n = 2 + Math.floor(Math.random() * 3);
-      for (i = 0; i < n; i++) note(t + i * 0.14, f0 * (1 + i * 0.03), f0 * (1.28 + i * 0.03), 0.09, 0.016, pan);
+    var t = ctx.currentTime + 0.03, pan = Math.random() * 1.6 - 0.8, kind = Math.random(), i, f;
+    if (kind < 0.25) {
+      // Koel: a patient rising two-note call that speeds up
+      var n = 4 + Math.floor(Math.random() * 4), gap = 0.42;
+      f = 620 + Math.random() * 120;
+      for (i = 0; i < n; i++) { vnote(t, f * (1 + i * 0.07), f * (1.35 + i * 0.07), 0.3, 0.03, pan, 6, 10); t += gap; gap = Math.max(0.2, gap * 0.9); }
+    } else if (kind < 0.5) {
+      // Tropical songbird phrase: clear pentatonic whistles with vibrato
+      var m = 3 + Math.floor(Math.random() * 4); f = 1500 + Math.random() * 900;
+      for (i = 0; i < m; i++) { var r0 = PENTA[Math.floor(Math.random() * PENTA.length)]; vnote(t, f * r0, f * r0 * (Math.random() < 0.5 ? 1.12 : 0.9), 0.17 + Math.random() * 0.14, 0.024, pan, 7, 20); t += 0.2 + Math.random() * 0.14; }
+    } else if (kind < 0.72) {
+      // Soft dove coo: three low, mellow notes
+      f = 430 + Math.random() * 80;
+      for (i = 0; i < 3; i++) { vnote(t, f * 1.08, f * 0.96, 0.4, 0.034, pan, 4, 4); t += 0.5; }
+    } else if (kind < 0.9) {
+      // Warbling trill, like a bulbul or finch
+      var w = 8 + Math.floor(Math.random() * 6); f = 2300 + Math.random() * 900;
+      for (i = 0; i < w; i++) { vnote(t, f * (i % 2 ? 1.1 : 1), f * (i % 2 ? 1.0 : 1.14), 0.07, 0.016, pan, 0.1, 0); t += 0.075; }
     } else {
-      var m = 7 + Math.floor(Math.random() * 7);
-      for (i = 0; i < m; i++) note(t + i * 0.06, f0 * (i % 2 ? 1.12 : 1), f0 * (i % 2 ? 1.0 : 1.12), 0.05, 0.011, pan);
+      // Gentle parrot-like whistle, two notes, one low one high
+      f = 1100 + Math.random() * 300;
+      vnote(t, f, f * 1.5, 0.28, 0.028, pan, 5, 14); vnote(t + 0.34, f * 1.6, f * 1.1, 0.34, 0.026, pan, 5, 14);
     }
+    // Occasionally a second bird answers from the other side
+    if (Math.random() < 0.3) setTimeout(chirp, 700 + Math.random() * 1400);
   }
   // Gentle lapping at the shore: short, soft, irregular water slaps and tiny drips. No continuous swell.
   var lapTimer = 0;
   function lap() {
     if (!ctx || muted || !visible) return;
     var t0 = ctx.currentTime + 0.02, k = 1 + Math.floor(Math.random() * 3), i;
-    for (i = 0; i < k; i++) {
-      var tt = t0 + i * (0.12 + Math.random() * 0.14), f = 500 + Math.random() * 900, d = 0.09 + Math.random() * 0.14;
-      var s = ctx.createBufferSource(); s.buffer = noiseW;
-      var bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 2.5; bp.frequency.setValueAtTime(f, tt); bp.frequency.exponentialRampToValueAtTime(f * 1.5, tt + d);
-      var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, tt); g.gain.linearRampToValueAtTime(0.012 + Math.random() * 0.016, tt + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, tt + d);
-      s.connect(bp); bp.connect(g); g.connect(master); s.start(tt, Math.random() * 2); s.stop(tt + d + 0.05);
+    // Water drips and soft lapping: rounded sine "plips" and one very soft, low-passed swish. No hissing slaps.
+    for (i = 0; i < k; i++) tone2(t0 + i * (0.1 + Math.random() * 0.2), 520 + Math.random() * 700);
+    if (Math.random() < 0.45) {
+      var s = ctx.createBufferSource(); s.buffer = noiseB;
+      var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420;
+      var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(0.012, t0 + 0.22); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.7);
+      s.connect(lp); lp.connect(g); g.connect(master); s.start(t0, Math.random() * 2); s.stop(t0 + 0.8);
     }
-    if (Math.random() < 0.35) tone2(t0 + 0.05 + Math.random() * 0.3, 650 + Math.random() * 500);
   }
   function tone2(tt, f) {
-    var o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(f, tt); o.frequency.exponentialRampToValueAtTime(f * 1.8, tt + 0.07);
-    var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, tt); g.gain.linearRampToValueAtTime(0.006, tt + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.09);
-    o.connect(g); g.connect(master); o.start(tt); o.stop(tt + 0.12);
+    var o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(f, tt); o.frequency.exponentialRampToValueAtTime(f * 1.6, tt + 0.06);
+    var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, tt); g.gain.linearRampToValueAtTime(0.011, tt + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.1);
+    o.connect(g); g.connect(master); o.start(tt); o.stop(tt + 0.14);
   }
   function scheduleLap() { clearTimeout(lapTimer); lapTimer = setTimeout(function () { lap(); scheduleLap(); }, 900 + Math.random() * 2200); }
   function scheduleBird() {
     clearTimeout(birdTimer);
-    birdTimer = setTimeout(function () { chirp(); scheduleBird(); }, 1800 + Math.random() * 5200);
+    birdTimer = setTimeout(function () { chirp(); scheduleBird(); }, 1400 + Math.random() * 3600);
   }
   document.addEventListener('visibilitychange', function () {
     visible = !document.hidden;
@@ -460,9 +489,8 @@ var Sound = (function () {
     setWind: function (sp) {
       if (!ctx || !wGain) return;
       var n = ctx.currentTime;
-      wGain.gain.setTargetAtTime(0.008 + 0.034 * Math.min(sp, 6) / 6, n, 0.5);
-      wFilt.frequency.setTargetAtTime(700 + sp * 140, n, 0.5);
-      whGain.gain.setTargetAtTime(sp > 3.6 ? (sp - 3.6) * 0.004 : 0, n, 0.5);
+      wGain.gain.setTargetAtTime(0.003 + 0.011 * Math.min(sp, 6) / 6, n, 0.8);
+      wFilt.frequency.setTargetAtTime(380 + sp * 60, n, 0.8);
     },
     throwIt: function (power) {
       if (muted || !ensure()) return;
@@ -491,10 +519,14 @@ var Sound = (function () {
     },
     creature: function (type) {
       if (muted || !ensure()) return;
-      var t = ctx.currentTime + 0.02;
-      if (type === 'ball') { tone(t, 260, 720, 0.22, 0.2, 'sine'); tone(t + 0.12, 360, 900, 0.18, 0.12, 'sine'); }
-      else if (type === 'jetski') { tone(t, 466, 0, 0.16, 0.08, 'square'); tone(t + 0.22, 466, 0, 0.26, 0.08, 'square'); burst(t, 0.5, 'lowpass', 700, 300, 0.7, 0.12); }
-      else { tone(t, 120, 55, 0.9, 0.2, 'triangle'); tone(t + 0.02, 60, 40, 1.0, 0.22, 'sine'); burst(t, 0.9, 'lowpass', 500, 120, 0.8, 0.22); }
+      var t = ctx.currentTime + 0.02, i;
+      // Every creature hit ends on a bright rising chime, so it reads as a reward and not a miss
+      var arp = [523, 659, 784, 1046, 1319];
+      if (type === 'ball') { tone(t, 260, 720, 0.2, 0.16, 'sine'); }
+      else if (type === 'jetski') { burst(t, 0.45, 'lowpass', 500, 1400, 0.7, 0.1); tone(t, 180, 420, 0.4, 0.1, 'triangle'); burst(t + 0.15, 0.3, 'highpass', 2200, 1200, 0.7, 0.12); }
+      else { tone(t, 120, 70, 0.7, 0.14, 'triangle'); burst(t, 0.6, 'lowpass', 500, 160, 0.8, 0.14); }
+      for (i = 0; i < arp.length; i++) tone(t + 0.12 + i * 0.075, arp[i], 0, 0.5, 0.1, 'triangle');
+      tone(t + 0.12 + arp.length * 0.075, 1568, 0, 0.8, 0.08, 'sine');
     },
     ring: function (bull) {
       if (muted || !ensure()) return;
