@@ -136,6 +136,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
 
 .angle { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 10px; }
 .angle .lbl, .angle .read, .angle .slider { display: none; }
+.angle.tiltOn .read { display: block; grid-column: 1; }
 .angle { grid-template-columns: 1fr auto; }
 .angle .read { font-family: var(--font-display); font-weight: 800; font-size: 28px; line-height: 1; font-variant-numeric: tabular-nums; }
 .angle .read small { font-size: 12px; font-weight: 600; color: var(--mute); letter-spacing: .06em; margin-left: 6px; }
@@ -218,7 +219,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
   <header class="top">
     <div class="brand">
       <span class="word">Skipstone</span>
-      <span class="lbl">Prototype v1.6</span>
+      <span class="lbl">Prototype v1.8</span>
     </div>
     <div class="bests">
       <div><span class="lbl">Best round</span><b id="bestRound">0</b></div>
@@ -796,36 +797,56 @@ $('haptic').addEventListener('click', function () {
 
 /* Phone aim: tilt sets the throw angle, turning the phone sets direction. The pose held when Phone aim is switched on, and after each Recentre,
    counts as 10 degrees and as pointing at the target. */
-var tilt = { on: false, seen: false, beta0: null, smooth: 10, timer: 0 };
+var tilt = { on: false, seen: false, beta0: null, smooth: 10, timer: 0, auto: false, stillT: 0, autoT: 0, pa: null, pb: null, pt: 0, lastBeta: null };
 function wrap180(a) { while (a > 180) a -= 360; while (a < -180) a += 360; return a; }
 function ringBearing() { return ring ? Math.atan2(ring.z, ring.x) * 180 / Math.PI : 0; }
-function recentre(full) { yawRef = lastAlpha; aimYaw = ringBearing(); if (full && tilt.on) tilt.beta0 = null; }
+function recentre(full) {
+  aimYaw = ringBearing();
+  if (tilt.on && !full) { tilt.auto = true; tilt.stillT = 0; tilt.autoT = 0; tilt.smooth = 10; setAngle(10); return; }
+  yawRef = lastAlpha;
+  if (tilt.on) { tilt.beta0 = tilt.lastBeta; tilt.smooth = 10; setAngle(10); tilt.auto = false; }
+}
+/* Every new throw re-references the phone: the pose it is held in once it settles (still for about a third of a second, or 1.5 s at most while
+   walking) counts as pointing at the target with a 10 degree throw angle. The Recentre button does the same instantly. */
 function onOrient(e) {
   if (e.beta === null || e.beta === undefined) return;
   tilt.seen = true;
+  var now = e.timeStamp || Date.now(), dt = tilt.pt ? Math.max(0.001, Math.min(0.2, (now - tilt.pt) / 1000)) : 0.016;
+  var al = (e.alpha === null || e.alpha === undefined) ? null : e.alpha;
+  var rate = tilt.pb === null ? 0 : (Math.abs(e.beta - tilt.pb) + (al !== null && tilt.pa !== null ? Math.abs(wrap180(al - tilt.pa)) : 0)) / dt;
+  tilt.pt = now; tilt.pb = e.beta; tilt.pa = al; tilt.lastBeta = e.beta;
+  if (al !== null) lastAlpha = al;
   if (tilt.beta0 === null) tilt.beta0 = e.beta;
-  var target = clamp(10 + (e.beta - tilt.beta0) * 0.6, 0, 45);
+  if (tilt.auto) {
+    tilt.autoT += dt; tilt.stillT = rate < 15 ? tilt.stillT + dt : 0;
+    if (tilt.stillT >= 0.35 || tilt.autoT >= 1.5) {
+      tilt.auto = false; tilt.beta0 = e.beta; yawRef = al; tilt.smooth = 10; aimYaw = ringBearing();
+    }
+    return;
+  }
+  var target = clamp(10 + (e.beta - tilt.beta0) * 0.7, 2, 20);
   tilt.smooth += (target - tilt.smooth) * 0.25;
-  if (e.alpha !== null && e.alpha !== undefined) {
-    lastAlpha = e.alpha;
-    if (yawRef === null) yawRef = e.alpha;
+  if (aimLocked === null) setAngle(Math.round(tilt.smooth * 2) / 2);
+  if (al !== null) {
+    if (yawRef === null) yawRef = al;
     yawMode = true;
     if (yawLocked === null) {
-      var yt = clamp(ringBearing() + wrap180(yawRef - e.alpha) * 0.6, -50, 50);
+      var yt = clamp(ringBearing() + wrap180(yawRef - al) * 0.6, -50, 50);
       aimYaw += (yt - aimYaw) * 0.22;
     }
   }
 }
 function tiltOff(msg) {
-  tilt.on = false; tilt.beta0 = null; yawMode = false; yawRef = null; aimYaw = ringBearing();
+  tilt.on = false; tilt.beta0 = null; tilt.auto = false; yawMode = false; yawRef = null; aimYaw = ringBearing(); document.querySelector('.angle').classList.remove('tiltOn');
   window.removeEventListener('deviceorientation', onOrient);
   $('tilt').setAttribute('aria-pressed', 'false'); $('tilt').textContent = 'Phone aim'; $('recentre').classList.remove('on');
   $('tiltNote').textContent = msg;
 }
 function tiltOn() {
-  tilt.on = true; tilt.seen = false; tilt.beta0 = null; tilt.smooth = aimAngle; yawRef = null;
+  tilt.on = true; tilt.seen = false; tilt.beta0 = null; tilt.smooth = 10; setAngle(10); yawRef = null; tilt.auto = true; tilt.stillT = 0; tilt.autoT = 0; tilt.pa = null; tilt.pb = null; tilt.pt = 0;
+  document.querySelector('.angle').classList.add('tiltOn');
   $('tilt').setAttribute('aria-pressed', 'true'); $('tilt').textContent = 'Phone aim on'; $('recentre').classList.add('on');
-  $('tiltNote').textContent = 'Phone aim on. Turn the phone to aim. Tap Recentre to reset direction.';
+  $('tiltNote').textContent = 'Phone aim on. Turn the phone to aim and tilt it to set the throw angle. It recentres on its own before every throw; Recentre does it instantly.';
   window.addEventListener('deviceorientation', onOrient);
   clearTimeout(tilt.timer);
   tilt.timer = setTimeout(function () { if (tilt.on && !tilt.seen) tiltOff('No motion data reached this page. Swipe direction aims.'); }, 1500);
@@ -1572,7 +1593,7 @@ function create() {
     if (a.tap) { h.textContent = 'Swipe up toward the ring, do not tap.'; h.classList.remove('gone'); return; }
     if (a.down) { h.textContent = 'Swipe upward, away from you, toward the water.'; h.classList.remove('gone'); return; }
     var fy = yawMode ? (lockedYaw === null ? aimYaw : lockedYaw) : (lockedYaw === null ? aimYaw : lockedYaw) + a.yaw;
-    launch(a.angle, clamp(fy, -60, 60), a.power, a.spin);
+    launch(tilt.on && tilt.seen ? (lockedAngle === null ? aimAngle : lockedAngle) : a.angle, clamp(fy, -60, 60), a.power, a.spin);
   }
   cv.addEventListener('pointerup', release);
   cv.addEventListener('pointercancel', release);
