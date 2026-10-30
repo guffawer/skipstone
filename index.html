@@ -121,7 +121,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
 .hint.gone { opacity: 0; }
 
 .deck { background: var(--deck); border-radius: 8px; padding: 10px 12px 12px; display: grid; gap: 10px; }
-.stones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.stones { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 6px; }
 .stone {
   display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left;
   background: var(--deck-2); border: 1px solid var(--line); border-radius: 6px; padding: 7px 8px; min-width: 0;
@@ -163,6 +163,17 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
   #skips.pop { animation: none; }
   .card, .hint, .metrics, .round, .wind svg { transition: none; }
 }
+.pops { position: absolute; left: 50%; top: 63%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; z-index: 6; }
+.pop { display: flex; align-items: baseline; gap: 8px; color: #ffd25a; text-shadow: 0 2px 0 #0b2530, 0 0 14px rgba(11, 37, 48, .9); animation: popin 1.9s ease-out forwards; white-space: nowrap; }
+.pop b { font-family: var(--font-display); font-weight: 800; font-size: 54px; line-height: 1; font-variant-numeric: tabular-nums; }
+.pop span { font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: .06em; text-transform: uppercase; color: #fff; }
+@keyframes popin { 0% { opacity: 0; transform: translateY(14px) scale(.7); } 12% { opacity: 1; transform: translateY(0) scale(1.15); } 22% { transform: scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-34px); } }
+.banner { position: absolute; left: 50%; top: 34%; transform: translate(-50%, -50%); width: min(86%, 300px); box-sizing: border-box; text-align: center; padding: 12px 14px; border-radius: 10px; background: rgba(15, 35, 43, .9); border: 2px solid var(--ochre); color: var(--paper); pointer-events: none; z-index: 7; opacity: 0; }
+.banner.show { animation: bannerin 3s ease-out forwards; }
+@keyframes bannerin { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.8); } 10% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); } 18% { transform: translate(-50%, -50%) scale(1); } 85% { opacity: 1; } 100% { opacity: 0; } }
+.banner .gem { display: block; width: 44px; height: 16px; margin: 0 auto 6px; border-radius: 50%; background: conic-gradient(#ff5e5e, #ffb347, #fff35e, #6be08a, #5eb7ff, #b583ff, #ff5e5e); box-shadow: 0 0 14px rgba(255, 255, 255, .55); }
+.banner h3 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 28px; letter-spacing: .06em; text-transform: uppercase; line-height: 1.05; }
+.banner p { margin: 4px 0 0; font-size: 13px; color: var(--ochre); }
 .tut { position: absolute; inset: 0; box-sizing: border-box; padding: 12px 12px 10px; overflow: auto; background: rgba(15, 35, 43, .985); color: var(--paper); display: none; flex-direction: column; gap: 6px; z-index: 5; }
 .tut.show { display: flex; }
 .tut h2 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: .06em; text-transform: uppercase; }
@@ -177,7 +188,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
   <header class="top">
     <div class="brand">
       <span class="word">Skipstone</span>
-      <span class="lbl">Prototype v0.9</span>
+      <span class="lbl">Prototype v1.0</span>
     </div>
     <div class="bests">
       <div><span class="lbl">Best round</span><b id="bestRound">0</b></div>
@@ -227,6 +238,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
         </div>
       </div>
       <div class="hint" id="hint">Swipe up toward the target. Speed is power. A shorter flick throws lower. Turn the phone or angle the swipe to aim.</div>
+      <div class="pops" id="pops" aria-hidden="true"></div>
+      <div class="banner" id="banner" aria-live="polite"><span class="gem" id="bannerGem"></span><h3 id="bannerHead"></h3><p id="bannerSub"></p></div>
       <div class="tut" id="tut">
         <h2 id="tutHead">How to play</h2>
         <p>Skip stones across a quiet lake with a basket of 10. Score skips, distance and bonuses. <b>Swipe up</b> to throw: speed is power, a shorter flick throws lower, and turning the phone or angling the swipe aims.</p>
@@ -278,7 +291,8 @@ var MAXM = 150, KW = 0.07;
 var STONES = [
   { id: 'pebble',  name: 'River Pebble', note: 'Balanced',                 tol: 1.00, sens: 1.0,  flat: 0.60, mass: 0.50, spinRet: 0.94, drag: 0.050, launch: 1.00, vw: 0.46, vt: 0.13, sw: 16, sh: 5, color: 0xe0a03c, css: '#e0a03c' },
   { id: 'slate',   name: 'Flat Slate',   note: 'Most skips, touchy angle', tol: 0.85, sens: 1.0,  flat: 0.95, mass: 0.30, spinRet: 0.96, drag: 0.090, launch: 1.04, vw: 0.50, vt: 0.08, sw: 15, sh: 3, color: 0xe0624a, css: '#e0624a' },
-  { id: 'granite', name: 'Granite Disc', note: 'Few skips, forgiving',     tol: 1.35, sens: 0.55, flat: 0.30, mass: 1.10, spinRet: 0.90, drag: 0.024, launch: 0.90, vw: 0.52, vt: 0.19, sw: 19, sh: 8, color: 0xf1ecdc, css: '#f1ecdc' }
+  { id: 'granite', name: 'Granite Disc', note: 'Few skips, forgiving',     tol: 1.35, sens: 0.55, flat: 0.30, mass: 1.10, spinRet: 0.90, drag: 0.024, launch: 0.90, vw: 0.52, vt: 0.19, sw: 19, sh: 8, color: 0xf1ecdc, css: '#f1ecdc' },
+  { id: 'rainbow', name: 'Lucky Stone', note: 'Bonus stone, extra stable', rainbow: true, tol: 1.15, sens: 0.8, flat: 0.70, mass: 0.50, spinRet: 0.95, drag: 0.045, launch: 1.02, vw: 0.48, vt: 0.13, sw: 16, sh: 5, color: 0xff9a5e, css: 'conic-gradient(#ff5e5e, #ffb347, #fff35e, #6be08a, #5eb7ff, #b583ff, #ff5e5e)' }
 ];
 /* Wind as a pure function of time: speed gusts and direction drifts (x along the lake, z sideways). */
 function windAt(T) {
@@ -584,7 +598,7 @@ var Haptics = (function () {
 })();
 
 /* ---------- Game state ---------- */
-var BASKET0 = { pebble: 4, slate: 3, granite: 3 };
+var BASKET0 = { pebble: 4, slate: 3, granite: 3, rainbow: 0 };
 var basket = {}, thrown = 0, total = 0, throws = [], ring = null, needsNext = false;
 var stoneIdx = 0, aimAngle = 10, aimLocked = null, yawLocked = null, yawMode = false, aimYaw = 0, yawRef = null, lastAlpha = null;
 var mode = 'free', curWind = null, dailyDone = false, maxThrows = 10, combo = 0, extras = 0;
@@ -626,6 +640,7 @@ function refreshStones() {
   STONES.forEach(function (st, i) {
     stoneBtns[i].b.setAttribute('aria-pressed', i === stoneIdx ? 'true' : 'false');
     stoneBtns[i].b.disabled = basket[st.id] <= 0;
+    stoneBtns[i].b.style.display = (st.rainbow && basket[st.id] <= 0) ? 'none' : '';
     stoneBtns[i].ct.textContent = 'x' + basket[st.id];
   });
 }
@@ -732,7 +747,18 @@ showStreak();
 var TGT_NAME = { ring: 'Ring', hole: 'Hole', gate: 'Gate', hoops: 'Hoops' };
 var CRT = { ball: { name: 'Beach ball', r: 1.0, bonus: 100 }, jetski: { name: 'Jetski', r: 1.8, bonus: 150 }, nessie: { name: 'Loch Ness monster', r: 2.0, bonus: 250 } };
 var crt = null, JET_V = 2.0, floaters = [], tutOpen = false;
-function addFloat(x, z, h, txt, big) { floaters.push({ x: x, z: z, h: h, txt: txt, big: !!big, age: 0 }); if (floaters.length > 8) floaters.shift(); }
+function addFloat(x, z, h, txt, big) {
+  var box = $('pops'), parts = String(txt).split(' '), d = document.createElement('div'), n = document.createElement('b'), l = document.createElement('span');
+  d.className = 'pop'; n.textContent = parts[0]; l.textContent = parts.slice(1).join(' '); d.appendChild(n); d.appendChild(l); box.appendChild(d);
+  while (box.children.length > 3) box.removeChild(box.firstChild);
+  setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 1950);
+}
+var bannerTimer = 0;
+function showBanner(head, sub, gem) {
+  var b = $('banner'); $('bannerHead').textContent = head; $('bannerSub').textContent = sub; $('bannerGem').style.display = gem ? 'block' : 'none';
+  b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
+  clearTimeout(bannerTimer); bannerTimer = setTimeout(function () { b.classList.remove('show'); }, 3100);
+}
 function pickRing() {
   var rr = mode === 'daily' ? rng32(seedFromStr(todayStr()) + thrown * 7919) : Math.random;
   var u = rr(), type = u < 0.3 ? 'ring' : u < 0.5 ? 'hole' : u < 0.7 ? 'gate' : 'hoops';
@@ -898,12 +924,11 @@ function finishThrow() {
   if (marathon) { base += 150; want++; notes.push(skips + ' skips +150'); }
   if (far) { base += 150; want++; notes.push('100 m +150'); }
   var grant = Math.min(want, 3 - extras), earned = null;
-  if (grant > 0) { extras += grant; maxThrows += grant; basket[r.stone.id] += grant; refreshStones(); }
+  if (grant > 0) { extras += grant; maxThrows += grant; basket.rainbow += grant; stoneIdx = 3; refreshStones(); }
   if (want > 0) {
     earned = notes.join('. ') + (grant > 0 ? '. +' + grant + ' bonus stone' + (grant > 1 ? 's' : '') : '. Stone cap reached');
     Sound.bonus();
-    var le = r.events[r.events.length - 1], fh = 0.9;
-    notes.forEach(function (nt) { addFloat(le.x, le.z, fh, '+' + nt.split('+')[1].split(' ')[0] + ' ' + nt.split(' +')[0].toUpperCase(), true); fh += 0.9; });
+    showBanner(notes[0].split(' +')[0].toUpperCase() + (notes.length > 1 ? ' + ' + (notes.length - 1) + ' MORE' : ''), notes.join(' | ') + (grant > 0 ? '  |  +' + grant + ' LUCKY STONE' + (grant > 1 ? 'S' : '') : ''), grant > 0);
   }
   var score = Math.round(base * mult);
   combo = bonus > 0 ? combo + 1 : 0;
@@ -1257,20 +1282,7 @@ function update(time, delta) {
   drawFloats(sc, dt);
 }
 
-function drawFloats(sc, dt) {
-  var n = sc.floatTxt.length, i;
-  for (i = 0; i < n; i++) sc.floatTxt[i].setVisible(false);
-  for (i = floaters.length - 1; i >= 0; i--) {
-    var f = floaters[i]; f.age += dt;
-    if (f.age > 1.8) { floaters.splice(i, 1); continue; }
-  }
-  for (i = 0; i < floaters.length && i < n; i++) {
-    var q = floaters[i], tx = sc.floatTxt[i];
-    if (!P(q.x, q.z, q.h + q.age * 0.8)) continue;
-    var k = clamp(po.s * 0.05, 0.9, 2.4) * (q.big ? 1.25 : 1) * (1 + 0.25 * Math.max(0, 1 - q.age * 5));
-    tx.setText(q.txt).setPosition(clamp(po.x, 50, W - 50), clamp(po.y, 40, H - 40)).setScale(k).setAlpha(clamp(1 - Math.pow(q.age / 1.8, 3), 0, 1)).setVisible(true);
-  }
-}
+function drawFloats(sc, dt) {}
 
 function drawWaves(g, T, sunX) {
   var levels = [{ dmin: 1.2, dmax: 13, step: 1.25, lat: 2.3, len: 0.9 }, { dmin: 13, dmax: 56, step: 4.6, lat: 7, len: 3.0 }, { dmin: 56, dmax: 230, step: 17, lat: 25, len: 11 }];
@@ -1474,7 +1486,10 @@ function drawStoneScene(g, T, sx, sz, sh, stone, alpha, rot, shadowA, underwater
   if (alpha > 0.01) {
     var hl = Math.sin(T * 0.8) * sw * 0.1;
     g.fillStyle(shade(stone.color, 0.55), alpha); g.fillPoints(ellipsePts(px, py + th * 0.28, sw / 2, th / 2, rot, 22), true);
-    g.fillStyle(stone.color, alpha); g.fillPoints(ellipsePts(px, py, sw / 2, th / 2, rot, 22), true);
+    if (stone.rainbow) {
+      var rc = [0xff5e5e, 0xffb347, 0xfff35e, 0x6be08a, 0x5eb7ff, 0xb583ff], ep = ellipsePts(px, py, sw / 2, th / 2, rot, 24), sh0 = Math.floor(T * 6) % 6;
+      for (var wi = 0; wi < 6; wi++) { var wp = [{ x: px, y: py }]; for (var wk = 0; wk <= 4; wk++) wp.push(ep[(wi * 4 + wk) % 24]); g.fillStyle(rc[(wi + sh0) % 6], alpha); g.fillPoints(wp, true); }
+    } else { g.fillStyle(stone.color, alpha); g.fillPoints(ellipsePts(px, py, sw / 2, th / 2, rot, 22), true); }
     g.fillStyle(0xffffff, alpha * 0.28); g.fillPoints(ellipsePts(px - sw * 0.07 + hl, py - th * 0.16, sw * 0.3, th * 0.16, rot, 14), true);
   }
   if (handA > 0.01 && (state === 'ready' || state === 'returning')) drawHandFront(g, px, py, sw, handA);
