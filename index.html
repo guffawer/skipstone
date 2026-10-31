@@ -342,19 +342,83 @@ body { padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: ma
 @keyframes revfade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes revpop { 0% { transform: scale(0) rotate(-12deg); } 100% { transform: scale(1) rotate(0); } }
 @keyframes revbob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+/* v2.5 economy: coins, stars, shop, test ads, test purchases */
+.coinbtn { display: inline-flex; align-items: center; gap: 5px; background: var(--deck-2); border: 1px solid var(--line); border-radius: 14px; padding: 4px 10px 4px 6px; font-family: var(--font-display); font-weight: 800; font-size: 17px; line-height: 1; color: var(--ochre); font-variant-numeric: tabular-nums; }
+.coinbtn small { font-family: var(--font-body); font-size: 10px; font-weight: 600; color: var(--paper); letter-spacing: .08em; text-transform: uppercase; margin-left: 2px; }
+.coinbtn.bump { animation: pop .3s ease-out; }
+.clear { pointer-events: auto; background: rgba(15, 35, 43, .9); }
+.clear .stars { display: flex; gap: 8px; }
+.clear .stars svg { width: 46px; height: 46px; }
+.clear .stars svg.on { animation: clearpop .5s ease-out both; }
+.clear .coins { font-family: var(--font-display); font-weight: 800; font-size: 30px; line-height: 1; color: var(--ochre); min-height: 30px; }
+.clear .row { display: flex; gap: 8px; width: min(100%, 300px); margin-top: 6px; }
+.btnP { flex: 1; background: var(--ochre); color: var(--ink); border: 0; border-radius: 6px; padding: 11px 10px; font-weight: 600; font-size: 14px; }
+.btnS { flex: 1; background: var(--deck-2); color: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 11px 10px; font-weight: 600; font-size: 14px; }
+.btnP:disabled, .btnS:disabled { opacity: .45; cursor: default; }
+.adtag { display: inline-block; font-size: 9px; font-weight: 800; letter-spacing: .1em; background: var(--ink); color: var(--ochre); border-radius: 3px; padding: 2px 4px; margin-left: 6px; vertical-align: 2px; }
+.btnS .adtag { background: var(--ochre); color: var(--ink); }
+.round #cont { margin-top: auto; }
+.round #cont + .row { margin-top: 0; }
+.tut .brow { position: sticky; bottom: 0; margin-top: auto; display: flex; gap: 8px; }
+.tut .brow button { position: static; margin: 0; }
+.tut #tutGo { flex: 2; }
+.tut #tutMap { flex: 1; background: var(--deck-2); color: var(--paper); border: 1px solid var(--line); }
+.stones.tight .stone .t { display: none; }
+.stones.tight .stone .nm { justify-content: center; }
+.stones.tight .stone { padding: 6px 4px; }
+.stones.mid { gap: 4px; }
+.stones.mid .stone { padding: 6px 4px; }
+.stones.mid .stone .nm { font-size: 10.5px; gap: 3px; letter-spacing: -.01em; }
+.stones.mid .stone .ct { font-size: 13px; }
+.stones.mid .stone .t { text-overflow: clip; }
+.lv .st { display: flex; gap: 1px; min-height: 11px; }
+.shop { position: absolute; inset: 0; box-sizing: border-box; padding: 12px 12px 10px; overflow: auto; background: rgba(15, 35, 43, .99); display: none; flex-direction: column; gap: 8px; z-index: 10; }
+.shop.show { display: flex; }
+.shop h2 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: .06em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+.shop h3 { margin: 6px 0 0; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--mute); font-weight: 600; }
+.si { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 4px 10px; background: var(--deck-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.si .sw { border-radius: 50%; justify-self: center; }
+.si .nm { font-weight: 600; font-size: 13px; }
+.si .ds { font-size: 11px; color: var(--mute); line-height: 1.25; }
+.si .pips { display: flex; gap: 3px; margin-top: 4px; }
+.si .pips i { width: 14px; height: 5px; border-radius: 2px; background: var(--line); }
+.si .pips i.on { background: var(--good); }
+.si .act { display: flex; flex-direction: column; gap: 4px; align-items: stretch; }
+.si .act button { background: var(--ochre); color: var(--ink); border: 0; border-radius: 5px; padding: 6px 10px; font-weight: 700; font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.si .act button.alt { background: transparent; color: var(--paper); border: 1px solid var(--line); }
+.si .act button:disabled { opacity: .4; cursor: default; }
+.si .own { font-size: 11px; font-weight: 700; color: var(--good); letter-spacing: .08em; text-transform: uppercase; text-align: center; }
+.si .bigc { font-family: var(--font-display); font-weight: 800; font-size: 18px; color: var(--ochre); text-align: center; }
+.shop .note { margin: 2px 0 0; font-size: 10.5px; color: var(--mute); }
+.shop .close { position: sticky; bottom: 0; margin-top: auto; flex: none; }
+.adov { position: absolute; inset: 0; z-index: 20; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px; text-align: center; background: #05070a; color: var(--paper); }
+.adov.show { display: flex; }
+.adov .tag { font-size: 11px; font-weight: 800; letter-spacing: .2em; color: #05070a; background: #ffd25a; padding: 3px 8px; border-radius: 3px; }
+.adov .box { width: min(86%, 300px); aspect-ratio: 4 / 5; border: 2px dashed #3a4a52; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px; box-sizing: border-box; color: var(--mute); font-size: 13px; }
+.adov .box b { font-family: var(--font-display); font-size: 28px; color: var(--paper); }
+.adov .adcd { font-family: var(--font-display); font-weight: 800; font-size: 20px; color: var(--ochre); min-height: 24px; }
+.adov .btnP { flex: none; min-width: 200px; }
+.iap { position: absolute; inset: 0; z-index: 21; display: none; align-items: center; justify-content: center; background: rgba(5, 7, 10, .72); padding: 16px; box-sizing: border-box; }
+.iap.show { display: flex; }
+.iap .pn { width: min(100%, 300px); background: var(--deck); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.iap h3 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 24px; }
+.iap p { margin: 0; font-size: 12.5px; color: var(--mute); line-height: 1.35; }
+.iap .pr { font-family: var(--font-display); font-weight: 800; font-size: 30px; line-height: 1; color: var(--ochre); }
+.iap .row { display: flex; gap: 8px; }
 </style>
 
 <div class="app">
   <header class="top">
     <div class="brand">
       <span class="word">Skipstone</span>
-      <span class="lbl">Prototype v2.4</span>
+      <span class="lbl">Prototype v2.5</span>
     </div>
     <span class="lvlab" id="streak"></span>
     <div class="bests">
-      <div><span class="lbl">Best skips</span><b id="bestSkips">0</b></div>
+      <button class="coinbtn" id="shopBtn" type="button" aria-label="Coins and shop"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="#e2a553"/><circle cx="10" cy="10" r="5.4" fill="none" stroke="#8a5a1c" stroke-width="1.6"/></svg><span id="coinVal">0</span><small>Shop</small></button>
     </div>
-    <div style="display:none"><b id="bestRound">0</b><button id="mLevels" type="button" aria-pressed="false" tabindex="-1"></button></div>
+    <div style="display:none"><b id="bestSkips">0</b><b id="bestRound">0</b><button id="mLevels" type="button" aria-pressed="false" tabindex="-1"></button></div>
   </header>
   <div class="goalbar" id="goalBar" aria-live="polite"></div>
 
@@ -400,14 +464,14 @@ body { padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: ma
       <div class="tut" id="tut">
         <h2 id="tutHead">How to play</h2>
         <div id="tutBrief" style="display:none">
-          <div class="bhead"><span class="tier E" id="tutTier">Easy</span><span class="stk" id="tutStones"></span></div>
+          <div class="bhead"><span class="tier E" id="tutTier">Easy</span><span class="stk" id="tutBest"></span><span class="stk" id="tutStones"></span></div>
           <div class="gcs" id="tutGoals"></div>
           <div class="conds" id="tutCond"></div>
           <div class="crow" id="tutCrt"></div>
         </div>
         <div id="tutRules" class="rules"></div>
         <p id="tutDaily">Daily: same targets and wind for everyone, one scored attempt per day.</p>
-        <button id="tutGo" type="button">Start throwing</button>
+        <div class="brow"><button id="tutMap" type="button">Levels</button><button id="tutGo" type="button">Start throwing</button></div>
       </div>
       <div class="lvmap" id="lvmap">
         <h2>Levels</h2>
@@ -423,7 +487,7 @@ body { padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: ma
         <div class="rpts" id="revPts"></div>
         <button id="revGo" type="button">Continue</button>
       </div>
-      <div class="clear" id="clear"><div class="ch" id="clearHead"></div><div class="cs" id="clearSub"></div></div>
+      <div class="clear" id="clear"><div class="ch" id="clearHead"></div><div class="stars" id="clearStars"></div><div class="cs" id="clearSub"></div><div class="coins" id="clearCoins"></div><div class="row"><button class="btnS" id="dblBtn" type="button">Double coins<span class="adtag">AD</span></button><button class="btnP" id="clrGo" type="button">Continue</button></div></div>
       <div id="confetti" aria-hidden="true"></div>
       <div class="round" id="sum">
         <h2 id="sumHead"></h2>
@@ -440,8 +504,16 @@ body { padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: ma
           <thead><tr><th>#</th><th>Stone</th><th>Skips</th><th>Dist</th><th>Bonus</th><th>Score</th></tr></thead>
           <tbody id="rRows"></tbody>
         </table>
+        <button id="cont" type="button" style="display:none">+3 stones and keep going<span class="adtag">AD</span></button>
         <div class="row"><button id="share" type="button">Copy result</button><button id="again" type="button">New basket</button></div>
       </div>
+      <div class="shop" id="shop" aria-label="Shop">
+        <h2><span>Shop</span><span class="coinbtn" aria-hidden="true"><svg viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="10" r="8.5" fill="#e2a553"/><circle cx="10" cy="10" r="5.4" fill="none" stroke="#8a5a1c" stroke-width="1.6"/></svg><span id="shopCoins">0</span></span></h2>
+        <div id="shopBody" style="display:flex;flex-direction:column;gap:8px"></div>
+        <button class="btnS close" id="shopClose" type="button">Close</button>
+      </div>
+      <div class="iap" id="iap"><div class="pn"><h3 id="iapName"></h3><div class="pr" id="iapPrice"></div><p id="iapDesc"></p><p>Test purchase. No payment is taken in the prototype; the native build uses Google Play Billing.</p><div class="row"><button class="btnS" id="iapNo" type="button">Cancel</button><button class="btnP" id="iapYes" type="button">Buy (test)</button></div></div></div>
+      <div class="adov" id="adov"><span class="tag">TEST AD</span><div class="box"><b id="adKind">Interstitial</b><span id="adTxt"></span></div><div class="adcd" id="adCd"></div><button class="btnP" id="adClose" type="button">Close</button></div>
     </div>
   </main>
 
@@ -471,7 +543,11 @@ var STONES = [
   { id: 'pebble',  name: 'River Pebble', note: 'Balanced',                 tol: 1.00, sens: 1.0,  flat: 0.60, mass: 0.50, spinRet: 0.94, drag: 0.050, launch: 1.00, vw: 0.46, vt: 0.13, sw: 16, sh: 5, color: 0xe0a03c, css: '#e0a03c' },
   { id: 'slate',   name: 'Flat Slate',   note: 'Most skips, touchy angle', tol: 0.85, sens: 1.0,  flat: 0.95, mass: 0.30, spinRet: 0.96, drag: 0.090, launch: 1.04, vw: 0.50, vt: 0.08, sw: 15, sh: 3, color: 0xe0624a, css: '#e0624a' },
   { id: 'granite', name: 'Granite Disc', note: 'Few skips, forgiving',     tol: 1.35, sens: 0.55, flat: 0.30, mass: 1.10, spinRet: 0.90, drag: 0.024, launch: 0.90, vw: 0.52, vt: 0.19, sw: 19, sh: 8, color: 0xf1ecdc, css: '#f1ecdc' },
-  { id: 'rainbow', name: 'Lucky Stone', note: 'Bonus stone, extra stable', rainbow: true, tol: 1.15, sens: 0.8, flat: 0.70, mass: 0.50, spinRet: 0.95, drag: 0.045, launch: 1.02, vw: 0.48, vt: 0.13, sw: 16, sh: 5, color: 0xff9a5e, css: 'conic-gradient(#ff5e5e, #ffb347, #fff35e, #6be08a, #5eb7ff, #b583ff, #ff5e5e)' }
+  { id: 'rainbow', name: 'Lucky Stone', note: 'Bonus stone, extra stable', rainbow: true, tol: 1.15, sens: 0.8, flat: 0.70, mass: 0.50, spinRet: 0.95, drag: 0.045, launch: 1.02, vw: 0.48, vt: 0.13, sw: 16, sh: 5, color: 0xff9a5e, css: 'conic-gradient(#ff5e5e, #ffb347, #fff35e, #6be08a, #5eb7ff, #b583ff, #ff5e5e)' },
+  // Premium stones (v2.5): each one owned takes one slot in every level basket, so stone count never rises
+  { id: 'jade',     name: 'Jade Stone',     note: 'Steady all-rounder',        premium: true, swap: 'pebble',  coins: 1200, usd: '0.99', tol: 1.10, sens: 0.85, flat: 0.75, mass: 0.50, spinRet: 0.95, drag: 0.040, launch: 1.03, vw: 0.47, vt: 0.12, sw: 16, sh: 5, color: 0x4fc28c, css: '#4fc28c' },
+  { id: 'obsidian', name: 'Obsidian Disc',  note: 'Heavy, forgiving, long',    premium: true, swap: 'granite', coins: 2500, usd: '1.99', tol: 1.40, sens: 0.50, flat: 0.55, mass: 0.95, spinRet: 0.93, drag: 0.020, launch: 0.97, vw: 0.52, vt: 0.16, sw: 18, sh: 7, color: 0x9a7fd6, css: '#9a7fd6' },
+  { id: 'comet',    name: 'Comet Shard',    note: 'Most skips',                premium: true, swap: 'slate',   coins: 4000, usd: '2.99', tol: 0.95, sens: 0.90, flat: 0.97, mass: 0.32, spinRet: 0.97, drag: 0.075, launch: 1.06, vw: 0.50, vt: 0.08, sw: 15, sh: 3, color: 0x7fd6ff, css: '#7fd6ff' }
 ];
 /* Wind as a pure function of time: speed gusts and direction drifts (x along the lake, z sideways). */
 function windAt(T) {
@@ -870,7 +946,7 @@ var Haptics = (function () {
 })();
 
 /* ---------- Game state ---------- */
-var BASKET0 = { pebble: 4, slate: 3, granite: 3, rainbow: 0 };
+var BASKET0 = { pebble: 4, slate: 3, granite: 3, rainbow: 0, jade: 0, obsidian: 0, comet: 0 };
 var basket = {}, thrown = 0, total = 0, throws = [], ring = null, needsNext = false;
 var stoneIdx = 0, aimAngle = 10, aimLocked = null, yawLocked = null, yawMode = false, aimYaw = 0, yawRef = null, lastAlpha = null;
 var mode = 'free', curWind = null, dailyDone = false, maxThrows = 10, combo = 0, extras = 0, lvl = null, lvlPassed = false, clearing = false, clrT1 = 0, clrT2 = 0, sumN = 0;
@@ -909,12 +985,16 @@ function refreshStones() {
   if (basket[STONES[stoneIdx].id] <= 0) {
     for (var k = 0; k < STONES.length; k++) if (basket[STONES[k].id] > 0) { stoneIdx = k; break; }
   }
+  var vis = 0;
   STONES.forEach(function (st, i) {
+    var hide = (st.rainbow || st.premium) && basket[st.id] <= 0;
     stoneBtns[i].b.setAttribute('aria-pressed', i === stoneIdx ? 'true' : 'false');
     stoneBtns[i].b.disabled = basket[st.id] <= 0;
-    stoneBtns[i].b.style.display = (st.rainbow && basket[st.id] <= 0) ? 'none' : '';
+    stoneBtns[i].b.style.display = hide ? 'none' : '';
     stoneBtns[i].ct.textContent = 'x' + basket[st.id];
+    if (!hide) vis++;
   });
+  $('stones').classList.toggle('tight', vis > 4); $('stones').classList.toggle('mid', vis === 4);
 }
 
 function angleTag(a) { return a < 3.5 ? 'too flat' : a < 5 ? 'a little flat' : a <= 14 ? 'in the zone' : a <= 16.5 ? 'a little steep' : 'too steep'; }
@@ -1280,6 +1360,7 @@ function fillBrief() {
   box.innerHTML = h;
   $('tutTier').textContent = TIER_NAME[lvl.tier]; $('tutTier').className = 'tier ' + lvl.tier;
   var st = ''; for (i = 0; i < lvl.stones; i++) st += '<i></i>'; $('tutStones').innerHTML = st + '&nbsp;' + lvl.stones + ' stones';
+  $('tutBest').innerHTML = econ.stars[lvl.n] ? starsHtml(econ.stars[lvl.n], 16) : '';
   var wk = windWord(lvl.wind), c = '<span class="cd">' + ico('wind', 20) + 'Wind ' + wk + '</span>';
   c += '<span class="cd">' + ico('size', 20) + (lvl.tsz >= 1.15 ? 'Large' : lvl.tsz >= 0.95 ? 'Standard' : 'Small') + ' targets</span>';
   if (lvl.driftP) c += '<span class="cd">' + ico('moving', 20) + 'Moving targets</span>';
@@ -1294,7 +1375,8 @@ function showLevelMap() {
   resetClear(); tutOpen = true; $('tut').classList.remove('show'); $('round').classList.remove('show');
   var box = $('lvBody'), done = 0, i; box.textContent = '';
   for (i = 1; i <= LEVEL_COUNT; i++) if (lvProg[i] !== undefined) done++;
-  $('lvSub').textContent = done + ' of ' + LEVEL_COUNT + ' cleared. Clear a level to unlock the next. Bar colour: green easy, gold hard, red very hard.';
+  var stT = 0; for (i = 1; i <= LEVEL_COUNT; i++) stT += econ.stars[i] || (lvProg[i] !== undefined ? 1 : 0);
+  $('lvSub').textContent = done + ' of ' + LEVEL_COUNT + ' cleared, ' + stT + ' of ' + LEVEL_COUNT * 3 + ' stars. Replay a level to earn more stars and coins. Bar colour: green easy, gold hard, red very hard.';
   LAKES.forEach(function (nm, li) {
     var wrap = document.createElement('div'); wrap.className = 'lake';
     var h = document.createElement('div'); h.className = 'nm'; h.textContent = (li + 1) + '. ' + nm; wrap.appendChild(h);
@@ -1302,7 +1384,7 @@ function showLevelMap() {
     for (var k = 1; k <= 6; k++) (function (n) {
       var b = document.createElement('button'), nn = document.createElement('span'), sm = document.createElement('small'), pr = lvProg[n] !== undefined;
       b.type = 'button'; b.className = 'lv ' + TIERS.charAt(n - 1) + (pr ? ' done' : ''); b.disabled = !lvOpen(n);
-      nn.textContent = String(n); sm.textContent = pr ? String(lvProg[n]) : '';
+      nn.textContent = String(n); sm.className = 'st'; sm.innerHTML = pr ? starsHtml(econ.stars[n] || 1, 10) : '';
       b.appendChild(nn); b.appendChild(sm);
       b.addEventListener('click', function () { Sound.unlock(); startLevel(n); });
       row.appendChild(b);
@@ -1314,7 +1396,8 @@ function showLevelMap() {
 }
 function nextLevel() { for (var n = 1; n <= LEVEL_COUNT; n++) if (lvProg[n] === undefined) return n; return LEVEL_COUNT; }
 function startLevel(n) {
-  resetClear(); $('failBars').style.display = 'none'; lvl = levelDef(n); mode = 'levels';
+  resetClear(); $('failBars').style.display = 'none'; $('cont').style.display = 'none'; lvl = levelDef(n); mode = 'levels';
+  track('level_start', { level: n, stars: econ.stars[n] || 0, coins: econ.coins });
   $('mLevels').setAttribute('aria-pressed', 'false');
   newRound();
 }
@@ -1359,20 +1442,49 @@ function resetClear() {
   $('clear').classList.remove('show'); $('sum').classList.remove('show'); $('confetti').textContent = '';
 }
 /* All goals met: stop play, record the clear, celebrate and move to the next level automatically. */
+var clr = { n: 0, earn: 0, stars: 0, prev: 0, bonus: 0, unused: 0, doubled: false };
 function startClear() {
   if (clearing) return;
   clearing = true; tutOpen = true;
-  var n = lvl.n; recordLevel(n);
+  var n = lvl.n, unused = Math.max(0, maxThrows - thrown), sv = stoneVal(lvl);
+  clr = { n: n, unused: unused, bonus: unused * sv, prev: econ.stars[n] || 0, doubled: false };
+  total += clr.bonus; $('total').textContent = String(total);
+  clr.stars = starsFor(lvl, total);
+  clr.earn = Math.max(0, STAR_COINS[clr.stars] - STAR_COINS[clr.prev]);
+  if (clr.stars > clr.prev) econ.stars[n] = clr.stars;
+  econ.clearsSince = (econ.clearsSince || 0) + 1;
+  recordLevel(n); saveEcon();
+  if (clr.earn) addCoins(clr.earn, 'level_clear');
+  track('level_clear', { level: n, score: total, stars: clr.stars, unused: unused, coins: clr.earn, throws: thrown });
   clrT1 = setTimeout(function () { showClear(n); }, 1100);
 }
 function showClear(n) {
   var nx = n < LEVEL_COUNT ? levelDef(n + 1) : null;
   hideResult(); $('tut').classList.remove('show');
   $('clearHead').textContent = 'Level ' + n + ' cleared';
-  $('clearSub').textContent = n >= LEVEL_COUNT ? 'All ' + LEVEL_COUNT + ' levels cleared.' : n % 5 === 0 ? 'Milestone reached. Summary next.' : 'All goals met. Next: Level ' + (n + 1) + ' · ' + nx.name + ' · ' + TIER_NAME[nx.tier] + (nx.newCrt && !crtSeen[nx.newCrt] ? ' · New creature: ' + CRT[nx.newCrt].name : '');
+  $('clearStars').innerHTML = starsHtml(clr.stars, 46);
+  var svgs = $('clearStars').querySelectorAll('svg.on'); for (var i = 0; i < svgs.length; i++) svgs[i].style.animationDelay = (0.15 + i * 0.25) + 's';
+  var next = n >= LEVEL_COUNT ? 'All ' + LEVEL_COUNT + ' levels cleared.' : n % 5 === 0 ? 'Milestone summary next.' : 'Next: Level ' + (n + 1) + ' · ' + nx.name + ' · ' + TIER_NAME[nx.tier] + (nx.newCrt && !crtSeen[nx.newCrt] ? ' · New creature: ' + CRT[nx.newCrt].name : '');
+  $('clearSub').innerHTML = 'Score <b>' + total + '</b>' + (clr.unused ? ' incl. stone bonus +' + clr.bonus + ' (' + clr.unused + ' unused)' : '') + '<br>' + next;
+  $('clearCoins').textContent = clr.earn ? '+' + clr.earn + ' coins' : clr.prev >= 3 ? 'Already 3 stars' : 'No new stars this time';
+  $('dblBtn').style.display = clr.earn ? '' : 'none'; $('dblBtn').disabled = false; $('dblBtn').innerHTML = 'Double coins<span class="adtag">AD</span>';
   $('clear').classList.add('show'); confetti(); Sound.levelUp();
-  clrT2 = setTimeout(function () { if (n % 5 === 0) showSummary(n); else startLevel(n + 1); }, 2800);
 }
+$('dblBtn').addEventListener('click', function () {
+  Sound.unlock();
+  if (clr.doubled || !clr.earn) return;
+  Ads.rewarded('Double coins', function () {
+    clr.doubled = true; addCoins(clr.earn, 'double_rewarded');
+    $('clearCoins').textContent = '+' + clr.earn * 2 + ' coins'; $('dblBtn').disabled = true; $('dblBtn').textContent = 'Coins doubled';
+  });
+});
+$('clrGo').addEventListener('click', function () {
+  Sound.unlock();
+  var n = clr.n;
+  $('clear').classList.remove('show');
+  var go = function () { if (n % 5 === 0) showSummary(n); else startLevel(n + 1); };
+  if (interstitialDue(n)) { econ.clearsSince = 0; saveEcon(); Ads.interstitial(go); } else go();
+});
 function showSummary(n) {
   $('clear').classList.remove('show'); $('tut').classList.remove('show');
   sumN = n;
@@ -1399,6 +1511,9 @@ function showSummary(n) {
   if (ck.length) { h += '<div class="crs">'; ck.forEach(function (c) { h += '<div class="r">' + ico('crt:' + c, 22) + '<span>' + CRT[c].name + ' x' + g.cr[c] + '</span><div style="height:6px;border-radius:3px;background:var(--deck-2);overflow:hidden"><div class="fl" style="width:' + Math.round(g.cr[c] / cm * 100) + '%"></div></div></div>'; }); h += '</div>'; }
   $('sumBody').innerHTML = h;
   $('sumHead').textContent = n >= LEVEL_COUNT ? 'All ' + LEVEL_COUNT + ' levels cleared' : 'Levels ' + a + ' to ' + n + ' cleared';
+  var sS = 0; for (i = a; i <= n; i++) sS += econ.stars[i] || 0;
+  h = h.replace('<small>Total score</small></div>', '<small>Total score</small></div><div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mute)">' + starSvg(true, 16) + '<b style="color:var(--paper)">' + sS + ' of ' + (n - a + 1) * 3 + '</b> stars &middot; ' + econ.coins + ' coins</div>');
+  $('sumBody').innerHTML = h;
   $('sumSub').textContent = n >= LEVEL_COUNT ? 'Final summary. Green easy, gold hard, red very hard. Outline marks your best level.' : 'Green easy, gold hard, red very hard. Outline marks your best level.';
   $('sumGo').textContent = n >= LEVEL_COUNT ? 'Play again from level 1' : 'Continue to level ' + (n + 1);
   $('sum').classList.add('show');
@@ -1417,9 +1532,176 @@ function showLevelResult(tot) {
   $('failBars').innerHTML = h; $('failBars').style.display = 'flex';
   $('rTotal').textContent = String(tot);
   $('rSub').textContent = 'Out of stones. Fill every bar to clear the level.';
-  $('again').textContent = 'Retry level'; $('share').style.display = 'none';
+  $('again').textContent = 'Retry level'; $('share').style.display = ''; $('share').textContent = 'Levels';
+  $('cont').style.display = contUsed ? 'none' : '';
+  $('rSub').textContent = contUsed ? 'Out of stones. Retry to fill every bar.' : 'Out of stones. Watch a short ad for 3 more, or retry.';
   $('round').classList.add('show');
+  track('level_fail', { level: L.n, score: tot, continued: contUsed });
 }
+
+/* ---------- Economy v2.5: coins, stars, upgrades, premium stones, test ads and test purchases ---------- */
+var ECON_KEY = 'skipstone.v25.econ';
+var econ = { coins: 100, up: { pebble: 0, slate: 0, granite: 0 }, own: {}, stars: {}, noAds: false, noAdsUntil: 0, starter: false, clearsSince: 0, lastAd: 0 };
+try { var ej = JSON.parse(localStorage.getItem(ECON_KEY) || 'null'); if (ej && typeof ej === 'object') { for (var ek in ej) econ[ek] = ej[ek]; } } catch (e) {}
+try {
+  var qs = new URLSearchParams(window.location.search);
+  if (qs.get('reset') === 'econ') { econ = { coins: 100, up: { pebble: 0, slate: 0, granite: 0 }, own: {}, stars: {}, noAds: false, noAdsUntil: 0, starter: false, clearsSince: 0, lastAd: 0 }; }
+  if (qs.get('coins') !== null && !isNaN(parseInt(qs.get('coins'), 10))) econ.coins = Math.max(0, parseInt(qs.get('coins'), 10));
+} catch (e) {}
+function saveEcon() { try { localStorage.setItem(ECON_KEY, JSON.stringify(econ)); } catch (e) {} }
+saveEcon();
+/* Analytics hook: logs locally now; the native build forwards these to Firebase Analytics. */
+function track(ev, p) { try { (window.__skipLog = window.__skipLog || []).push([ev, p || {}, Date.now()]); if (window.console) console.log('[track]', ev, p || ''); } catch (e) {} }
+
+var UP_COST = [100, 200, 400, 700, 1000], UP_MAX = 5;
+var STAR_COINS = [0, 20, 40, 60];
+var STAR_REF = { E: [350, 1500], H: [1300, 2000], V: [3000, 3800] };
+/* Upgrades: each tier adds 1.5% launch speed, cuts bounce drag 6%, widens angle tolerance 3% and adds a little spin retention. Tier 5 Slate is
+   worth about 1.5 skips and 15 to 20 m on a strong throw, inside the 12-skip and 90 m working ceilings. */
+function effStone(st) {
+  var lv = econ.up[st.id] || 0; if (!lv) return st;
+  var o = {}, k; for (k in st) o[k] = st[k];
+  o.launch = st.launch * (1 + 0.015 * lv); o.drag = st.drag * (1 - 0.06 * lv); o.tol = st.tol * (1 + 0.03 * lv); o.spinRet = Math.min(0.985, st.spinRet + 0.004 * lv);
+  return o;
+}
+function stoneById(id) { for (var i = 0; i < STONES.length; i++) if (STONES[i].id === id) return STONES[i]; return null; }
+function noAdsActive() { return econ.noAds || Date.now() < (econ.noAdsUntil || 0); }
+function refreshCoins(bump) {
+  $('coinVal').textContent = String(econ.coins); $('shopCoins').textContent = String(econ.coins);
+  if (bump) { var b = $('shopBtn'); b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); }
+}
+function addCoins(n, why) { if (n <= 0) return; econ.coins += n; saveEcon(); refreshCoins(true); track('coins_earn', { amount: n, source: why }); }
+/* Stars: score at the clear plus a stone bonus for every unused stone (worth one average throw: reference score divided by basket size).
+   Reference is the level's score goal, or a tier estimate when the level has no score goal. 2 stars at 1.15 x reference, 3 stars at 1.35 x. */
+function starRef(L) { var s = 0; L.goals.forEach(function (g) { if (g[0] === 'score') s = g[1]; }); return s || STAR_REF[L.tier][L.n > 30 ? 1 : 0]; }
+function stoneVal(L) { return Math.max(25, Math.round(starRef(L) / L.stones / 5) * 5); }
+function starsFor(L, sc) { var r = starRef(L); return sc >= r * 1.35 ? 3 : sc >= r * 1.15 ? 2 : 1; }
+function starSvg(on, sz) { return '<svg viewBox="0 0 40 40" width="' + sz + '" height="' + sz + '" aria-hidden="true"' + (on ? ' class="on"' : '') + '><polygon points="20,4 25,15 37,16 28,24 31,36 20,29 9,36 12,24 3,16 15,15" fill="' + (on ? '#e2a553' : 'none') + '" stroke="#e2a553" stroke-width="2.4" stroke-linejoin="round"/></svg>'; }
+function starsHtml(k, sz) { var h = '', i; for (i = 1; i <= 3; i++) h += starSvg(i <= k, sz); return h; }
+
+/* Ads: test placeholders with the same flow as AdMob. Interstitial closes after 5 s. Rewarded pays only when watched to the end. */
+var Ads = (function () {
+  var CFG = { androidInterstitial: 'ca-app-pub-3940256099942544/1033173712', androidRewarded: 'ca-app-pub-3940256099942544/5224354917', secs: 5 };
+  var timer = 0, left = 0, kind = '', onDone = null, onReward = null, granted = false;
+  function tick() {
+    left--;
+    if (left > 0) { $('adCd').textContent = (kind === 'rewarded' ? 'Reward in ' : 'Close in ') + left; return; }
+    clearInterval(timer);
+    if (kind === 'rewarded') { granted = true; $('adCd').textContent = 'Reward ready'; $('adClose').textContent = 'Collect reward'; }
+    else { $('adCd').textContent = ''; $('adClose').disabled = false; }
+  }
+  function open(k, label, txt) {
+    kind = k; granted = false; left = CFG.secs;
+    $('adKind').textContent = label; $('adTxt').textContent = txt;
+    $('adCd').textContent = (k === 'rewarded' ? 'Reward in ' : 'Close in ') + left;
+    $('adClose').disabled = k !== 'rewarded'; $('adClose').textContent = k === 'rewarded' ? 'Skip (no reward)' : 'Close';
+    $('adov').classList.add('show'); clearInterval(timer); timer = setInterval(tick, 1000);
+  }
+  $('adClose').addEventListener('click', function () {
+    clearInterval(timer); $('adov').classList.remove('show');
+    if (kind === 'rewarded') { track(granted ? 'ad_rewarded_complete' : 'ad_rewarded_skip', {}); if (granted && onReward) onReward(); else if (onDone) onDone(); }
+    else if (onDone) onDone();
+    econ.lastAd = Date.now(); saveEcon();
+  });
+  return {
+    cfg: CFG,
+    interstitial: function (cb) { onDone = cb; onReward = null; track('ad_interstitial_show', {}); open('interstitial', 'Interstitial', 'AdMob test interstitial placeholder. Remove Ads switches these off.'); },
+    rewarded: function (label, reward, cancel) { onReward = reward; onDone = cancel || null; track('ad_rewarded_start', { placement: label }); open('rewarded', 'Rewarded: ' + label, 'AdMob test rewarded placeholder. Watch to the end to earn the reward.'); }
+  };
+})();
+/* Interstitial rule: only between levels, from Level 8, after every third clear, at least 3 minutes since any ad, never after a failed attempt,
+   never when Remove Ads (or the Starter Pack's 7-day window) is active. */
+function interstitialDue(n) { return n >= 8 && econ.clearsSince >= 3 && Date.now() - (econ.lastAd || 0) >= 180000 && !noAdsActive(); }
+
+/* Purchases: test confirmations only. The native build swaps IAP.buy for Google Play Billing with the same product ids. */
+var SKUS = {
+  noads: { name: 'Remove Ads', usd: '3.99', desc: 'Removes interstitial ads for good. Optional reward ads stay available.' },
+  starter: { name: 'Starter Pack', usd: '1.99', desc: 'Jade Stone, 500 coins and 7 days without interstitial ads. One per player.' },
+  coins500: { name: '500 coins', usd: '0.99', coins: 500 },
+  coins1800: { name: '1,800 coins', usd: '2.99', coins: 1800 },
+  coins3500: { name: '3,500 coins', usd: '4.99', coins: 3500 },
+  coins8000: { name: '8,000 coins', usd: '9.99', coins: 8000 },
+  stone_jade: { name: 'Jade Stone', usd: '0.99', desc: 'Steady all-rounder. Takes one Pebble slot in every basket.' },
+  stone_obsidian: { name: 'Obsidian Disc', usd: '1.99', desc: 'Heavy, forgiving and long. Takes one Granite slot in every basket.' },
+  stone_comet: { name: 'Comet Shard', usd: '2.99', desc: 'Most skips of any stone. Takes one Slate slot in every basket.' }
+};
+var IAP = (function () {
+  var cur = null;
+  function grant(id) {
+    var s = SKUS[id];
+    if (s.coins) addCoins(s.coins, 'iap');
+    if (id === 'noads') econ.noAds = true;
+    if (id === 'starter') { econ.starter = true; econ.own.jade = true; econ.noAdsUntil = Date.now() + 7 * 86400000; addCoins(500, 'starter'); }
+    if (id.indexOf('stone_') === 0) econ.own[id.slice(6)] = true;
+    saveEcon(); refreshCoins(); track('iap_test_purchase', { sku: id, usd: s.usd });
+    if (Sound.bonus) Sound.bonus();
+    renderShop();
+  }
+  $('iapNo').addEventListener('click', function () { $('iap').classList.remove('show'); cur = null; });
+  $('iapYes').addEventListener('click', function () { $('iap').classList.remove('show'); if (cur) grant(cur); cur = null; });
+  return {
+    buy: function (id) {
+      var s = SKUS[id]; cur = id;
+      $('iapName').textContent = s.name; $('iapPrice').textContent = 'USD ' + s.usd; $('iapDesc').textContent = s.desc || 'Coins are added to your balance straight away.';
+      $('iap').classList.add('show');
+    }
+  };
+})();
+function upDesc(lv) { return lv ? 'Speed +' + (1.5 * lv).toFixed(1).replace('.0', '') + '%, drag -' + 6 * lv + '%, angle tolerance +' + 3 * lv + '%' : 'Base stats. Upgrade for speed, less drag and a wider angle zone'; }
+function swatch(st) { return '<span class="sw" style="width:' + st.sw + 'px;height:' + st.sh + 'px;background:' + st.css + '"></span>'; }
+function renderShop() {
+  var h = '<h3>Upgrade starter stones</h3>';
+  ['pebble', 'slate', 'granite'].forEach(function (id) {
+    var st = stoneById(id), lv = econ.up[id] || 0, c = UP_COST[lv], pips = '', i;
+    for (i = 0; i < UP_MAX; i++) pips += '<i' + (i < lv ? ' class="on"' : '') + '></i>';
+    h += '<div class="si">' + swatch(st) + '<div><div class="nm">' + st.name + ' &middot; Tier ' + lv + ' of ' + UP_MAX + '</div><div class="ds">' + upDesc(lv) + '</div><div class="pips">' + pips + '</div></div><div class="act">' +
+      (lv >= UP_MAX ? '<span class="own">Max</span>' : '<button type="button" data-up="' + id + '"' + (econ.coins < c ? ' disabled' : '') + '>' + c + ' coins</button>') + '</div></div>';
+  });
+  h += '<h3>Premium stones</h3>';
+  STONES.filter(function (s) { return s.premium; }).forEach(function (st) {
+    var own = !!econ.own[st.id];
+    h += '<div class="si">' + swatch(st) + '<div><div class="nm">' + st.name + '</div><div class="ds">' + st.note + '. Replaces one ' + st.swap.charAt(0).toUpperCase() + st.swap.slice(1) + ' in every basket.</div></div><div class="act">' +
+      (own ? '<span class="own">Owned</span>' : '<button type="button" data-buyc="' + st.id + '"' + (econ.coins < st.coins ? ' disabled' : '') + '>' + st.coins + ' coins</button><button type="button" class="alt" data-sku="stone_' + st.id + '">USD ' + st.usd + '</button>') + '</div></div>';
+  });
+  h += '<h3>Store</h3>';
+  if (!econ.starter) h += '<div class="si">' + swatch(stoneById('jade')) + '<div><div class="nm">Starter Pack</div><div class="ds">' + SKUS.starter.desc + '</div></div><div class="act"><button type="button" data-sku="starter">USD 1.99</button></div></div>';
+  h += '<div class="si"><span></span><div><div class="nm">Remove Ads</div><div class="ds">' + SKUS.noads.desc + '</div></div><div class="act">' + (econ.noAds ? '<span class="own">Owned</span>' : '<button type="button" data-sku="noads">USD 3.99</button>') + '</div></div>';
+  var BUN = { coins500: 'Small bundle', coins1800: 'Medium bundle', coins3500: 'Large bundle', coins8000: 'Best value' };
+  ['coins500', 'coins1800', 'coins3500', 'coins8000'].forEach(function (id) {
+    h += '<div class="si"><span class="bigc">' + (SKUS[id].coins >= 1000 ? (SKUS[id].coins / 1000).toFixed(1).replace('.0', '') + 'k' : SKUS[id].coins) + '</span><div><div class="nm">' + BUN[id] + '</div><div class="ds">' + SKUS[id].name + '</div></div><div class="act"><button type="button" data-sku="' + id + '">USD ' + SKUS[id].usd + '</button></div></div>';
+  });
+  if (!econ.noAds && noAdsActive()) h += '<p class="note">Starter Pack ad-free window ends ' + new Date(econ.noAdsUntil).toLocaleDateString() + '.</p>';
+  h += '<p class="note">Test mode: purchases and ads are simulated and nothing is charged. Premium stones join from the next level start.</p>';
+  $('shopBody').innerHTML = h; refreshCoins();
+}
+$('shopBody').addEventListener('click', function (e) {
+  var b = e.target.closest('button'); if (!b || b.disabled) return;
+  Sound.unlock();
+  var up = b.getAttribute('data-up'), bc = b.getAttribute('data-buyc'), sku = b.getAttribute('data-sku');
+  if (up) { var lv = econ.up[up] || 0, c = UP_COST[lv]; if (lv < UP_MAX && econ.coins >= c) { econ.coins -= c; econ.up[up] = lv + 1; saveEcon(); track('coins_spend', { item: 'upgrade_' + up, tier: lv + 1, amount: c }); Sound.ring(true); } }
+  if (bc) { var st = stoneById(bc); if (!econ.own[bc] && econ.coins >= st.coins) { econ.coins -= st.coins; econ.own[bc] = true; saveEcon(); track('coins_spend', { item: 'stone_' + bc, amount: st.coins }); Sound.bonus(); } }
+  if (sku) { IAP.buy(sku); return; }
+  renderShop();
+});
+function openShop() { renderShop(); $('shop').classList.add('show'); track('shop_open', { level: lvl ? lvl.n : 0 }); }
+$('shopBtn').addEventListener('click', function () { Sound.unlock(); openShop(); });
+$('shopClose').addEventListener('click', function () { $('shop').classList.remove('show'); });
+function modalOpen() { return $('shop').classList.contains('show') || $('adov').classList.contains('show') || $('iap').classList.contains('show') || $('clear').classList.contains('show'); }
+refreshCoins();
+
+/* Failed level: one rewarded continue per attempt adds a pebble, a slate and a granite and resumes the same level. */
+var contUsed = false;
+$('cont').addEventListener('click', function () {
+  Sound.unlock();
+  if (contUsed || !lvl) return;
+  Ads.rewarded('+3 stones', function () {
+    contUsed = true; basket.pebble++; basket.slate++; basket.granite++; maxThrows += 3;
+    $('round').classList.remove('show'); $('failBars').style.display = 'none'; $('round').querySelector('table').style.display = '';
+    tutOpen = false; toReady(true); refreshStones(); updateHud();
+    showBanner('+3 stones', 'Finish the goals', false);
+    track('continue_rewarded', { level: lvl.n });
+  });
+});
 
 /* ---------- Basket, target and scoring ---------- */
 var TGT_NAME = { ring: 'Ring', hole: 'Hole', gate: 'Gate', hoops: 'Hoops' };
@@ -1499,6 +1781,7 @@ function showTut() {
   $('tut').classList.add('show');
 }
 $('tutGo').addEventListener('click', function () { Sound.unlock(); tutOpen = false; $('tut').classList.remove('show'); $('hint').classList.add('gone'); try { localStorage.setItem(RULES_KEY, '1'); } catch (e) {} });
+$('tutMap').addEventListener('click', function () { Sound.unlock(); showLevelMap(); });
 $('lvClose').addEventListener('click', function () {
   $('lvmap').classList.remove('show');
   if (state === 'roundEnd') $('round').classList.add('show');
@@ -1512,6 +1795,8 @@ function newRound() {
   for (var k in BASKET0) basket[k] = BASKET0[k];
   thrown = 0; total = 0; throws = []; needsNext = false; maxThrows = lvl ? lvl.stones : 10; combo = 0; extras = 0;
   if (lvl) { var sn = lvl.stones, pb = Math.ceil(sn * 0.4), gr = Math.floor((sn - pb) / 2); basket.pebble = pb; basket.granite = gr; basket.slate = sn - pb - gr; }
+  STONES.forEach(function (st) { if (st.premium && econ.own[st.id] && basket[st.swap] > 0) { basket[st.swap]--; basket[st.id] = 1; } });
+  contUsed = false;
   $('round').classList.remove('show'); hideResult(); $('metrics').classList.remove('show');
   $('skips').textContent = '0';
   state = 'ready'; stoneIdx = 0; refreshStones(); pickRing(); updateHud();
@@ -1839,7 +2124,7 @@ function create() {
   function toDesign(e) { var rc = cv.getBoundingClientRect(); return { x: (e.clientX - rc.left) / rc.width * W, y: (e.clientY - rc.top) / rc.height * H, t: e.timeStamp }; }
   cv.addEventListener('pointerdown', function (e) {
     Sound.unlock();
-    if (tutOpen || state === 'flying' || state === 'roundEnd') return;
+    if (tutOpen || modalOpen() || state === 'flying' || state === 'roundEnd') return;
     if (run && !run.shown && state === 'settling') { run.shown = true; finishThrow(); }
     if (thrown >= maxThrows) { state = 'roundEnd'; hideResult(); showRound(); return; }
     if (state !== 'ready') toReady(true);
@@ -1905,7 +2190,7 @@ function launch(angle, yaw, power, spin) {
   if (basket[stone.id] <= 0 || thrown >= maxThrows) return;
   basket[stone.id]--; thrown++;
   if (tilt.on) { tilt.auto = true; tilt.stillT = 0; tilt.autoT = 0; }
-  var cw = curWind; run = simulate(stone, angle, yaw, power, spin, cw ? function () { return cw; } : (lvl ? levelWind : windAt), clockT(), Math.random);
+  var cw = curWind; run = simulate(effStone(stone), angle, yaw, power, spin, cw ? function () { return cw; } : (lvl ? levelWind : windAt), clockT(), Math.random);
   run.power = power; run.spin = spin; run.stone = stone; run.yaw = yaw; run.yawRad = rad(yaw); run.hits = ringHits(run.events); run.marks = buildMarks(run); run.extra = run.marks.reduce(function (a, mk) { return a + mk.b; }, 0); run.shown = false;
   playT = 0; evIdx = 0; settleT = 0; trail.length = 0; trailAcc = 0; punch = 1; slow = 1; needsNext = true;
   state = 'flying';
@@ -2404,6 +2689,13 @@ window.__skipGame = new Phaser.Game({
   scene: { create: create, update: update }
 });
 window.__skipSim = { simulate: simulate, STONES: STONES };
+/* Test hooks for headless checks only; not reachable from the game interface. */
+window.__skipDbg = {
+  econ: function () { return econ; }, basket: function () { return basket; }, state: function () { return { state: state, thrown: thrown, maxThrows: maxThrows, total: total, level: lvl && lvl.n }; },
+  clearNow: function (score) { total = score || 0; startClear(); },
+  failNow: function () { thrown = maxThrows; state = 'roundEnd'; showRound(); },
+  adSecs: function (s) { Ads.cfg.secs = s; }
+};
 })();
 </script>
 </body></html>
