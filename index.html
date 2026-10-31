@@ -1533,10 +1533,12 @@ function showLevelResult(tot) {
   $('rTotal').textContent = String(tot);
   $('rSub').textContent = 'Out of stones. Fill every bar to clear the level.';
   $('again').textContent = 'Retry level'; $('share').style.display = ''; $('share').textContent = 'Levels';
-  $('cont').style.display = contUsed ? 'none' : '';
-  $('rSub').textContent = contUsed ? 'Out of stones. Retry to fill every bar.' : 'Out of stones. Watch a short ad for 3 more, or retry.';
+  $('banner').classList.remove('show');
+  var offer = !contUsed || paidAvail();
+  $('cont').style.display = offer ? '' : 'none'; $('cont').innerHTML = contLabel();
+  $('rSub').textContent = !contUsed ? 'Out of stones. Watch a short ad for 3 more, or retry.' : paidAvail() ? 'Out of stones. Add 5 more stones (' + (PAID_MAX - paidN) + ' left this attempt), or retry.' : 'Out of stones. Retry to fill every bar.';
   $('round').classList.add('show');
-  track('level_fail', { level: L.n, score: tot, continued: contUsed });
+  track('level_fail', { level: L.n, score: tot, continued: contUsed, paid: paidN, offer: offer ? (contUsed ? (econ.coins >= PAID_COST[paidN] ? 'coins' : 'rescue_pack') : 'ad') : 'none' });
 }
 
 /* ---------- Economy v2.5: coins, stars, upgrades, premium stones, test ads and test purchases ---------- */
@@ -1615,6 +1617,7 @@ function interstitialDue(n) { return n >= 8 && econ.clearsSince >= 3 && Date.now
 
 /* Purchases: test confirmations only. The native build swaps IAP.buy for Google Play Billing with the same product ids. */
 var SKUS = {
+  rescue: { name: 'Rescue Pack', usd: '0.99', desc: '5 stones now to finish this level, plus 500 coins for the shop.' },
   noads: { name: 'Remove Ads', usd: '3.99', desc: 'Removes interstitial ads for good. Optional reward ads stay available.' },
   starter: { name: 'Starter Pack', usd: '1.99', desc: 'Jade Stone, 500 coins and 7 days without interstitial ads. One per player.' },
   coins500: { name: '500 coins', usd: '0.99', coins: 500 },
@@ -1631,6 +1634,7 @@ var IAP = (function () {
     var s = SKUS[id];
     if (s.coins) addCoins(s.coins, 'iap');
     if (id === 'noads') econ.noAds = true;
+    if (id === 'rescue') { addCoins(500, 'rescue_pack'); rescueResume(); }
     if (id === 'starter') { econ.starter = true; econ.own.jade = true; econ.noAdsUntil = Date.now() + 7 * 86400000; addCoins(500, 'starter'); }
     if (id.indexOf('stone_') === 0) econ.own[id.slice(6)] = true;
     saveEcon(); refreshCoins(); track('iap_test_purchase', { sku: id, usd: s.usd });
@@ -1690,17 +1694,36 @@ function modalOpen() { return $('shop').classList.contains('show') || $('adov').
 refreshCoins();
 
 /* Failed level: one rewarded continue per attempt adds a pebble, a slate and a granite and resumes the same level. */
-var contUsed = false;
+/* After the free ad continue is used, from Level 20 a failed attempt offers a paid continue: +5 stones for 150, 300, then 600 coins,
+   at most 3 per attempt. If the balance is short, the same button offers the Rescue Pack (5 stones and 500 coins, USD 0.99). */
+var contUsed = false, paidN = 0, PAID_COST = [150, 300, 600], PAID_FROM = 20, PAID_MAX = 3;
+function paidAvail() { return !!lvl && contUsed && lvl.n >= PAID_FROM && paidN < PAID_MAX; }
+function resumeWith(p, s, g, head) {
+  basket.pebble += p; basket.slate += s; basket.granite += g; maxThrows += p + s + g;
+  $('round').classList.remove('show'); $('failBars').style.display = 'none'; $('round').querySelector('table').style.display = '';
+  tutOpen = false; toReady(true); refreshStones(); updateHud();
+  showBanner(head, 'Finish the goals', false);
+}
+function contLabel() {
+  if (!contUsed) return '+3 stones and keep going<span class="adtag">AD</span>';
+  var c = PAID_COST[paidN];
+  return econ.coins >= c ? '+5 stones for ' + c + ' coins' : 'Rescue Pack &middot; USD 0.99<br><small style="font-weight:600;font-size:11.5px">5 stones now + 500 coins</small>';
+}
+function rescueResume() { paidN++; resumeWith(2, 2, 1, '+5 stones'); track('continue_paid', { level: lvl.n, route: 'rescue_pack', n: paidN }); }
 $('cont').addEventListener('click', function () {
   Sound.unlock();
-  if (contUsed || !lvl) return;
-  Ads.rewarded('+3 stones', function () {
-    contUsed = true; basket.pebble++; basket.slate++; basket.granite++; maxThrows += 3;
-    $('round').classList.remove('show'); $('failBars').style.display = 'none'; $('round').querySelector('table').style.display = '';
-    tutOpen = false; toReady(true); refreshStones(); updateHud();
-    showBanner('+3 stones', 'Finish the goals', false);
-    track('continue_rewarded', { level: lvl.n });
-  });
+  if (!lvl) return;
+  if (!contUsed) {
+    Ads.rewarded('+3 stones', function () { contUsed = true; resumeWith(1, 1, 1, '+3 stones'); track('continue_rewarded', { level: lvl.n }); });
+    return;
+  }
+  if (!paidAvail()) return;
+  var c = PAID_COST[paidN];
+  if (econ.coins >= c) {
+    econ.coins -= c; saveEcon(); refreshCoins(true); paidN++;
+    track('coins_spend', { item: 'continue', amount: c, level: lvl.n, n: paidN }); track('continue_paid', { level: lvl.n, route: 'coins', n: paidN });
+    resumeWith(2, 2, 1, '+5 stones');
+  } else { track('rescue_offer_tap', { level: lvl.n, n: paidN + 1 }); IAP.buy('rescue'); }
 });
 
 /* ---------- Basket, target and scoring ---------- */
@@ -1796,7 +1819,7 @@ function newRound() {
   thrown = 0; total = 0; throws = []; needsNext = false; maxThrows = lvl ? lvl.stones : 10; combo = 0; extras = 0;
   if (lvl) { var sn = lvl.stones, pb = Math.ceil(sn * 0.4), gr = Math.floor((sn - pb) / 2); basket.pebble = pb; basket.granite = gr; basket.slate = sn - pb - gr; }
   STONES.forEach(function (st) { if (st.premium && econ.own[st.id] && basket[st.swap] > 0) { basket[st.swap]--; basket[st.id] = 1; } });
-  contUsed = false;
+  contUsed = false; paidN = 0;
   $('round').classList.remove('show'); hideResult(); $('metrics').classList.remove('show');
   $('skips').textContent = '0';
   state = 'ready'; stoneIdx = 0; refreshStones(); pickRing(); updateHud();
