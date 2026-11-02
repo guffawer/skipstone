@@ -366,6 +366,18 @@ body { padding-left: max(6px, var(--safe-area-inset-left, env(safe-area-inset-le
 .round #cont + .row { margin-top: 0; }
 .tut .brow { position: sticky; bottom: 0; margin-top: auto; display: flex; gap: 8px; }
 .tut .brow button { position: static; margin: 0; }
+/* v2.5.2: the button bar is a solid footer, and the first-time rule tiles go compact when a level briefing is also shown, so nothing hides behind the buttons */
+.tut .brow { background: rgba(15, 35, 43, 1); padding-top: 8px; box-shadow: 0 -10px 12px -6px rgba(15, 35, 43, 1); }
+.tut #tutBrief:not([style*="none"]) ~ .rules { gap: 6px; }
+.tut #tutBrief:not([style*="none"]) ~ .rules .gc { padding: 6px 4px 6px; flex-direction: row; gap: 6px; justify-content: center; }
+.tut #tutBrief:not([style*="none"]) ~ .rules .gc svg { width: 26px; height: 26px; flex: none; }
+.tut #tutBrief:not([style*="none"]) ~ .rules .gc small { font-size: 11px; text-align: left; }
+@media (max-height: 780px) {
+  .tut { gap: 6px; padding-top: 10px; }
+  .tut #tutBrief .gcs { gap: 6px; }
+  .tut #tutBrief .gc { padding: 6px 10px; }
+  .tut #tutBrief .conds, .tut #tutBrief .crow { gap: 4px; }
+}
 .tut #tutGo { flex: 2; }
 .tut #tutMap { flex: 1; background: var(--deck-2); color: var(--paper); border: 1px solid var(--line); }
 .stones.tight .stone .t { display: none; }
