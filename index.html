@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>html{color-scheme:dark;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>html{color-scheme:dark;padding:var(--safe-area-inset-top,env(safe-area-inset-top,0px)) 0 var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px))}body{margin:0}
 .bhead { display: flex; align-items: center; justify-content: space-between; }
 .stk { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700; color: var(--paper); }
 .stk i { display: inline-block; width: 13px; height: 6px; border-radius: 50%; background: #b9a98a; }
@@ -49,11 +49,9 @@
 .crs .r svg { grid-row: 1 / 3; }
 #failBars { display: none; flex-direction: column; gap: 8px; }
 #failBars .mtr { grid-template-columns: 96px 1fr auto; }
-</style></head><body><title>Skipstone</title>
+</style></head><body><title>Neon Skip</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Figtree:wght@400;600&display=swap">
+<link rel="stylesheet" href="vendor/fonts.css">
 <style>
 /* Layout: one-screen portrait app. Header strip, a 3:4 first-person lake stage with HUD overlays, a control deck (stone basket, angle).
    One committed look (dawn lake), so tokens are set once with an explicit dark UI. */
@@ -78,8 +76,8 @@ body {
   font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.35;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-left: max(16px, var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));
+  padding-right: max(16px, var(--safe-area-inset-right, env(safe-area-inset-right, 0px)));
   padding-block: 0;
   overflow: hidden;
   -webkit-user-select: none;
@@ -115,6 +113,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
 
 .side { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .chip { background: rgba(15, 35, 43, .72); color: var(--paper); font-size: 12px; padding: 5px 9px; border-radius: 4px; border: 0; font-variant-numeric: tabular-nums; }
+#windChip { transition: background-color .4s, box-shadow .4s; }
+#windChip[data-w=calm] { background: rgba(28, 120, 74, .82); }
+#windChip[data-w=breezy] { background: rgba(176, 116, 18, .86); }
+#windChip[data-w=strong] { background: rgba(196, 40, 52, .92); font-weight: 600; animation: windPulse 1.1s ease-in-out infinite; }
+@keyframes windPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 80, 90, .0); } 50% { box-shadow: 0 0 0 4px rgba(255, 80, 90, .45); } }
+@media (prefers-reduced-motion: reduce) { #windChip[data-w=strong] { animation: none; } }
 .wind { display: flex; align-items: center; gap: 7px; pointer-events: none; }
 .wind svg { width: 16px; height: 16px; transition: transform .3s linear; }
 .wind span { white-space: nowrap; }
@@ -271,7 +275,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
 .gp.met { border-color: var(--good); color: var(--good); }
 
 /* v2.0 layout: maximum stage, compact controls */
-body { padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: max(6px, env(safe-area-inset-right, 0px)); }
+body { padding-left: max(6px, var(--safe-area-inset-left, env(safe-area-inset-left, 0px))); padding-right: max(6px, var(--safe-area-inset-right, env(safe-area-inset-right, 0px))); }
 .app { gap: 5px; padding-block: 5px; max-width: 640px; }
 .top { gap: 8px; }
 .top .word { font-size: 20px; }
@@ -411,8 +415,8 @@ body { padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: ma
 <div class="app">
   <header class="top">
     <div class="brand">
-      <span class="word">Skipstone</span>
-      <span class="lbl">Prototype v2.5</span>
+      <span class="word">Neon Skip</span>
+      <span class="lbl">Stone Skipping</span>
     </div>
     <span class="lvlab" id="streak"></span>
     <div class="bests">
@@ -512,7 +516,7 @@ body { padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: ma
         <div id="shopBody" style="display:flex;flex-direction:column;gap:8px"></div>
         <button class="btnS close" id="shopClose" type="button">Close</button>
       </div>
-      <div class="iap" id="iap"><div class="pn"><h3 id="iapName"></h3><div class="pr" id="iapPrice"></div><p id="iapDesc"></p><p>Test purchase. No payment is taken in the prototype; the native build uses Google Play Billing.</p><div class="row"><button class="btnS" id="iapNo" type="button">Cancel</button><button class="btnP" id="iapYes" type="button">Buy (test)</button></div></div></div>
+      <div class="iap" id="iap"><div class="pn"><h3 id="iapName"></h3><div class="pr" id="iapPrice"></div><p id="iapDesc"></p><p>Test purchase. No payment is taken in test mode.</p><div class="row"><button class="btnS" id="iapNo" type="button">Cancel</button><button class="btnP" id="iapYes" type="button">Buy (test)</button></div></div></div>
       <div class="adov" id="adov"><span class="tag">TEST AD</span><div class="box"><b id="adKind">Interstitial</b><span id="adTxt"></span></div><div class="adcd" id="adCd"></div><button class="btnP" id="adClose" type="button">Close</button></div>
     </div>
   </main>
@@ -530,7 +534,9 @@ body { padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: ma
   </section>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.80.1/phaser.min.js"></script>
+<script src="build-config.js"></script>
+<script src="native.js"></script>
+<script src="vendor/phaser.min.js"></script>
 <script>
 (function () {
 'use strict';
@@ -864,11 +870,13 @@ var Sound = (function () {
         tone(t + 0.95, 120, 70, 0.14, 0.2, 'triangle'); tone(t + 1.12, 120, 70, 0.14, 0.2, 'triangle');
         celebrate(t + 0.5);
       } else if (type === 'dolphin') {
-        // Excited dolphin laugh: rapid chirps, a click train and a long rising whistle
-        for (i = 0; i < 7; i++) tone(t + i * 0.09, i % 2 ? 3600 : 2000, i % 2 ? 2100 : 3800, 0.09, 0.1, 'sine');
-        for (i = 0; i < 16; i++) burst(t + 0.7 + i * 0.026, 0.012, 'bandpass', 4600, 0, 3, 0.14);
-        tone(t + 1.15, 1500, 3900, 0.5, 0.1, 'sine'); tone(t + 1.15, 1510, 3920, 0.5, 0.04, 'triangle');
-        celebrate(t + 0.4);
+        // Dolphin flip: rising whoosh, big belly-flop splash, bubble bloops and a squeaky-toy "eh-eh-eh" laugh
+        burst(t, 0.32, 'bandpass', 500, 2600, 2.5, 0.22);
+        burst(t + 0.3, 0.6, 'lowpass', 2400, 260, 0.9, 0.5); burst(t + 0.3, 0.25, 'highpass', 3000, 1500, 0.7, 0.14);
+        tone(t + 0.3, 140, 60, 0.25, 0.3, 'sine');
+        for (i = 0; i < 9; i++) { var bt = t + 0.55 + i * 0.055 + Math.random() * 0.03, bf = 260 + Math.random() * 380; tone(bt, bf, bf * 2.6, 0.06, 0.16, 'sine'); }
+        for (i = 0; i < 4; i++) { tone(t + 1.1 + i * 0.13, 1250 + i * 60, 1650 + i * 60, 0.09, 0.05, 'square'); tone(t + 1.1 + i * 0.13, 625 + i * 30, 825 + i * 30, 0.09, 0.05, 'square'); }
+        celebrate(t + 0.6);
       } else if (type === 'ball') {
         // Rubber ball: two springy boings and a pop
         vnote(t, 200, 700, 0.1, 0.3, 0, 0.1, 0); vnote(t + 0.1, 700, 150, 0.55, 0.34, 0, 17, 90);
@@ -930,18 +938,21 @@ var Sound = (function () {
       [523, 659, 784, 1046, 1318].forEach(function (f, i) { tone(t + i * 0.11, f, 0, 0.7, 0.1, 'triangle'); });
       celebrate(t + 0.2);
     },
+    suspendAll: function () { visible = false; if (ctx) { try { ctx.suspend(); } catch (e) {} } },
+    resumeAll: function () { visible = !document.hidden; if (ctx && visible && !muted) { try { ctx.resume(); } catch (e) {} } },
     setMuted: function (m) { muted = m; if (master) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.05); if (!m) ensure(); }
   };
 })();
 
 /* ---------- Haptics: Android vibrate only (iPhone Safari has no vibration support) ---------- */
+window.__neonSound = Sound;
 var Haptics = (function () {
-  var enabled = true;
-  function buzz(ms) { if (enabled && navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } }
+  var enabled = true, NH = window.NeonNative && window.NeonNative.haptics;
+  function buzz(ms, style) { if (!enabled) return; if (NH) { NH.impact(style); return; } if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } }
   return {
-    skip: function (v) { buzz(8 + Math.round(Math.min(v, 9) * 2)); },
-    sink: function () { buzz([30, 40, 45]); },
-    setEnabled: function (e) { enabled = e; if (e) buzz(15); }
+    skip: function (v) { buzz(8 + Math.round(Math.min(v, 9) * 2), v > 6 ? 'MEDIUM' : 'LIGHT'); },
+    sink: function () { buzz([30, 40, 45], 'HEAVY'); },
+    setEnabled: function (e) { enabled = e; if (e) buzz(15, 'LIGHT'); }
   };
 })();
 
@@ -1361,7 +1372,7 @@ function fillBrief() {
   $('tutTier').textContent = TIER_NAME[lvl.tier]; $('tutTier').className = 'tier ' + lvl.tier;
   var st = ''; for (i = 0; i < lvl.stones; i++) st += '<i></i>'; $('tutStones').innerHTML = st + '&nbsp;' + lvl.stones + ' stones';
   $('tutBest').innerHTML = econ.stars[lvl.n] ? starsHtml(econ.stars[lvl.n], 16) : '';
-  var wk = windWord(lvl.wind), c = '<span class="cd">' + ico('wind', 20) + 'Wind ' + wk + '</span>';
+  var wk = windWord(lvl.wind), c = '<span class="cd"' + (lvl.wind >= 1.1 ? ' style="background:rgba(196,40,52,.88);color:#fff;font-weight:600"' : lvl.wind < 0.8 ? ' style="background:rgba(28,120,74,.75);color:#fff"' : '') + '>' + ico('wind', 20) + 'Wind ' + wk + (lvl.wind >= 1.1 ? ' (warning)' : '') + '</span>';
   c += '<span class="cd">' + ico('size', 20) + (lvl.tsz >= 1.15 ? 'Large' : lvl.tsz >= 0.95 ? 'Standard' : 'Small') + ' targets</span>';
   if (lvl.driftP) c += '<span class="cd">' + ico('moving', 20) + 'Moving targets</span>';
   if (lvl.farP) c += '<span class="cd">' + ico('far', 20) + 'Far creatures</span>';
@@ -1553,7 +1564,7 @@ try {
 function saveEcon() { try { localStorage.setItem(ECON_KEY, JSON.stringify(econ)); } catch (e) {} }
 saveEcon();
 /* Analytics hook: logs locally now; the native build forwards these to Firebase Analytics. */
-function track(ev, p) { try { (window.__skipLog = window.__skipLog || []).push([ev, p || {}, Date.now()]); if (window.console) console.log('[track]', ev, p || ''); } catch (e) {} }
+function track(ev, p) { try { (window.__skipLog = window.__skipLog || []).push([ev, p || {}, Date.now()]); if (window.console) console.log('[track]', ev, p || ''); var NA = window.NeonNative && window.NeonNative.analytics; if (NA) NA.log(ev, p || {}); } catch (e) {} }
 
 var UP_COST = [100, 200, 400, 700, 1000], UP_MAX = 5;
 var STAR_COINS = [0, 20, 40, 60];
@@ -1607,8 +1618,24 @@ var Ads = (function () {
   });
   return {
     cfg: CFG,
-    interstitial: function (cb) { onDone = cb; onReward = null; track('ad_interstitial_show', {}); open('interstitial', 'Interstitial', 'AdMob test interstitial placeholder. Remove Ads switches these off.'); },
-    rewarded: function (label, reward, cancel) { onReward = reward; onDone = cancel || null; track('ad_rewarded_start', { placement: label }); open('rewarded', 'Rewarded: ' + label, 'AdMob test rewarded placeholder. Watch to the end to earn the reward.'); }
+    interstitial: function (cb) {
+      var NA = window.NeonNative && window.NeonNative.ads;
+      if (NA) { NA.interstitial(function (shownAd) { if (shownAd) { track('ad_interstitial_show', {}); econ.lastAd = Date.now(); saveEcon(); } cb(); }); return; }
+      onDone = cb; onReward = null; track('ad_interstitial_show', {}); open('interstitial', 'Interstitial', 'AdMob test interstitial placeholder. Remove Ads switches these off.'); },
+    rewarded: function (label, reward, cancel) {
+      var NA = window.NeonNative && window.NeonNative.ads;
+      if (NA) {
+        track('ad_rewarded_start', { placement: label });
+        if (!NA.rewardReady()) showBanner('Loading ad', 'One moment', false);
+        NA.rewarded(function (ok) {
+          if (ok === null) { track('ad_rewarded_unavailable', { placement: label }); showBanner('No ad available', 'Try again in a moment', false); if (cancel) cancel(); return; }
+          econ.lastAd = Date.now(); saveEcon();
+          track(ok ? 'ad_rewarded_complete' : 'ad_rewarded_skip', { placement: label });
+          if (ok) reward(); else if (cancel) cancel();
+        });
+        return;
+      }
+      onReward = reward; onDone = cancel || null; track('ad_rewarded_start', { placement: label }); open('rewarded', 'Rewarded: ' + label, 'AdMob test rewarded placeholder. Watch to the end to earn the reward.'); }
   };
 })();
 /* Interstitial rule: only between levels, from Level 8, after every third clear, at least 3 minutes since any ad, never after a failed attempt,
@@ -1628,23 +1655,39 @@ var SKUS = {
   stone_obsidian: { name: 'Obsidian Disc', usd: '1.99', desc: 'Heavy, forgiving and long. Takes one Granite slot in every basket.' },
   stone_comet: { name: 'Comet Shard', usd: '2.99', desc: 'Most skips of any stone. Takes one Slate slot in every basket.' }
 };
+function billingLive() { var NB = window.NeonNative && window.NeonNative.billing; return !!(NB && NB.mode === 'play'); }
+function priceOf(id) { var NB = window.NeonNative && window.NeonNative.billing, p = NB && NB.price(id); return p || 'USD ' + SKUS[id].usd; }
 var IAP = (function () {
   var cur = null;
-  function grant(id) {
-    var s = SKUS[id];
+  function grant(id, o) {
+    var s = SKUS[id]; if (!s) return; o = o || {};
     if (s.coins) addCoins(s.coins, 'iap');
     if (id === 'noads') econ.noAds = true;
-    if (id === 'rescue') { addCoins(500, 'rescue_pack'); rescueResume(); }
+    if (id === 'rescue') { addCoins(500, 'rescue_pack'); if (state === 'roundEnd' && $('round').classList.contains('show') && lvl) rescueResume(); }
     if (id === 'starter') { econ.starter = true; econ.own.jade = true; econ.noAdsUntil = Date.now() + 7 * 86400000; addCoins(500, 'starter'); }
     if (id.indexOf('stone_') === 0) econ.own[id.slice(6)] = true;
-    saveEcon(); refreshCoins(); track('iap_test_purchase', { sku: id, usd: s.usd });
+    saveEcon(); refreshCoins(); track(o.native ? 'iap_purchase' : 'iap_test_purchase', { sku: id, usd: s.usd });
     if (Sound.bonus) Sound.bonus();
     renderShop();
   }
   $('iapNo').addEventListener('click', function () { $('iap').classList.remove('show'); cur = null; });
   $('iapYes').addEventListener('click', function () { $('iap').classList.remove('show'); if (cur) grant(cur); cur = null; });
+  /* Restores entitlements from Play (reinstall or new phone): unlocks only, no coins or ad-free window. */
+  function entitle(id) {
+    var ch = false;
+    if (id === 'noads' && !econ.noAds) { econ.noAds = true; ch = true; }
+    if (id === 'starter' && !econ.starter) { econ.starter = true; econ.own.jade = true; ch = true; }
+    if (id.indexOf('stone_') === 0 && !econ.own[id.slice(6)]) { econ.own[id.slice(6)] = true; ch = true; }
+    if (ch) { saveEcon(); renderShop(); track('iap_restore', { sku: id }); }
+  }
+  window.__neonIAP = { grant: grant, entitle: entitle };
   return {
     buy: function (id) {
+      if (billingLive()) {
+        track('iap_start', { sku: id });
+        window.NeonNative.billing.buy(id, function (r) { if (r && !r.ok && !r.cancelled) showBanner('Purchase not completed', r.message || '', false); });
+        return;
+      }
       var s = SKUS[id]; cur = id;
       $('iapName').textContent = s.name; $('iapPrice').textContent = 'USD ' + s.usd; $('iapDesc').textContent = s.desc || 'Coins are added to your balance straight away.';
       $('iap').classList.add('show');
@@ -1665,22 +1708,24 @@ function renderShop() {
   STONES.filter(function (s) { return s.premium; }).forEach(function (st) {
     var own = !!econ.own[st.id];
     h += '<div class="si">' + swatch(st) + '<div><div class="nm">' + st.name + '</div><div class="ds">' + st.note + '. Replaces one ' + st.swap.charAt(0).toUpperCase() + st.swap.slice(1) + ' in every basket.</div></div><div class="act">' +
-      (own ? '<span class="own">Owned</span>' : '<button type="button" data-buyc="' + st.id + '"' + (econ.coins < st.coins ? ' disabled' : '') + '>' + st.coins + ' coins</button><button type="button" class="alt" data-sku="stone_' + st.id + '">USD ' + st.usd + '</button>') + '</div></div>';
+      (own ? '<span class="own">Owned</span>' : '<button type="button" data-buyc="' + st.id + '"' + (econ.coins < st.coins ? ' disabled' : '') + '>' + st.coins + ' coins</button><button type="button" class="alt" data-sku="stone_' + st.id + '">' + priceOf('stone_' + st.id) + '</button>') + '</div></div>';
   });
   h += '<h3>Store</h3>';
-  if (!econ.starter) h += '<div class="si">' + swatch(stoneById('jade')) + '<div><div class="nm">Starter Pack</div><div class="ds">' + SKUS.starter.desc + '</div></div><div class="act"><button type="button" data-sku="starter">USD 1.99</button></div></div>';
-  h += '<div class="si"><span></span><div><div class="nm">Remove Ads</div><div class="ds">' + SKUS.noads.desc + '</div></div><div class="act">' + (econ.noAds ? '<span class="own">Owned</span>' : '<button type="button" data-sku="noads">USD 3.99</button>') + '</div></div>';
+  if (!econ.starter) h += '<div class="si">' + swatch(stoneById('jade')) + '<div><div class="nm">Starter Pack</div><div class="ds">' + SKUS.starter.desc + '</div></div><div class="act"><button type="button" data-sku="starter">' + priceOf('starter') + '</button></div></div>';
+  h += '<div class="si"><span></span><div><div class="nm">Remove Ads</div><div class="ds">' + SKUS.noads.desc + '</div></div><div class="act">' + (econ.noAds ? '<span class="own">Owned</span>' : '<button type="button" data-sku="noads">' + priceOf('noads') + '</button>') + '</div></div>';
   var BUN = { coins500: 'Small bundle', coins1800: 'Medium bundle', coins3500: 'Large bundle', coins8000: 'Best value' };
   ['coins500', 'coins1800', 'coins3500', 'coins8000'].forEach(function (id) {
-    h += '<div class="si"><span class="bigc">' + (SKUS[id].coins >= 1000 ? (SKUS[id].coins / 1000).toFixed(1).replace('.0', '') + 'k' : SKUS[id].coins) + '</span><div><div class="nm">' + BUN[id] + '</div><div class="ds">' + SKUS[id].name + '</div></div><div class="act"><button type="button" data-sku="' + id + '">USD ' + SKUS[id].usd + '</button></div></div>';
+    h += '<div class="si"><span class="bigc">' + (SKUS[id].coins >= 1000 ? (SKUS[id].coins / 1000).toFixed(1).replace('.0', '') + 'k' : SKUS[id].coins) + '</span><div><div class="nm">' + BUN[id] + '</div><div class="ds">' + SKUS[id].name + '</div></div><div class="act"><button type="button" data-sku="' + id + '">' + priceOf(id) + '</button></div></div>';
   });
   if (!econ.noAds && noAdsActive()) h += '<p class="note">Starter Pack ad-free window ends ' + new Date(econ.noAdsUntil).toLocaleDateString() + '.</p>';
-  h += '<p class="note">Test mode: purchases and ads are simulated and nothing is charged. Premium stones join from the next level start.</p>';
+  h += '<p class="note">' + (billingLive() ? '' : 'Test mode: purchases are simulated and nothing is charged. ') + 'Premium stones join from the next level start.</p>';
+  var NAp = window.NeonNative && window.NeonNative.ads; if (NAp && NAp.privacyRequired()) h += '<button type="button" class="btnS" data-privacy="1" style="flex:none">Privacy and ad choices</button>';
   $('shopBody').innerHTML = h; refreshCoins();
 }
 $('shopBody').addEventListener('click', function (e) {
   var b = e.target.closest('button'); if (!b || b.disabled) return;
   Sound.unlock();
+  if (b.getAttribute('data-privacy')) { window.NeonNative.ads.privacyForm(); return; }
   var up = b.getAttribute('data-up'), bc = b.getAttribute('data-buyc'), sku = b.getAttribute('data-sku');
   if (up) { var lv = econ.up[up] || 0, c = UP_COST[lv]; if (lv < UP_MAX && econ.coins >= c) { econ.coins -= c; econ.up[up] = lv + 1; saveEcon(); track('coins_spend', { item: 'upgrade_' + up, tier: lv + 1, amount: c }); Sound.ring(true); } }
   if (bc) { var st = stoneById(bc); if (!econ.own[bc] && econ.coins >= st.coins) { econ.coins -= st.coins; econ.own[bc] = true; saveEcon(); track('coins_spend', { item: 'stone_' + bc, amount: st.coins }); Sound.bonus(); } }
@@ -1707,7 +1752,7 @@ function resumeWith(p, s, g, head) {
 function contLabel() {
   if (!contUsed) return '+3 stones and keep going<span class="adtag">AD</span>';
   var c = PAID_COST[paidN];
-  return econ.coins >= c ? '+5 stones for ' + c + ' coins' : 'Rescue Pack &middot; USD 0.99<br><small style="font-weight:600;font-size:11.5px">5 stones now + 500 coins</small>';
+  return econ.coins >= c ? '+5 stones for ' + c + ' coins' : 'Rescue Pack &middot; ' + priceOf('rescue') + '<br><small style="font-weight:600;font-size:11.5px">5 stones now + 500 coins</small>';
 }
 function rescueResume() { paidN++; resumeWith(2, 2, 1, '+5 stones'); track('continue_paid', { level: lvl.n, route: 'rescue_pack', n: paidN }); }
 $('cont').addEventListener('click', function () {
@@ -1843,8 +1888,8 @@ $('mLevels').addEventListener('click', function () { Sound.unlock(); showLevelMa
 $('share').addEventListener('click', function () {
   if (mode === 'levels') { showLevelMap(); return; }
   var sk = throws.reduce(function (a, t2) { return a + t2.skips; }, 0);
-  var txt = 'Skipstone ' + (mode === 'daily' ? 'Daily ' + todayStr() : 'basket') + ': ' + total + ' points, ' + sk + ' skips' + (mode === 'daily' ? ', streak ' + streakNow() : '');
-  if (!throws.length) txt = 'Skipstone Daily ' + daily.last + ': ' + daily.score + ' points, ' + daily.skips + ' skips, streak ' + daily.streak;
+  var txt = 'Neon Skip ' + (mode === 'daily' ? 'Daily ' + todayStr() : 'basket') + ': ' + total + ' points, ' + sk + ' skips' + (mode === 'daily' ? ', streak ' + streakNow() : '');
+  if (!throws.length) txt = 'Neon Skip Daily ' + daily.last + ': ' + daily.score + ' points, ' + daily.skips + ' skips, streak ' + daily.streak;
   var done = function () { $('share').textContent = 'Copied'; setTimeout(function () { $('share').textContent = 'Copy result'; }, 1800); };
   try { navigator.clipboard.writeText(txt).then(done, function () { $('rSub').textContent = txt; }); } catch (e) { $('rSub').textContent = txt; }
 });
@@ -1901,7 +1946,9 @@ function applyMark(mk) {
 /* ---------- Windows: wind readout ---------- */
 function updateWindHud(wv) {
   var sp = wv.speed;
-  $('windTxt').textContent = sp < 0.4 ? 'Calm' : sp.toFixed(1) + ' m/s';
+  var wl = sp < 2.5 ? 'calm' : sp < 5 ? 'breezy' : 'strong';
+  $('windTxt').textContent = sp < 0.4 ? 'Calm' : (wl === 'strong' ? 'Strong ' : '') + sp.toFixed(1) + ' m/s';
+  var wc = $('windChip'); if (wc.getAttribute('data-w') !== wl) wc.setAttribute('data-w', wl);
   $('windArrow').style.transform = 'rotate(' + (Math.atan2(wv.z, wv.x) * 180 / Math.PI).toFixed(0) + 'deg)';
   $('windArrow').style.opacity = sp < 0.4 ? '0.3' : '1';
 }
@@ -1961,12 +2008,13 @@ function finishThrow() {
   var cm = r.marks.some(function (q) { return q.kind === 'crt'; });
   var av = ring.type === 'hoops' ? [hp + ' of 3 hoops' + (cm ? ', ' + crt.name + ' hit.' : '.'), hp > 0 || cm] : cm ? [crt.name + ' hit.', true] : bonus > 0 ? [TGT_NAME[ring.type] + ' hit.', true] : close === 1e9 ? ['No skip reached the target.', false] : ['Closest skip ' + close.toFixed(1) + ' m from the target.', false];
   setRow('dAim', 'dAimW', yd, av);
-  $('card').classList.add('show');
+  $('card').classList.add('show'); clearTimeout(cardT); cardT = setTimeout(hideResult, 3000);
   $('metrics').classList.remove('show');
   updateHud();
   if (mode === 'levels' && lvl && !clearing && goalsMet()) startClear();
 }
-function hideResult() { $('card').classList.remove('show'); }
+var cardT = 0;
+function hideResult() { clearTimeout(cardT); $('card').classList.remove('show'); }
 
 var BOARD_KEY = 'skipstone.v02.board';
 function updateBoard(score) {
