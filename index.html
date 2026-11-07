@@ -52,6 +52,26 @@
 </style></head><body><title>Neon Skip</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="vendor/fonts.css">
+<div class="intro show" id="intro" role="button" tabindex="0" aria-label="Neon Skip. Tap to skip the intro">
+  <svg class="iscene" viewBox="0 0 360 640" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="iSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#120b2e"/><stop offset=".55" stop-color="#3a1c5c"/><stop offset=".85" stop-color="#b4457a"/><stop offset="1" stop-color="#ff9a5c"/></linearGradient>
+      <linearGradient id="iWater" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a2a72"/><stop offset=".25" stop-color="#2e1a58"/><stop offset="1" stop-color="#07050f"/></linearGradient>
+      <linearGradient id="iStone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd9a0"/><stop offset="1" stop-color="#e0624a"/></linearGradient>
+      <filter id="iGlow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <rect width="360" height="352" fill="url(#iSky)"/>
+    <path d="M0 352 L52 318 L96 334 L150 300 L206 330 L250 312 L300 336 L360 316 L360 352 Z" fill="#2a1446" opacity=".9"/>
+    <rect y="352" width="360" height="288" fill="url(#iWater)"/>
+    <g stroke="#ffc89a" stroke-linecap="round" opacity=".55"><line x1="150" y1="372" x2="214" y2="372" stroke-width="2"/><line x1="166" y1="384" x2="204" y2="384" stroke-width="1.6"/></g>
+    <g class="irip" style="--d:.42s"><ellipse cx="96" cy="552" rx="30" ry="7"/></g>
+    <g class="irip" style="--d:.74s"><ellipse cx="160" cy="470" rx="22" ry="5"/></g>
+    <g class="irip" style="--d:.98s"><ellipse cx="208" cy="420" rx="15" ry="3.6"/></g>
+    <g class="ihoop" filter="url(#iGlow)"><ellipse cx="262" cy="372" rx="20" ry="38" fill="none" stroke-width="5"/></g>
+    <g class="istone"><ellipse cx="0" cy="0" rx="13" ry="4.6" fill="url(#iStone)"/><ellipse cx="-3" cy="-1.4" rx="6" ry="1.4" fill="#fff" opacity=".45"/></g>
+  </svg>
+  <div class="iword"><b>Neon Skip</b><span>Stone Skipping</span></div>
+</div>
 <style>
 /* Layout: one-screen portrait app. Header strip, a 3:4 first-person lake stage with HUD overlays, a control deck (stone basket, angle).
    One committed look (dawn lake), so tokens are set once with an explicit dark UI. */
@@ -422,6 +442,177 @@ body { padding-left: max(6px, var(--safe-area-inset-left, env(safe-area-inset-le
 .iap p { margin: 0; font-size: 12.5px; color: var(--mute); line-height: 1.35; }
 .iap .pr { font-family: var(--font-display); font-weight: 800; font-size: 30px; line-height: 1; color: var(--ochre); }
 .iap .row { display: flex; gap: 8px; }
+
+/* ===================== v2.6 (Round 2): full-height sheets, larger header, animated intro =====================
+   Colours, fonts, icons and art are unchanged. Full-screen cards (briefing, not cleared, cleared, summary, level map,
+   shop, creature reveal) now live in .layer, which spans from under the header to the bottom of the screen, so they
+   never sit on top of the live HUD. While one is open, body.sheetOn hides the HUD, goal bar and stone deck. */
+:root { --gy: clamp(14px, 2.4vh, 24px); --sx: 18px; }
+html { background: #120b2e; }
+.app { position: relative; gap: 6px; }
+.btns[hidden] { display: none !important; }
+
+/* Header: wordmark left, level centre, coins and Shop right; 44 px touch target */
+.top { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; min-height: 50px; padding: 2px 4px 0; }
+.top .brand { gap: 3px; }
+.top .word { font-size: 25px; letter-spacing: .07em; }
+.top .brand .lbl { font-size: 9px; letter-spacing: .22em; }
+.lvlab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 0; white-space: nowrap; }
+.lvlab b { font-family: var(--font-display); font-weight: 800; font-size: 21px; line-height: 1; letter-spacing: .06em; text-transform: uppercase; color: var(--paper); }
+.lvlab small { font-size: 9.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--ochre); line-height: 1; }
+.top .bests { justify-self: end; }
+.top .coinbtn { min-height: 44px; box-sizing: border-box; padding: 0 14px 0 9px; border-radius: 22px; gap: 7px; font-size: 21px; }
+.top .coinbtn svg { width: 22px; height: 22px; }
+.top .coinbtn small { font-size: 11px; letter-spacing: .1em; margin-left: 1px; }
+@media (max-width: 372px) { .top .word { font-size: 22px; } .top .coinbtn { padding: 0 11px 0 8px; gap: 5px; } .lvlab b { font-size: 19px; } }
+
+/* Layer for full-height sheets */
+.layer { position: absolute; left: 0; right: 0; top: var(--layerTop, 58px); bottom: 0; z-index: 30; pointer-events: none; }
+.layer > .sheet { position: absolute; inset: 0; box-sizing: border-box; border-radius: 0; z-index: auto; display: none; opacity: 1; transition: none; pointer-events: auto; }
+.layer > .sheet.show { display: flex; flex-direction: column; animation: sheetIn .2s ease-out; }
+.layer > .sheet:not(.reveal) { background: var(--ink); }
+.layer > .shop { z-index: 3; } .layer > .iap { z-index: 4; } .layer > #confetti { z-index: 2; position: absolute; inset: 0; contain: strict; }
+.layer > .reveal { z-index: 1; }
+@keyframes sheetIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.adov { position: fixed; z-index: 2147481000; }
+.layer > .iap, .layer > .adov { pointer-events: auto; }
+body.sheetOn .goalbar, body.sheetOn .deck, body.sheetOn .frame .hud, body.sheetOn .frame .big, body.sheetOn .frame .side,
+body.sheetOn .frame .metrics, body.sheetOn .frame .card, body.sheetOn .frame .hint, body.sheetOn .frame .banner, body.sheetOn .frame .pops { visibility: hidden; }
+
+.sheet .sbody { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; box-sizing: border-box; padding: clamp(14px, 2.6vh, 26px) var(--sx) 12px; display: flex; flex-direction: column; gap: var(--gy); }
+.sheet .sfoot { flex: none; padding: 10px var(--sx) 12px; display: flex; flex-direction: column; gap: 8px; background: var(--ink); }
+.sheet .sfoot .row { display: flex; gap: 10px; margin: 0; width: 100%; }
+.sheet .sfoot button { margin: 0; min-height: 52px; border-radius: 14px; font-size: 16px; font-weight: 600; padding: 12px 16px; box-sizing: border-box; width: 100%; flex: 1 1 0; position: static; }
+.sheet .sfoot .btnP, .sheet #again, .sheet #cont { background: var(--ochre); color: var(--ink); border: 0; }
+.sheet .sfoot .btnS, .sheet #share { background: var(--deck-2); color: var(--paper); border: 1px solid var(--line); }
+.sheet .sfoot .btnT { background: transparent; color: var(--mute); border: 0; min-height: 40px; font-size: 15px; padding: 6px; }
+.sheet #cont:not([style*="none"]) ~ .row #again { background: var(--deck-2); color: var(--paper); border: 1px solid var(--line); }
+.sheet .eyebrow { display: flex; align-items: center; gap: 10px; min-height: 22px; font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--ochre); }
+.sheet .eyebrow:empty { display: none; }
+.sheet .eyebrow .sp { margin-left: auto; }
+.sheet .eyebrow .tier { font-size: 10.5px; padding: 3px 9px; border-radius: 4px; }
+.sheet h2 { margin: calc(var(--gy) * -0.55) 0 0; font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 5.4vh, 48px); line-height: 1; letter-spacing: .03em; text-transform: uppercase; color: var(--paper); }
+.sheet .slab { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 10px; font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--mute); }
+.sheet .sec { display: flex; flex-direction: column; }
+
+/* Briefing */
+#tut #tutBrief { flex-direction: column; gap: var(--gy); }
+#tut #tutBrief[style*="flex"] { display: flex; }
+#tut .gcs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+#tut .gcs.n1 { grid-template-columns: 1fr; }
+#tut .gc { flex-direction: row; justify-content: flex-start; text-align: left; gap: 12px; padding: 12px 14px; min-height: clamp(62px, 8.6vh, 82px); box-sizing: border-box; border-radius: 14px; }
+#tut .gcs.n1 .gc { justify-content: center; }
+#tut .gc svg { flex: none; }
+#tut .gc b { font-size: clamp(26px, 3.8vh, 32px); }
+#tut .gc small { font-size: 13px; line-height: 1.2; }
+#tut .slab .stk { font-size: 12px; letter-spacing: .04em; text-transform: none; color: var(--paper); gap: 4px; }
+#tut .slab .stk i { width: 14px; height: 6px; }
+#tut .conds { gap: 8px; }
+#tut .cd { font-size: 13px; padding: 7px 13px 7px 9px; gap: 7px; border-radius: 18px; }
+#tut .crow { display: grid; grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap: 12px 8px; flex-wrap: initial; }
+#tut .crow .cg, #tut .crow .cg.new { flex: none; min-width: 0; width: auto; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+#tut .crow .ci { width: 100%; max-width: 60px; height: auto; aspect-ratio: 1; border-radius: 14px; }
+#tut .crow .cg em { font-size: 10.5px; }
+#tut .rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+#tut .rules .gc.v { flex-direction: column; justify-content: center; text-align: center; gap: 8px; padding: 14px 6px 12px; min-height: 0; }
+#tut .rules .gc.v svg { width: 44px; height: 44px; }
+#tut .rules .gc.v small { font-size: 12.5px; color: var(--paper); font-weight: 600; }
+#tut #tutDaily { margin: 0; font-size: 13px; color: var(--mute); }
+#tut .sbody > .sec#tutRulesSec[style*="none"] { display: none; }
+
+/* Not cleared / basket complete */
+#round .tot { font-size: clamp(72px, 11vh, 104px); line-height: .9; margin-top: -6px; }
+#round .slab { margin-bottom: -8px; }
+#round .sub { font-size: 15px; line-height: 1.35; color: var(--paper); }
+#round #failLab:has(+ #failBars:not([style*="flex"])) { display: none; }
+#round #failBars { gap: 14px; }
+#round #failBars .mtr { grid-template-columns: minmax(84px, 34%) 1fr auto; gap: 12px; font-size: 14px; }
+#round #failBars .mtr .tr { height: 10px; border-radius: 5px; }
+#round #failBars .mtr b { font-size: 14px; min-width: 64px; }
+#round .sfoot .row button { flex: 1 1 0; }
+#round .sfoot #cont .adtag { margin-left: 8px; }
+
+/* Cleared */
+#clear .sbody { align-items: center; justify-content: center; text-align: center; }
+#clear .ch { font-size: clamp(40px, 6.6vh, 58px); line-height: 1; animation: clearpop .5s ease-out; }
+#clear .stars { gap: 12px; }
+#clear .stars svg { width: clamp(52px, 8vh, 72px); height: clamp(52px, 8vh, 72px); }
+#clear .cscore { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+#clear .cscore .slab { margin: 0; }
+#clear .cscore b { font-family: var(--font-display); font-weight: 800; font-size: clamp(48px, 7.5vh, 66px); line-height: 1; color: var(--paper); font-variant-numeric: tabular-nums; }
+#clear .cs { font-size: 13px; color: var(--mute); max-width: 300px; }
+#clear .cs:empty { display: none; }
+#clear .coins { font-size: clamp(28px, 4.2vh, 36px); min-height: 0; }
+#clear .cnext { width: 100%; max-width: 360px; box-sizing: border-box; background: var(--deck-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; font-size: 15px; font-weight: 600; color: var(--paper); text-align: left; }
+#clear .cnext:empty { display: none; }
+#clear .cnext small { font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--mute); }
+#clear .cnext em { font-style: normal; font-size: 13px; font-weight: 600; color: var(--ochre); }
+
+/* Summary, level map, shop: same sheet, own content */
+#sum .sbody { gap: 12px; }
+#sum h2 { font-size: clamp(28px, 4.4vh, 38px); margin: 0; }
+.layer > .lvmap, .layer > .shop { padding: clamp(14px, 2.4vh, 22px) var(--sx) 12px; gap: 12px; overflow-y: auto; }
+.layer > .lvmap.show, .layer > .shop.show { display: flex; }
+.layer > .lvmap #lvClose, .layer > .shop .close { min-height: 52px; border-radius: 14px; font-size: 16px; }
+.layer > .reveal .rico { width: clamp(150px, 24vh, 200px); height: clamp(150px, 24vh, 200px); }
+.layer > .reveal button { min-height: 52px; border-radius: 14px; font-size: 16px; min-width: 240px; }
+
+/* Resets for sheets that were centred cards before v2.6 */
+.layer > .sheet:not(.reveal):not(.lvmap):not(.shop) { padding: 0; gap: 0; align-items: stretch; justify-content: flex-start; text-align: left; }
+#tut #tutMap { background: transparent; color: var(--mute); border: 0; min-height: 40px; font-size: 15px; padding: 6px; }
+#tut .slab .stk { gap: 3px; } #tut .slab .stk i { width: 10px; height: 5px; }
+@media (max-height: 860px) {
+  :root { --gy: 13px; }
+  .sheet .sbody { padding-top: 12px; }
+  .sheet h2 { font-size: 34px; }
+  .sheet .slab { margin-bottom: 8px; }
+  #tut .gc { min-height: 54px; padding: 8px 12px; gap: 10px; }
+  #tut .gc svg { width: 34px; height: 34px; }
+  #tut .gc b { font-size: 25px; }
+  #tut .gc small { font-size: 12px; }
+  #tut .cd { font-size: 12.5px; padding: 5px 11px 5px 8px; }
+  #tut .crow { grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 8px 6px; }
+  #tut .crow .ci { max-width: 50px; border-radius: 12px; }
+  #tut .rules .gc.v { padding: 10px 4px 8px; gap: 6px; }
+  #tut .rules .gc.v svg { width: 32px; height: 32px; }
+  .sheet .sfoot { padding-top: 8px; padding-bottom: 10px; gap: 4px; }
+  .sheet .sfoot button { min-height: 50px; }
+}
+.layer > .shop { padding-bottom: 0; }
+.layer > .shop .close { bottom: 12px; margin-bottom: 12px; box-shadow: 0 12px 0 var(--ink), 0 -14px 14px -6px var(--ink); }
+/* Animated intro (R2): about 2 s, tap anywhere to skip, static under reduced motion */
+.intro { position: fixed; inset: 0; z-index: 2147482000; background: #120b2e; display: none; overflow: hidden; cursor: pointer; outline: none; }
+.intro.show { display: block; animation: introOut .28s ease-in 1.8s forwards; }
+.intro.skip { animation: introOut .14s ease-in forwards; }
+@keyframes introOut { to { opacity: 0; visibility: hidden; } }
+.iscene { position: absolute; inset: 0; width: 100%; height: 100%; }
+.iword { position: absolute; left: 0; right: 0; top: 19%; text-align: center; pointer-events: none; }
+.iword b { display: block; font-family: var(--font-display); font-weight: 800; font-size: clamp(54px, 18vw, 80px); line-height: 1; letter-spacing: .06em; text-transform: uppercase; color: #ece6d6; opacity: 0; animation: iWordOn .7s ease-out .05s forwards; }
+.iword span { display: block; margin-top: 12px; font-family: var(--font-body); font-size: 13px; font-weight: 600; letter-spacing: .34em; text-transform: uppercase; color: var(--ochre); opacity: 0; animation: iFade .4s ease-out 1.15s forwards; }
+@keyframes iWordOn { 0% { opacity: 0; } 22% { opacity: .85; } 34% { opacity: .3; } 48% { opacity: 1; text-shadow: 0 0 20px rgba(104, 224, 255, .95), 0 0 46px rgba(104, 224, 255, .55); } 100% { opacity: 1; text-shadow: 0 0 12px rgba(104, 224, 255, .6), 0 0 30px rgba(104, 224, 255, .3); } }
+@keyframes iFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.istone { opacity: 0; animation: iHop 1.35s linear .1s forwards; }
+@keyframes iHop {
+  0% { opacity: 1; transform: translate(30px, 650px) scale(1.7); animation-timing-function: ease-out; }
+  11.9% { transform: translate(63px, 548px) scale(1.5); animation-timing-function: ease-in; }
+  23.7% { transform: translate(96px, 552px) scale(1.4); animation-timing-function: ease-out; }
+  35.6% { transform: translate(128px, 478px) scale(1.2); animation-timing-function: ease-in; }
+  47.4% { transform: translate(160px, 470px) scale(1.1); animation-timing-function: ease-out; }
+  56.3% { transform: translate(184px, 422px) scale(1); animation-timing-function: ease-in; }
+  65.2% { transform: translate(208px, 420px) scale(.95); animation-timing-function: linear; }
+  81.5% { opacity: 1; transform: translate(262px, 374px) scale(.8); }
+  100% { opacity: 0; transform: translate(304px, 344px) scale(.65); }
+}
+.irip ellipse { fill: none; stroke: #fff; stroke-width: 2; opacity: 0; transform-box: fill-box; transform-origin: center; animation: iRip .7s ease-out var(--d) forwards; }
+@keyframes iRip { 0% { opacity: .9; transform: scale(.3); } 100% { opacity: 0; transform: scale(1.7); } }
+.ihoop ellipse { stroke: #68e0ff; animation: iHoop .9s ease-out 1.18s forwards; }
+@keyframes iHoop { 0% { stroke: #ffd25a; stroke-width: 7; } 100% { stroke: #68e0ff; stroke-width: 5; } }
+@media (prefers-reduced-motion: reduce) {
+  .intro.show { animation-delay: .9s; }
+  .iword b, .iword span { animation: none; opacity: 1; }
+  .istone, .irip ellipse, .ihoop ellipse { animation: none; }
+  .layer > .sheet.show { animation: none; }
+}
 </style>
 
 <div class="app">
@@ -477,59 +668,6 @@ body { padding-left: max(6px, var(--safe-area-inset-left, env(safe-area-inset-le
       <div class="hint" id="hint">Swipe up toward the target. Speed is power. A shorter flick throws lower. Turn the phone or angle the swipe to aim.</div>
       <div class="pops" id="pops" aria-hidden="true"></div>
       <div class="banner" id="banner" aria-live="polite"><span class="gem" id="bannerGem"></span><h3 id="bannerHead"></h3><p id="bannerSub"></p></div>
-      <div class="tut" id="tut">
-        <h2 id="tutHead">How to play</h2>
-        <div id="tutBrief" style="display:none">
-          <div class="bhead"><span class="tier E" id="tutTier">Easy</span><span class="stk" id="tutBest"></span><span class="stk" id="tutStones"></span></div>
-          <div class="gcs" id="tutGoals"></div>
-          <div class="conds" id="tutCond"></div>
-          <div class="crow" id="tutCrt"></div>
-        </div>
-        <div id="tutRules" class="rules"></div>
-        <p id="tutDaily">Daily: same targets and wind for everyone, one scored attempt per day.</p>
-        <div class="brow"><button id="tutMap" type="button">Levels</button><button id="tutGo" type="button">Start throwing</button></div>
-      </div>
-      <div class="lvmap" id="lvmap">
-        <h2>Levels</h2>
-        <p id="lvSub"></p>
-        <div id="lvBody" style="display:grid;gap:12px"></div>
-        <button id="lvClose" type="button">Close</button>
-      </div>
-      <div class="reveal" id="reveal">
-        <div class="rays"></div>
-        <div class="rtag">New lake creature</div>
-        <div class="rico" id="revIco"></div>
-        <div class="rname" id="revName"></div>
-        <div class="rpts" id="revPts"></div>
-        <button id="revGo" type="button">Continue</button>
-      </div>
-      <div class="clear" id="clear"><div class="ch" id="clearHead"></div><div class="stars" id="clearStars"></div><div class="cs" id="clearSub"></div><div class="coins" id="clearCoins"></div><div class="row"><button class="btnS" id="dblBtn" type="button">Double coins<span class="adtag">AD</span></button><button class="btnP" id="clrGo" type="button">Continue</button></div></div>
-      <div id="confetti" aria-hidden="true"></div>
-      <div class="round" id="sum">
-        <h2 id="sumHead"></h2>
-        <div class="sub" id="sumSub"></div>
-        <div id="sumBody"></div>
-        <div class="row"><button id="sumGo" type="button">Continue</button></div>
-      </div>
-      <div class="round" id="round" aria-live="polite">
-        <h2>Basket complete</h2>
-        <div class="tot" id="rTotal">0</div>
-        <div class="sub" id="rSub"></div>
-        <div id="failBars"></div>
-        <table>
-          <thead><tr><th>#</th><th>Stone</th><th>Skips</th><th>Dist</th><th>Bonus</th><th>Score</th></tr></thead>
-          <tbody id="rRows"></tbody>
-        </table>
-        <button id="cont" type="button" style="display:none">+3 stones and keep going<span class="adtag">AD</span></button>
-        <div class="row"><button id="share" type="button">Copy result</button><button id="again" type="button">New basket</button></div>
-      </div>
-      <div class="shop" id="shop" aria-label="Shop">
-        <h2><span>Shop</span><span class="coinbtn" aria-hidden="true"><svg viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="10" r="8.5" fill="#e2a553"/><circle cx="10" cy="10" r="5.4" fill="none" stroke="#8a5a1c" stroke-width="1.6"/></svg><span id="shopCoins">0</span></span></h2>
-        <div id="shopBody" style="display:flex;flex-direction:column;gap:8px"></div>
-        <button class="btnS close" id="shopClose" type="button">Close</button>
-      </div>
-      <div class="iap" id="iap"><div class="pn"><h3 id="iapName"></h3><div class="pr" id="iapPrice"></div><p id="iapDesc"></p><p>Test purchase. No payment is taken in test mode.</p><div class="row"><button class="btnS" id="iapNo" type="button">Cancel</button><button class="btnP" id="iapYes" type="button">Buy (test)</button></div></div></div>
-      <div class="adov" id="adov"><span class="tag">TEST AD</span><div class="box"><b id="adKind">Interstitial</b><span id="adTxt"></span></div><div class="adcd" id="adCd"></div><button class="btnP" id="adClose" type="button">Close</button></div>
     </div>
   </main>
 
@@ -540,10 +678,86 @@ body { padding-left: max(6px, var(--safe-area-inset-left, env(safe-area-inset-le
       <span class="read"><span id="angleVal">10</span>&deg;<small id="angleTag">in the zone</small></span>
       <div id="angMeter" aria-hidden="true"><div class="bar"></div><div class="mk" id="angMk"></div></div>
       <div class="slider"><input id="angle" type="range" min="0" max="45" step="0.5" value="10" aria-label="Throw angle in degrees"></div>
-      <span class="note" id="tiltNote">Phone aim: tilt sets angle, turning aims.</span>
-      <span class="btns"><button id="tilt" type="button" aria-pressed="false">Phone aim</button></span>
+      <span class="note" id="tiltNote">Swipe length sets the angle. Swipe direction aims.</span>
+      <span class="btns" hidden><button id="tilt" type="button" aria-pressed="false" tabindex="-1">Phone aim</button></span>
     </div>
   </section>
+  <div class="layer" id="layer">
+      <div class="tut sheet" id="tut">
+        <div class="sbody">
+          <div class="eyebrow"><span id="tutEye"></span><span class="tier E" id="tutTier">Easy</span><span class="stk sp" id="tutBest"></span></div>
+          <h2 id="tutHead">How to play</h2>
+          <div id="tutBrief" style="display:none">
+            <section class="sec"><div class="slab">Goals<span class="stk" id="tutStones"></span></div><div class="gcs" id="tutGoals"></div></section>
+            <section class="sec"><div class="slab">Conditions</div><div class="conds" id="tutCond"></div></section>
+            <section class="sec"><div class="slab">Creatures</div><div class="crow" id="tutCrt"></div></section>
+          </div>
+          <section class="sec" id="tutRulesSec"><div class="slab">How to play</div><div id="tutRules" class="rules"></div></section>
+          <p id="tutDaily">Daily: same targets and wind for everyone, one scored attempt per day.</p>
+        </div>
+        <div class="sfoot"><button id="tutGo" class="btnP" type="button">Start Skipping</button><button id="tutMap" class="btnT" type="button">Levels</button></div>
+      </div>
+      <div class="lvmap sheet" id="lvmap">
+        <h2>Levels</h2>
+        <p id="lvSub"></p>
+        <div id="lvBody" style="display:grid;gap:12px"></div>
+        <button id="lvClose" type="button">Close</button>
+      </div>
+      <div class="reveal sheet" id="reveal">
+        <div class="rays"></div>
+        <div class="rtag">New lake creature</div>
+        <div class="rico" id="revIco"></div>
+        <div class="rname" id="revName"></div>
+        <div class="rpts" id="revPts"></div>
+        <button id="revGo" type="button">Continue</button>
+      </div>
+      <div class="clear sheet" id="clear">
+        <div class="sbody">
+          <div class="eyebrow" id="clearEye"></div>
+          <div class="ch" id="clearHead"></div>
+          <div class="stars" id="clearStars"></div>
+          <div class="cscore"><span class="slab">Score</span><b id="clearScore">0</b><span class="cs" id="clearSub"></span></div>
+          <div class="coins" id="clearCoins"></div>
+          <div class="cnext" id="clearNext"></div>
+        </div>
+        <div class="sfoot"><button class="btnP" id="clrGo" type="button">Continue</button><button class="btnS" id="dblBtn" type="button">Double coins<span class="adtag">AD</span></button></div>
+      </div>
+      <div id="confetti" aria-hidden="true"></div>
+      <div class="round sheet" id="sum">
+        <div class="sbody">
+          <h2 id="sumHead"></h2>
+          <div class="sub" id="sumSub"></div>
+          <div id="sumBody"></div>
+        </div>
+        <div class="sfoot"><button id="sumGo" class="btnP" type="button">Continue</button></div>
+      </div>
+      <div class="round sheet" id="round" aria-live="polite">
+        <div class="sbody">
+        <div class="eyebrow" id="rEye"></div>
+        <h2>Basket complete</h2>
+        <div class="slab">Score</div>
+        <div class="tot" id="rTotal">0</div>
+        <div class="sub" id="rSub"></div>
+        <div class="slab" id="failLab">Goals</div>
+        <div id="failBars"></div>
+        <table>
+          <thead><tr><th>#</th><th>Stone</th><th>Skips</th><th>Dist</th><th>Bonus</th><th>Score</th></tr></thead>
+          <tbody id="rRows"></tbody>
+        </table>
+        </div>
+        <div class="sfoot">
+        <button id="cont" type="button" style="display:none">+3 stones and keep going<span class="adtag">AD</span></button>
+        <div class="row"><button id="share" type="button">Copy result</button><button id="again" type="button">New basket</button></div>
+        </div>
+      </div>
+      <div class="shop sheet" id="shop" aria-label="Shop">
+        <h2><span>Shop</span><span class="coinbtn" aria-hidden="true"><svg viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="10" r="8.5" fill="#e2a553"/><circle cx="10" cy="10" r="5.4" fill="none" stroke="#8a5a1c" stroke-width="1.6"/></svg><span id="shopCoins">0</span></span></h2>
+        <div id="shopBody" style="display:flex;flex-direction:column;gap:8px"></div>
+        <button class="btnS close" id="shopClose" type="button">Close</button>
+      </div>
+      <div class="iap" id="iap"><div class="pn"><h3 id="iapName"></h3><div class="pr" id="iapPrice"></div><p id="iapDesc"></p><p>Test purchase. No payment is taken in test mode.</p><div class="row"><button class="btnS" id="iapNo" type="button">Cancel</button><button class="btnP" id="iapYes" type="button">Buy (test)</button></div></div></div>
+      <div class="adov" id="adov"><span class="tag">TEST AD</span><div class="box"><b id="adKind">Interstitial</b><span id="adTxt"></span></div><div class="adcd" id="adCd"></div><button class="btnP" id="adClose" type="button">Close</button></div>
+  </div>
 </div>
 
 <script src="build-config.js"></script>
@@ -677,15 +891,44 @@ var Sound = (function () {
     return buf;
   }
   function loopSrc(buf, rate) { var s = ctx.createBufferSource(); s.buffer = buf; s.loop = true; if (rate) s.playbackRate.value = rate; s.start(0, Math.random() * 3); return s; }
+  /* v2.6 (R7): phone-speaker master bus. Small speakers cannot move air below about 150 Hz; energy there only makes them
+     buzz and distort. Chain: master -> 2 x high-pass 150 Hz (24 dB/oct) -> gentle compressor -> limiter -> soft clip -> out. */
+  var MASTER = 0.9;
+  function softClip() {
+    var n = 2048, c = new Float32Array(n), i;
+    for (i = 0; i < n; i++) { var x = i / (n - 1) * 2 - 1; c[i] = Math.tanh(1.4 * x) / Math.tanh(1.4); }
+    var w = ctx.createWaveShaper(); w.curve = c; w.oversample = '2x'; return w;
+  }
   function build() {
-    master = ctx.createGain(); master.gain.value = muted ? 0 : 0.9;
-    var comp = ctx.createDynamicsCompressor(); comp.threshold.value = -20; comp.ratio.value = 3;
-    master.connect(comp); comp.connect(ctx.destination);
+    master = ctx.createGain(); master.gain.value = muted ? 0 : MASTER;
+    var hp1 = ctx.createBiquadFilter(); hp1.type = 'highpass'; hp1.frequency.value = 150; hp1.Q.value = 0.54;
+    var hp2 = ctx.createBiquadFilter(); hp2.type = 'highpass'; hp2.frequency.value = 150; hp2.Q.value = 1.31;
+    var comp = ctx.createDynamicsCompressor(); comp.threshold.value = -22; comp.knee.value = 8; comp.ratio.value = 3.5; comp.attack.value = 0.004; comp.release.value = 0.18;
+    var lim = ctx.createDynamicsCompressor(); lim.threshold.value = -6; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.001; lim.release.value = 0.06;
+    var out = ctx.createGain(); out.gain.value = 0.45;        // offsets the compressors' automatic make-up gain
+    master.connect(hp1); hp1.connect(hp2); hp2.connect(comp); comp.connect(lim); lim.connect(softClip()).connect(out); out.connect(ctx.destination);
     sfx = ctx.createGain(); sfx.connect(master);
-    var conv = ctx.createConvolver(); conv.buffer = makeIR(1.7);
-    var wet = ctx.createGain(); wet.gain.value = 0.3; sfx.connect(conv); conv.connect(wet); wet.connect(master);
+    var conv = ctx.createConvolver(); conv.buffer = makeIR(0.7);          // short room, was 1.7 s
+    var wet = ctx.createGain(); wet.gain.value = 0.14; sfx.connect(conv); conv.connect(wet); wet.connect(master);
     noiseW = makeNoise(false); noiseB = makeNoise(true);
   }
+  /* Voice budget: at most VMAX effect voices sound at once. A new voice steals the oldest overlapping one (fast fade);
+     low-priority voices (sparkles, applause, ambience) are simply skipped when the budget is full. LVL scales every
+     effect voice, so reward layers can be turned down as a group. */
+  var VMAX = 10, live = [], LVL = 1;
+  function admit(t, dur, low) {
+    var now = ctx.currentTime, i, n = 0, old = null;
+    if (live.length > 40) live = live.filter(function (v) { return v.e > now; });
+    for (i = 0; i < live.length; i++) { var v = live[i]; if (v.e > t && v.s < t + dur) { n++; if (!old || v.s < old.s) old = v; } }
+    if (n < VMAX) return true;
+    if (low) return false;
+    if (old) {
+      try { old.g.gain.cancelScheduledValues(t); old.g.gain.setTargetAtTime(0.0001, Math.max(t, now), 0.012); } catch (e) {}
+      old.e = t;
+    }
+    return true;
+  }
+  function reg(t, dur, g) { live.push({ s: t, e: t + dur, g: g }); }
   function startAmbient() {
     started = true;
     // Very soft, low-passed breeze in the canopy. No broadband hiss and no surf-like swell.
@@ -697,26 +940,31 @@ var Sound = (function () {
     scheduleLap(); scheduleBird();
   }
   function ensure() {
+    if (ctx && ctx.state === 'closed') { ctx = null; started = false; live = []; }
     if (!ctx) {
       try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ctx = null; return null; }
       build();
     }
-    if (ctx.state === 'suspended' && visible) { try { ctx.resume(); } catch (e) {} }
+    if (ctx.state !== 'running' && visible && !muted) { try { var rp = ctx.resume(); if (rp && rp.catch) rp.catch(function () {}); } catch (e) {} }
     if (!started) startAmbient();
     return ctx;
   }
-  function burst(t, dur, type, f0, f1, q, vol) {
+  function burst(t, dur, type, f0, f1, q, vol, low) {
+    if (!admit(t, dur, low)) return;
+    vol *= LVL;
     var s = ctx.createBufferSource(); s.buffer = noiseW;
     var f = ctx.createBiquadFilter(); f.type = type; f.Q.value = q; f.frequency.setValueAtTime(f0, t);
     if (f1) f.frequency.exponentialRampToValueAtTime(f1, t + dur);
     var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    s.connect(f); f.connect(g); g.connect(sfx); s.start(t, Math.random() * 2); s.stop(t + dur + 0.05);
+    s.connect(f); f.connect(g); g.connect(sfx); s.start(t, Math.random() * 2); s.stop(t + dur + 0.05); reg(t, dur, g);
   }
-  function tone(t, f0, f1, dur, vol, type) {
+  function tone(t, f0, f1, dur, vol, type, low) {
+    if (!admit(t, dur, low)) return;
+    vol *= LVL; if (type === 'square' || type === 'sawtooth') vol *= 0.7;   // buzzy waves read louder on small speakers
     var o = ctx.createOscillator(); o.type = type || 'sine'; o.frequency.setValueAtTime(f0, t);
     if (f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
     var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(sfx); o.start(t); o.stop(t + dur + 0.05);
+    o.connect(g); g.connect(sfx); o.start(t); o.stop(t + dur + 0.05); reg(t, dur, g);
   }
   function note(t, fa, fb, dur, vol, pan) {
     var o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(fa, t); o.frequency.exponentialRampToValueAtTime(fb, t + dur * 0.8);
@@ -730,12 +978,13 @@ var Sound = (function () {
   function vnote(t, f0, f1, dur, vol, pan, vibHz, vibDepth) {
     var o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur * 0.85);
     var lf = ctx.createOscillator(); lf.frequency.value = vibHz; var lg = ctx.createGain(); lg.gain.value = vibDepth; lf.connect(lg); lg.connect(o.frequency);
-    vol *= 0.65;
+    var low = vol < 0.05; if (!admit(t, dur, low)) return;
+    vol *= 0.65 * (low ? 1 : LVL);
     var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + Math.min(0.04, dur * 0.3)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 5200;
     o.connect(g); g.connect(lp);
     if (ctx.createStereoPanner) { var p = ctx.createStereoPanner(); p.pan.value = pan; lp.connect(p); p.connect(sfx); } else lp.connect(sfx);
-    o.start(t); lf.start(t); o.stop(t + dur + 0.05); lf.stop(t + dur + 0.05);
+    o.start(t); lf.start(t); o.stop(t + dur + 0.05); lf.stop(t + dur + 0.05); reg(t, dur, g);
   }
   var PENTA = [1, 1.125, 1.25, 1.5, 1.667, 2];
   function chirp() {
@@ -790,14 +1039,47 @@ var Sound = (function () {
     clearTimeout(birdTimer);
     birdTimer = setTimeout(function () { chirp(); scheduleBird(); }, 1400 + Math.random() * 3600);
   }
-  document.addEventListener('visibilitychange', function () {
-    visible = !document.hidden;
-    if (!ctx) return;
-    try { if (visible && !muted) ctx.resume(); else ctx.suspend(); } catch (e) {}
-  });
+  /* v2.6 (R8): sound always comes back after the app returns. Android can refuse resume() without a user gesture, or leave
+     the context "running" with a stalled clock after a long background. So: try on every resume path, verify the clock
+     is moving, and if not, retry on the next touch; if that still fails, rebuild the audio graph. */
+  var armed = false, wantOn = false;
+  function onGesture() {
+    disarm();
+    if (!ctx || muted || !visible) return;
+    var t0 = ctx.currentTime;
+    var p = null; try { p = ctx.resume(); } catch (e) {}
+    setTimeout(function () { if (ctx && (ctx.state !== 'running' || ctx.currentTime - t0 < 0.05)) rebuild(); }, 250);
+    return p;
+  }
+  function arm() { if (armed) return; armed = true; ['pointerdown', 'touchend', 'keydown'].forEach(function (k) { window.addEventListener(k, onGesture, true); }); }
+  function disarm() { if (!armed) return; armed = false; ['pointerdown', 'touchend', 'keydown'].forEach(function (k) { window.removeEventListener(k, onGesture, true); }); }
+  function rebuild() {
+    try { if (ctx && ctx.close) ctx.close(); } catch (e) {}
+    clearTimeout(lapTimer); clearTimeout(birdTimer);
+    ctx = null; started = false; live = [];
+    ensure();
+  }
+  function wake(why) {
+    visible = !document.hidden; wantOn = visible && !muted;
+    if (!ctx || !wantOn) return;
+    var t0 = ctx.currentTime;
+    try { var pr = ctx.resume(); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {}
+    setTimeout(function () {
+      if (!ctx || !visible || muted) return;
+      if (ctx.state !== 'running' || ctx.currentTime - t0 < 0.1) arm();   // still silent: the next touch brings it back
+      else { disarm(); scheduleLap(); scheduleBird(); }
+    }, 400);
+  }
+  function sleep() { visible = false; disarm(); if (ctx) { try { ctx.suspend(); } catch (e) {} } }
+  document.addEventListener('visibilitychange', function () { if (document.hidden) sleep(); else wake('visibility'); });
+  window.addEventListener('pageshow', function () { if (!document.hidden) wake('pageshow'); });
+  window.addEventListener('focus', function () { if (!document.hidden && ctx && ctx.state !== 'running') wake('focus'); });
   // Human-like voice: a sawtooth through three moving formant filters. fa and fb are the vowel formants at start and end.
   function voice(t, f0, f1, dur, vol, fa, fb, o) {
     o = o || {};
+    if (!admit(t, dur, false)) return;
+    vol *= LVL * 0.75;
+    if (f0 < 160) { f0 *= 1.6; f1 *= 1.6; }                  // keep voices above the speaker's floor (croc, swan, nessie)
     var osc = ctx.createOscillator(); osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(f0, t); osc.frequency.exponentialRampToValueAtTime(f1, t + dur);
     var lf = ctx.createOscillator(); lf.frequency.value = o.vib || 5.5;
@@ -813,20 +1095,88 @@ var Sound = (function () {
       var fg = ctx.createGain(); fg.gain.value = gains[k]; osc.connect(bp); bp.connect(fg); fg.connect(amp);
     }
     amp.connect(sfx);
-    osc.start(t); lf.start(t); osc.stop(t + dur + 0.05); lf.stop(t + dur + 0.05);
+    osc.start(t); lf.start(t); osc.stop(t + dur + 0.05); lf.stop(t + dur + 0.05); reg(t, dur, amp);
   }
   function applause(t, dur, vol) {
-    var n = Math.floor(dur * 60), i;
-    for (i = 0; i < n; i++) { var tt = t + Math.random() * dur, env = Math.sin(Math.PI * (tt - t) / dur); burst(tt, 0.02 + Math.random() * 0.02, 'bandpass', 1500 + Math.random() * 3500, 0, 1.2, vol * env * (0.5 + Math.random())); }
+    var n = Math.floor(dur * 18), i;
+    for (i = 0; i < n; i++) { var tt = t + Math.random() * dur, env = Math.sin(Math.PI * (tt - t) / dur); burst(tt, 0.02 + Math.random() * 0.02, 'bandpass', 1800 + Math.random() * 3000, 0, 1.2, vol * env * (0.5 + Math.random()), true); }
   }
   // Shared reward layer: rising arpeggio, bright chord, sparkles and applause. Every creature adds its own sound on top.
   function celebrate(t) {
-    var arp = [523, 659, 784, 1046, 1319, 1568], i;
-    for (i = 0; i < arp.length; i++) tone(t + i * 0.07, arp[i], 0, 0.55, 0.14, 'triangle');
-    [523, 659, 784, 1046].forEach(function (f) { tone(t + 0.5, f, 0, 1.0, 0.07, 'triangle'); });
-    tone(t + 0.5, 2093, 0, 1.2, 0.06, 'sine');
-    for (i = 0; i < 9; i++) tone(t + 0.1 + Math.random() * 1.0, 2400 + Math.random() * 2400, 0, 0.18, 0.04, 'sine');
-    applause(t + 0.3, 1.5, 0.12);
+    var keep = LVL; LVL = 1; try { celebrate0(t); } finally { LVL = keep; }
+  }
+  function celebrate0(t) {
+    // v2.6: about 40 percent quieter than v2.5 and fewer layers (arpeggio, one soft chord, a few sparkles, short applause)
+    var arp = [523, 659, 784, 1046, 1319], i;
+    for (i = 0; i < arp.length; i++) tone(t + i * 0.07, arp[i], 0, 0.32, 0.08, 'triangle');
+    [659, 1046].forEach(function (f) { tone(t + 0.42, f, 0, 0.6, 0.04, 'triangle', true); });
+    for (i = 0; i < 4; i++) tone(t + 0.15 + Math.random() * 0.7, 2600 + Math.random() * 1800, 0, 0.14, 0.022, 'sine', true);
+    applause(t + 0.3, 0.9, 0.07);
+  }
+  function creatureSound(type, t) {
+    var i, o;
+    if (type === 'grandma') {
+      // Delighted human cheer: "Yaaay!", a higher "Yay!", then a happy "woo-hoo"
+      var y0 = [320, 2200, 2800], y1 = [560, 1800, 2500];
+      voice(t, 300, 440, 0.62, 0.9, y0, y1, { vib: 6, q: 7 });
+      voice(t + 0.7, 340, 500, 0.55, 0.9, y0, y1, { vib: 6.5, q: 7 });
+      voice(t + 1.35, 380, 340, 0.2, 0.8, [320, 800, 2300], [420, 900, 2400], { vib: 7, q: 7 });
+      voice(t + 1.58, 400, 560, 0.4, 0.8, [320, 800, 2300], [380, 1000, 2400], { vib: 7, q: 7 });
+      celebrate(t + 0.3);
+    } else if (type === 'croc') {
+      // Two low reptile grunts and a pair of jaw snaps
+      var g0 = [640, 1190, 2390], g1 = [520, 1000, 2200];
+      voice(t, 95, 52, 0.36, 0.95, g0, g1, { vib: 0, vibD: 0, am: 30, amD: 0.6, q: 5, att: 0.03 });
+      voice(t + 0.44, 86, 48, 0.42, 1.0, g0, g1, { vib: 0, vibD: 0, am: 26, amD: 0.6, q: 5, att: 0.03 });
+      burst(t, 0.3, 'lowpass', 900, 400, 0.8, 0.08);
+      burst(t + 0.95, 0.05, 'highpass', 1800, 900, 0.8, 0.34); burst(t + 1.12, 0.05, 'highpass', 1800, 900, 0.8, 0.34);
+      tone(t + 0.95, 260, 170, 0.12, 0.14, 'triangle'); tone(t + 1.12, 260, 170, 0.12, 0.14, 'triangle');
+      celebrate(t + 0.5);
+    } else if (type === 'dolphin') {
+      // Dolphin flip: rising whoosh, big belly-flop splash, bubble bloops and a squeaky-toy "eh-eh-eh" laugh
+      burst(t, 0.32, 'bandpass', 500, 2600, 2.5, 0.22);
+      burst(t + 0.3, 0.45, 'lowpass', 2400, 520, 0.9, 0.3); burst(t + 0.3, 0.25, 'highpass', 3000, 1500, 0.7, 0.14);
+      tone(t + 0.3, 320, 180, 0.2, 0.18, 'sine');
+      for (i = 0; i < 5; i++) { var bt = t + 0.55 + i * 0.055 + Math.random() * 0.03, bf = 260 + Math.random() * 380; tone(bt, bf, bf * 2.6, 0.06, 0.16, 'sine'); }
+      for (i = 0; i < 4; i++) { tone(t + 1.1 + i * 0.13, 1250 + i * 60, 1650 + i * 60, 0.09, 0.05, 'square'); tone(t + 1.1 + i * 0.13, 625 + i * 30, 825 + i * 30, 0.09, 0.05, 'square'); }
+      celebrate(t + 0.6);
+    } else if (type === 'ball') {
+      // Rubber ball: two springy boings and a pop
+      vnote(t, 200, 700, 0.1, 0.3, 0, 0.1, 0); vnote(t + 0.1, 700, 200, 0.5, 0.34, 0, 17, 90);
+      vnote(t + 0.65, 160, 520, 0.09, 0.26, 0, 0.1, 0); vnote(t + 0.74, 520, 180, 0.4, 0.28, 0, 19, 70);
+      burst(t + 0.05, 0.05, 'bandpass', 1200, 0, 1.5, 0.2);
+      celebrate(t + 0.3);
+    } else if (type === 'jetski') {
+      // Engine rev, two horn honks and a splash
+      o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(170, t); o.frequency.exponentialRampToValueAtTime(340, t + 0.7);
+      var jf = ctx.createBiquadFilter(); jf.type = 'lowpass'; jf.frequency.setValueAtTime(500, t); jf.frequency.exponentialRampToValueAtTime(2200, t + 0.7);
+      var jg = ctx.createGain(); jg.gain.setValueAtTime(0.0001, t); jg.gain.linearRampToValueAtTime(0.13 * 0.6, t + 0.1); jg.gain.exponentialRampToValueAtTime(0.0001, t + 0.95);
+      o.connect(jf); jf.connect(jg); jg.connect(sfx); o.start(t); o.stop(t + 1.0); reg(t, 0.95, jg);
+      burst(t + 0.2, 0.5, 'highpass', 2400, 1200, 0.7, 0.14);
+      tone(t + 0.85, 466, 0, 0.16, 0.06, 'square'); tone(t + 0.85, 622, 0, 0.16, 0.05, 'square');
+      tone(t + 1.08, 466, 0, 0.3, 0.06, 'square'); tone(t + 1.08, 622, 0, 0.3, 0.05, 'square');
+      celebrate(t + 0.5);
+    } else if (type === 'swan') {
+      // Two goose-like honks and a flurry of wing beats
+      var sf0 = [700, 1200, 2500], sf1 = [560, 1050, 2300];
+      voice(t, 340, 270, 0.26, 0.95, sf0, sf1, { vib: 0, vibD: 0, am: 22, amD: 0.5, q: 6, att: 0.02 });
+      voice(t + 0.38, 380, 290, 0.3, 0.95, sf0, sf1, { vib: 0, vibD: 0, am: 22, amD: 0.5, q: 6, att: 0.02 });
+      for (i = 0; i < 5; i++) burst(t + 0.8 + i * 0.09, 0.06, 'bandpass', 900, 0, 1.2, 0.18 - i * 0.02, true);
+      celebrate(t + 0.5);
+    } else if (type === 'otter') {
+      // Squeaky chitter, a rising squeal and a happy splash
+      for (i = 0; i < 8; i++) tone(t + i * 0.06, i % 2 ? 2600 : 2000, i % 2 ? 2300 : 2700, 0.05, 0.09, 'triangle');
+      tone(t + 0.6, 1200, 2900, 0.35, 0.09, 'sine'); tone(t + 0.62, 1210, 2920, 0.35, 0.04, 'triangle');
+      burst(t + 1.0, 0.25, 'lowpass', 1400, 300, 0.8, 0.14);
+      celebrate(t + 0.4);
+    } else {
+      // Loch Ness: slide whistle, two bloops, a friendly deep hoot and a xylophone run
+      tone(t, 300, 1500, 0.45, 0.1, 'sine'); tone(t + 0.02, 305, 1520, 0.45, 0.05, 'triangle');
+      tone(t + 0.5, 420, 900, 0.14, 0.12, 'sine'); tone(t + 0.66, 520, 1100, 0.14, 0.12, 'sine');
+      voice(t + 0.85, 150, 105, 0.6, 0.9, [400, 900, 2300], [300, 700, 2300], { vib: 5, q: 6 });
+      var run = [784, 988, 1175, 1568, 1319, 1568]; for (i = 0; i < run.length; i++) tone(t + 0.86 + i * 0.09, run[i], 0, 0.3, 0.1, 'triangle');
+      celebrate(t + 0.6);
+    }
   }
   return {
     unlock: ensure,
@@ -845,93 +1195,31 @@ var Sound = (function () {
     skip: function (n, v) {
       if (muted || !ensure()) return;
       var t = ctx.currentTime, vv = Math.min(v, 9) / 9, pf = 1 + (1 - vv) * 0.55 + (Math.random() - 0.5) * 0.12, i;
-      burst(t, 0.07 + vv * 0.06, 'highpass', 1700 * pf, 900 * pf, 0.7, 0.26 + vv * 0.2);
-      burst(t, 0.12, 'bandpass', 900 * pf, 500 * pf, 1.2, 0.14 + vv * 0.12);
-      tone(t, 230 * pf, 85 * pf, 0.1, 0.2 + vv * 0.16, 'sine');
-      var k = 2 + Math.round(vv * 3);
-      for (i = 0; i < k; i++) burst(t + 0.03 + Math.random() * 0.17, 0.025, 'bandpass', 3200 + Math.random() * 3500, 0, 2, 0.04 + vv * 0.03);
+      burst(t, 0.07 + vv * 0.05, 'highpass', 1700 * pf, 900 * pf, 0.7, 0.2 + vv * 0.14);
+      burst(t, 0.1, 'bandpass', 1000 * pf, 600 * pf, 1.2, 0.1 + vv * 0.08);
+      tone(t, 420 * pf, 210 * pf, 0.08, 0.12 + vv * 0.08, 'sine');        // was 230 to 85 Hz: a thump phone speakers rattle on
+      var k = 1 + Math.round(vv * 2);
+      for (i = 0; i < k; i++) burst(t + 0.03 + Math.random() * 0.15, 0.025, 'bandpass', 3200 + Math.random() * 3000, 0, 2, 0.035 + vv * 0.02, true);
     },
     sink: function () {
       if (muted || !ensure()) return;
       var t = ctx.currentTime, i;
-      burst(t, 0.6, 'lowpass', 2800, 260, 0.8, 0.5);
-      burst(t, 0.18, 'highpass', 1800, 900, 0.7, 0.3);
-      tone(t, 540, 170, 0.2, 0.3, 'sine');
-      tone(t + 0.07, 380, 140, 0.24, 0.22, 'sine');
-      tone(t + 0.05, 150, 62, 0.34, 0.3, 'sine');
-      for (i = 0; i < 7; i++) { var f = 450 + Math.random() * 1400; tone(t + 0.14 + i * 0.055 + Math.random() * 0.03, f, f * 1.35, 0.05, 0.06, 'sine'); }
+      burst(t, 0.45, 'lowpass', 2800, 520, 0.8, 0.3);
+      burst(t, 0.16, 'highpass', 1800, 900, 0.7, 0.22);
+      tone(t, 560, 240, 0.18, 0.18, 'sine');
+      tone(t + 0.07, 420, 200, 0.2, 0.12, 'sine');                          // 150 to 62 Hz thump removed
+      for (i = 0; i < 4; i++) { var f = 500 + Math.random() * 1300; tone(t + 0.14 + i * 0.07 + Math.random() * 0.03, f, f * 1.35, 0.05, 0.05, 'sine', true); }
     },
     creature: function (type) {
       if (muted || !ensure()) return;
       var t = ctx.currentTime + 0.02, i, o;
-      if (type === 'grandma') {
-        // Delighted human cheer: "Yaaay!", a higher "Yay!", then a happy "woo-hoo"
-        var y0 = [320, 2200, 2800], y1 = [560, 1800, 2500];
-        voice(t, 300, 440, 0.62, 0.9, y0, y1, { vib: 6, q: 7 });
-        voice(t + 0.7, 340, 500, 0.55, 0.9, y0, y1, { vib: 6.5, q: 7 });
-        voice(t + 1.35, 380, 340, 0.2, 0.8, [320, 800, 2300], [420, 900, 2400], { vib: 7, q: 7 });
-        voice(t + 1.58, 400, 560, 0.4, 0.8, [320, 800, 2300], [380, 1000, 2400], { vib: 7, q: 7 });
-        celebrate(t + 0.3);
-      } else if (type === 'croc') {
-        // Two low reptile grunts and a pair of jaw snaps
-        var g0 = [640, 1190, 2390], g1 = [520, 1000, 2200];
-        voice(t, 95, 52, 0.36, 0.95, g0, g1, { vib: 0, vibD: 0, am: 30, amD: 0.6, q: 5, att: 0.03 });
-        voice(t + 0.44, 86, 48, 0.42, 1.0, g0, g1, { vib: 0, vibD: 0, am: 26, amD: 0.6, q: 5, att: 0.03 });
-        burst(t, 0.4, 'lowpass', 520, 140, 0.8, 0.12);
-        burst(t + 0.95, 0.05, 'highpass', 1800, 900, 0.8, 0.34); burst(t + 1.12, 0.05, 'highpass', 1800, 900, 0.8, 0.34);
-        tone(t + 0.95, 120, 70, 0.14, 0.2, 'triangle'); tone(t + 1.12, 120, 70, 0.14, 0.2, 'triangle');
-        celebrate(t + 0.5);
-      } else if (type === 'dolphin') {
-        // Dolphin flip: rising whoosh, big belly-flop splash, bubble bloops and a squeaky-toy "eh-eh-eh" laugh
-        burst(t, 0.32, 'bandpass', 500, 2600, 2.5, 0.22);
-        burst(t + 0.3, 0.6, 'lowpass', 2400, 260, 0.9, 0.5); burst(t + 0.3, 0.25, 'highpass', 3000, 1500, 0.7, 0.14);
-        tone(t + 0.3, 140, 60, 0.25, 0.3, 'sine');
-        for (i = 0; i < 9; i++) { var bt = t + 0.55 + i * 0.055 + Math.random() * 0.03, bf = 260 + Math.random() * 380; tone(bt, bf, bf * 2.6, 0.06, 0.16, 'sine'); }
-        for (i = 0; i < 4; i++) { tone(t + 1.1 + i * 0.13, 1250 + i * 60, 1650 + i * 60, 0.09, 0.05, 'square'); tone(t + 1.1 + i * 0.13, 625 + i * 30, 825 + i * 30, 0.09, 0.05, 'square'); }
-        celebrate(t + 0.6);
-      } else if (type === 'ball') {
-        // Rubber ball: two springy boings and a pop
-        vnote(t, 200, 700, 0.1, 0.3, 0, 0.1, 0); vnote(t + 0.1, 700, 150, 0.55, 0.34, 0, 17, 90);
-        vnote(t + 0.65, 160, 520, 0.09, 0.26, 0, 0.1, 0); vnote(t + 0.74, 520, 130, 0.42, 0.28, 0, 19, 70);
-        burst(t + 0.05, 0.05, 'bandpass', 1200, 0, 1.5, 0.2);
-        celebrate(t + 0.3);
-      } else if (type === 'jetski') {
-        // Engine rev, two horn honks and a splash
-        o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(60, t); o.frequency.exponentialRampToValueAtTime(260, t + 0.7);
-        var jf = ctx.createBiquadFilter(); jf.type = 'lowpass'; jf.frequency.setValueAtTime(500, t); jf.frequency.exponentialRampToValueAtTime(2200, t + 0.7);
-        var jg = ctx.createGain(); jg.gain.setValueAtTime(0.0001, t); jg.gain.linearRampToValueAtTime(0.13, t + 0.1); jg.gain.exponentialRampToValueAtTime(0.0001, t + 0.95);
-        o.connect(jf); jf.connect(jg); jg.connect(sfx); o.start(t); o.stop(t + 1.0);
-        burst(t + 0.2, 0.5, 'highpass', 2400, 1200, 0.7, 0.14);
-        tone(t + 0.85, 466, 0, 0.16, 0.06, 'square'); tone(t + 0.85, 622, 0, 0.16, 0.05, 'square');
-        tone(t + 1.08, 466, 0, 0.3, 0.06, 'square'); tone(t + 1.08, 622, 0, 0.3, 0.05, 'square');
-        celebrate(t + 0.5);
-      } else if (type === 'swan') {
-        // Two goose-like honks and a flurry of wing beats
-        var sf0 = [700, 1200, 2500], sf1 = [560, 1050, 2300];
-        voice(t, 340, 270, 0.26, 0.95, sf0, sf1, { vib: 0, vibD: 0, am: 22, amD: 0.5, q: 6, att: 0.02 });
-        voice(t + 0.38, 380, 290, 0.3, 0.95, sf0, sf1, { vib: 0, vibD: 0, am: 22, amD: 0.5, q: 6, att: 0.02 });
-        for (i = 0; i < 7; i++) burst(t + 0.8 + i * 0.075, 0.06, 'bandpass', 700, 0, 1.2, 0.2 - i * 0.015);
-        celebrate(t + 0.5);
-      } else if (type === 'otter') {
-        // Squeaky chitter, a rising squeal and a happy splash
-        for (i = 0; i < 8; i++) tone(t + i * 0.06, i % 2 ? 2600 : 2000, i % 2 ? 2300 : 2700, 0.05, 0.09, 'triangle');
-        tone(t + 0.6, 1200, 2900, 0.35, 0.09, 'sine'); tone(t + 0.62, 1210, 2920, 0.35, 0.04, 'triangle');
-        burst(t + 1.0, 0.25, 'lowpass', 1400, 300, 0.8, 0.14);
-        celebrate(t + 0.4);
-      } else {
-        // Loch Ness: slide whistle, two bloops, a friendly deep hoot and a xylophone run
-        tone(t, 300, 1500, 0.45, 0.1, 'sine'); tone(t + 0.02, 305, 1520, 0.45, 0.05, 'triangle');
-        tone(t + 0.5, 420, 900, 0.14, 0.12, 'sine'); tone(t + 0.66, 520, 1100, 0.14, 0.12, 'sine');
-        voice(t + 0.85, 150, 105, 0.6, 0.9, [400, 900, 2300], [300, 700, 2300], { vib: 5, q: 6 });
-        var run = [784, 988, 1175, 1568, 1319, 1568]; for (i = 0; i < run.length; i++) tone(t + 0.86 + i * 0.09, run[i], 0, 0.3, 0.1, 'triangle');
-        celebrate(t + 0.6);
-      }
+      LVL = 0.6; try { creatureSound(type, t); } finally { LVL = 1; }
     },
     bonus: function () {
       if (muted || !ensure()) return;
-      var t = ctx.currentTime + 0.05, notes = [659, 784, 988, 1319, 1568, 1976];
-      for (var i = 0; i < notes.length; i++) tone(t + i * 0.07, notes[i], 0, 0.45, 0.1, 'triangle');
-      tone(t + notes.length * 0.07, 2093, 0, 0.9, 0.08, 'sine');
+      var t = ctx.currentTime + 0.05, notes = [659, 784, 988, 1319, 1568];
+      for (var i = 0; i < notes.length; i++) tone(t + i * 0.07, notes[i], 0, 0.32, 0.065, 'triangle');
+      tone(t + notes.length * 0.07, 2093, 0, 0.5, 0.045, 'sine');
     },
     ring: function (bull) {
       if (muted || !ensure()) return;
@@ -942,16 +1230,17 @@ var Sound = (function () {
     roundEnd: function () {
       if (muted || !ensure()) return;
       var t = ctx.currentTime;
-      [523, 659, 784, 1046].forEach(function (f, i) { tone(t + i * 0.2, f, 0, 0.9, 0.09, 'triangle'); });
+      [523, 659, 784, 1046].forEach(function (f, i) { tone(t + i * 0.2, f, 0, 0.6, 0.07, 'triangle'); });
     },
     levelUp: function () {
       if (muted || !ensure()) return;
       var t = ctx.currentTime + 0.05;
-      [523, 659, 784, 1046, 1318].forEach(function (f, i) { tone(t + i * 0.11, f, 0, 0.7, 0.1, 'triangle'); });
+      [523, 659, 784, 1046, 1318].forEach(function (f, i) { tone(t + i * 0.11, f, 0, 0.5, 0.07, 'triangle'); });
       celebrate(t + 0.2);
     },
-    suspendAll: function () { visible = false; if (ctx) { try { ctx.suspend(); } catch (e) {} } },
-    resumeAll: function () { visible = !document.hidden; if (ctx && visible && !muted) { try { ctx.resume(); } catch (e) {} } },
+    suspendAll: sleep,
+    resumeAll: function () { wake('app'); },
+    __state: function () { return ctx ? { state: ctx.state, t: ctx.currentTime, armed: armed, live: live.length } : null; },
     setMuted: function (m) { muted = m; if (master) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.05); if (!m) ensure(); }
   };
 })();
@@ -1021,8 +1310,11 @@ function refreshStones() {
 }
 
 function angleTag(a) { return a < 3.5 ? 'too flat' : a < 5 ? 'a little flat' : a <= 14 ? 'in the zone' : a <= 16.5 ? 'a little steep' : 'too steep'; }
+var shownAngle = null;
 function setAngle(a, fromSlider) {
   aimAngle = clamp(a, 0, 45);
+  if (shownAngle === aimAngle) return;
+  shownAngle = aimAngle;
   $('angleVal').textContent = aimAngle.toFixed(aimAngle % 1 ? 1 : 0);
   $('angleTag').textContent = angleTag(aimAngle);
   if (!fromSlider) $('angle').value = String(aimAngle);
@@ -1060,6 +1352,11 @@ function recentre(full) {
 function onOrient(e) {
   if (e.beta === null || e.beta === undefined) return;
   tilt.seen = true;
+  // v2.6: while a full-screen card is open, keep the readout neutral and keep re-referencing, so play never starts at 20 degrees
+  if (tutOpen || modalOpen()) {
+    tilt.pt = e.timeStamp || Date.now(); tilt.pb = e.beta; tilt.pa = e.alpha; tilt.lastBeta = e.beta; if (e.alpha !== null && e.alpha !== undefined) lastAlpha = e.alpha;
+    tilt.auto = true; tilt.stillT = 0; tilt.autoT = 0; tilt.smooth = 10; if (aimLocked === null) setAngle(10); return;
+  }
   var now = e.timeStamp || Date.now(), dt = tilt.pt ? Math.max(0.001, Math.min(0.2, (now - tilt.pt) / 1000)) : 0.016;
   var al = (e.alpha === null || e.alpha === undefined) ? null : e.alpha;
   var rate = tilt.pb === null ? 0 : (Math.abs(e.beta - tilt.pb) + (al !== null && tilt.pa !== null ? Math.abs(wrap180(al - tilt.pa)) : 0)) / dt;
@@ -1089,7 +1386,7 @@ function tiltOff(msg) {
   tilt.on = false; tilt.beta0 = null; tilt.auto = false; yawMode = false; yawRef = null; aimYaw = ringBearing(); document.querySelector('.angle').classList.remove('tiltOn');
   window.removeEventListener('deviceorientation', onOrient);
   $('tilt').setAttribute('aria-pressed', 'false'); $('tilt').textContent = 'Phone aim';
-  $('tiltNote').textContent = msg;
+  $('tiltNote').textContent = AIM_FALLBACK;
 }
 function tiltOn() {
   tilt.on = true; tilt.seen = false; tilt.beta0 = null; tilt.smooth = 10; setAngle(10); yawRef = null; tilt.auto = true; tilt.stillT = 0; tilt.autoT = 0; tilt.pa = null; tilt.pb = null; tilt.pt = 0;
@@ -1099,6 +1396,22 @@ function tiltOn() {
   window.addEventListener('deviceorientation', onOrient);
   clearTimeout(tilt.timer);
   tilt.timer = setTimeout(function () { if (tilt.on && !tilt.seen) tiltOff('No motion data reached this page. Swipe direction aims.'); }, 1500);
+}
+/* v2.6 (R5): no button. Phone aim switches itself on when motion data arrives; without a sensor the swipe sets angle and aim. */
+var AIM_FALLBACK = 'Swipe length sets the angle. Swipe direction aims.';
+function autoAim() {
+  if (!('DeviceOrientationEvent' in window)) { tiltOff(); return; }
+  var D = window.DeviceOrientationEvent;
+  if (typeof D.requestPermission === 'function') {
+    // Newer Chrome grants this without a tap; iPhone needs a tap, so if refused now, ask again on the first tap anywhere
+    tiltOff();
+    var ask = function () {
+      document.removeEventListener('click', ask, true);
+      try { D.requestPermission().then(function (r) { if (r === 'granted') tiltOn(); }, function () {}); } catch (e) {}
+    };
+    try { D.requestPermission().then(function (r) { if (r === 'granted') tiltOn(); else document.addEventListener('click', ask, true); }, function () { document.addEventListener('click', ask, true); }); }
+    catch (e) { document.addEventListener('click', ask, true); }
+  } else tiltOn();
 }
 $('tilt').addEventListener('click', function () {
   Sound.unlock();
@@ -1123,6 +1436,36 @@ function fitFrame() {
 if (window.ResizeObserver) new ResizeObserver(fitFrame).observe($('stage'));
 window.addEventListener('resize', fitFrame);
 fitFrame();
+autoAim();
+
+/* v2.6: full-height sheets sit under the header; body.sheetOn hides the HUD while any of them is open */
+function placeLayer() {
+  var app = document.querySelector('.app'), hd = document.querySelector('.top');
+  if (!app || !hd) return;
+  var t = Math.round(hd.getBoundingClientRect().bottom - app.getBoundingClientRect().top + 4);
+  if (placeLayer.t !== t) { placeLayer.t = t; $('layer').style.setProperty('--layerTop', t + 'px'); }
+}
+var SHEETS = ['tut', 'round', 'clear', 'sum', 'lvmap', 'shop', 'reveal'];
+function syncSheet() {
+  var on = SHEETS.some(function (id) { return $(id).classList.contains('show'); });
+  if (document.body.classList.contains('sheetOn') !== on) document.body.classList.toggle('sheetOn', on);
+  var top = SHEETS.filter(function (id) { return $(id).classList.contains('show'); }).join('+') || 'play';
+  if (syncSheet.top !== top) { syncSheet.top = top; window.__neonMark = 'screen:' + top + '@' + Math.round(performance.now()); }
+}
+if (window.MutationObserver) { var sheetMo = new MutationObserver(syncSheet); SHEETS.forEach(function (id) { sheetMo.observe($(id), { attributes: true, attributeFilter: ['class'] }); }); }
+if (window.ResizeObserver) new ResizeObserver(placeLayer).observe(document.querySelector('.top'));
+window.addEventListener('resize', placeLayer);
+placeLayer();
+
+/* v2.6 (R2): animated intro on every cold start. CSS runs the 2 s animation from first paint; a tap skips it. */
+(function () {
+  var el = $('intro'); if (!el) return;
+  function done() { if (el.classList.contains('show')) { el.classList.remove('show', 'skip'); el.setAttribute('aria-hidden', 'true'); } }
+  el.addEventListener('animationend', function (e) { if (e.target === el) done(); });
+  el.addEventListener('click', function () { Sound.unlock(); el.classList.add('skip'); });
+  el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') el.click(); });
+  setTimeout(done, 3200);
+})();
 
 /* ---------- Daily challenge store (device only; shared leaderboard is a later gate) ---------- */
 var DAILY_KEY = 'skipstone.v02.daily';
@@ -1366,7 +1709,7 @@ function seenRules() { try { return localStorage.getItem(RULES_KEY) === '1'; } c
 var G_HUD = { score: 'Score', bonus: 'Bonus', targets: 'Targets', skips: 'Skips', creatures: 'Creatures', far: 'Far' };
 function updateGoals() {
   var bar = $('goalBar'); bar.textContent = '';
-  $('streak').textContent = lvl ? 'Level ' + lvl.n + ' · ' + TIER_NAME[lvl.tier] : '';
+  $('streak').innerHTML = lvl ? '<b>Level ' + lvl.n + '</b><small>' + TIER_NAME[lvl.tier] + '</small>' : '';
   if (!(mode === 'levels' && lvl)) return;
   var st = levelStats();
   goalList(lvl).forEach(function (g) {
@@ -1438,7 +1781,7 @@ function confetti() {
   if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var box = $('confetti'), cols = ['#ffd25a', '#ff6a5a', '#68e0ff', '#7cc49a', '#b583ff', '#ffffff'], i;
   box.textContent = '';
-  for (i = 0; i < 70; i++) {
+  for (i = 0; i < 36; i++) {
     var d = document.createElement('i');
     d.style.left = (Math.random() * 100) + '%'; d.style.background = cols[i % cols.length];
     d.style.width = (6 + Math.random() * 6) + 'px'; d.style.height = (8 + Math.random() * 8) + 'px';
@@ -1484,11 +1827,14 @@ function startClear() {
 function showClear(n) {
   var nx = n < LEVEL_COUNT ? levelDef(n + 1) : null;
   hideResult(); $('tut').classList.remove('show');
-  $('clearHead').textContent = 'Level ' + n + ' cleared';
-  $('clearStars').innerHTML = starsHtml(clr.stars, 46);
+  $('clearEye').textContent = 'Level ' + n + ' · ' + lvl.name;
+  $('clearHead').textContent = 'Level cleared';
+  $('clearStars').innerHTML = starsHtml(clr.stars, 72);
   var svgs = $('clearStars').querySelectorAll('svg.on'); for (var i = 0; i < svgs.length; i++) svgs[i].style.animationDelay = (0.15 + i * 0.25) + 's';
-  var next = n >= LEVEL_COUNT ? 'All ' + LEVEL_COUNT + ' levels cleared.' : n % 5 === 0 ? 'Milestone summary next.' : 'Next: Level ' + (n + 1) + ' · ' + nx.name + ' · ' + TIER_NAME[nx.tier] + (nx.newCrt && !crtSeen[nx.newCrt] ? ' · New creature: ' + CRT[nx.newCrt].name : '');
-  $('clearSub').innerHTML = 'Score <b>' + total + '</b>' + (clr.unused ? ' incl. stone bonus +' + clr.bonus + ' (' + clr.unused + ' unused)' : '') + '<br>' + next;
+  var next = n >= LEVEL_COUNT ? '<small>Up next</small>All ' + LEVEL_COUNT + ' levels cleared' : n % 5 === 0 ? '<small>Up next</small>Milestone summary' : '<small>Up next</small>Level ' + (n + 1) + ' · ' + nx.name + ' · ' + TIER_NAME[nx.tier] + (nx.newCrt && !crtSeen[nx.newCrt] ? '<em>New creature: ' + CRT[nx.newCrt].name + '</em>' : '');
+  $('clearScore').textContent = String(total);
+  $('clearSub').textContent = clr.unused ? 'Includes stone bonus +' + clr.bonus + ' (' + clr.unused + ' unused)' : '';
+  $('clearNext').innerHTML = next;
   $('clearCoins').textContent = clr.earn ? '+' + clr.earn + ' coins' : clr.prev >= 3 ? 'Already 3 stars' : 'No new stars this time';
   $('dblBtn').style.display = clr.earn ? '' : 'none'; $('dblBtn').disabled = false; $('dblBtn').innerHTML = 'Double coins<span class="adtag">AD</span>';
   $('clear').classList.add('show'); confetti(); Sound.levelUp();
@@ -1550,7 +1896,8 @@ function showLevelResult(tot) {
     h += '<div class="mtr"><span>' + g.short + '</span><div class="tr"><div class="fl' + (ok ? ' g' : '') + '" style="width:' + Math.min(100, Math.round(have / g.val * 100)) + '%"></div></div><b>' + Math.min(have, g.val) + ' / ' + g.val + '</b></div>';
   });
   lvlPassed = false;
-  $('round').querySelector('h2').textContent = 'Level ' + L.n + ' not cleared';
+  $('rEye').textContent = 'Level ' + L.n + ' · ' + L.name;
+  $('round').querySelector('h2').textContent = 'Not cleared';
   $('round').querySelector('table').style.display = 'none';
   $('failBars').innerHTML = h; $('failBars').style.display = 'flex';
   $('rTotal').textContent = String(tot);
@@ -1559,7 +1906,7 @@ function showLevelResult(tot) {
   $('banner').classList.remove('show');
   var offer = !contUsed || paidAvail();
   $('cont').style.display = offer ? '' : 'none'; $('cont').innerHTML = contLabel();
-  $('rSub').textContent = !contUsed ? 'Out of stones. Watch a short ad for 3 more, or retry.' : paidAvail() ? 'Out of stones. Add 5 more stones (' + (PAID_MAX - paidN) + ' left this attempt), or retry.' : 'Out of stones. Retry to fill every bar.';
+  $('rSub').textContent = !contUsed ? 'Out of stones. Watch a short ad for 3 more, or retry.' : paidAvail() ? 'Out of stones. Add 5 more stones (' + (PAID_MAX - paidN) + ' left this attempt), or retry.' : contUsed ? 'Free continue used. Retry for a fresh basket.' : 'Out of stones. Retry to fill every bar.';
   $('round').classList.add('show');
   track('level_fail', { level: L.n, score: tot, continued: contUsed, paid: paidN, offer: offer ? (contUsed ? (econ.coins >= PAID_COST[paidN] ? 'coins' : 'rescue_pack') : 'ad') : 'none' });
 }
@@ -1576,7 +1923,7 @@ try {
 function saveEcon() { try { localStorage.setItem(ECON_KEY, JSON.stringify(econ)); } catch (e) {} }
 saveEcon();
 /* Analytics hook: logs locally now; the native build forwards these to Firebase Analytics. */
-function track(ev, p) { try { (window.__skipLog = window.__skipLog || []).push([ev, p || {}, Date.now()]); if (window.console) console.log('[track]', ev, p || ''); var NA = window.NeonNative && window.NeonNative.analytics; if (NA) NA.log(ev, p || {}); } catch (e) {} }
+function track(ev, p) { try { window.__neonMark = ev + '@' + Math.round(performance.now()); } catch (e) {} try { (window.__skipLog = window.__skipLog || []).push([ev, p || {}, Date.now()]); if (window.console) console.log('[track]', ev, p || ''); var NA = window.NeonNative && window.NeonNative.analytics; if (NA) NA.log(ev, p || {}); } catch (e) {} }
 
 var UP_COST = [100, 200, 400, 700, 1000], UP_MAX = 5;
 var STAR_COINS = [0, 20, 40, 60];
@@ -1852,15 +2199,17 @@ function updateHud() {
 function showTut() {
   tutOpen = true;
   var lv = mode === 'levels' && lvl;
-  $('tutHead').textContent = lv ? 'Level ' + lvl.n + ' · ' + lvl.name : mode === 'daily' ? 'Daily challenge' : 'How to play';
-  $('tutBrief').style.display = lv ? 'block' : 'none';
+  $('tutHead').textContent = lv ? lvl.name : mode === 'daily' ? 'Daily challenge' : 'How to play';
+  $('tutEye').textContent = lv ? 'Level ' + lvl.n : '';
+  $('tutTier').style.display = lv ? '' : 'none'; if (!lv) $('tutBest').innerHTML = '';
+  $('tutBrief').style.display = lv ? 'flex' : 'none';
   if (lv) fillBrief();
   if (lv && lvl.newCrt && lvl.newCrt !== 'ball' && !crtSeen[lvl.newCrt]) showReveal(lvl.newCrt);
-  $('tutRules').style.display = (!lv || !seenRules()) ? 'grid' : 'none';
+  $('tutRulesSec').style.display = (!lv || !seenRules()) ? 'flex' : 'none';
   $('tutDaily').style.display = mode === 'daily' ? 'block' : 'none';
   $('tut').classList.add('show');
 }
-$('tutGo').addEventListener('click', function () { Sound.unlock(); tutOpen = false; $('tut').classList.remove('show'); $('hint').classList.add('gone'); try { localStorage.setItem(RULES_KEY, '1'); } catch (e) {} });
+$('tutGo').addEventListener('click', function () { Sound.unlock(); tutOpen = false; if (tilt.on) recentre(false); $('tut').classList.remove('show'); $('hint').classList.add('gone'); try { localStorage.setItem(RULES_KEY, '1'); } catch (e) {} });
 $('tutMap').addEventListener('click', function () { Sound.unlock(); showLevelMap(); });
 $('lvClose').addEventListener('click', function () {
   $('lvmap').classList.remove('show');
@@ -2040,6 +2389,7 @@ function updateBoard(score) {
 }
 function showRound() {
   if (clearing) return;
+  if ($('rEye')) $('rEye').textContent = '';
   var rows = $('rRows'); rows.textContent = '';
   var bestThrow = 0;
   throws.forEach(function (t) {
@@ -2195,6 +2545,11 @@ function create() {
   sc.sunImg = sc.add.image(0, 0, 'sun_' + theme).setOrigin(0.5, 0.5).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.9);
   sc.waterImg = sc.add.image(0, HOR_AIM, 'water_' + theme).setOrigin(0, 0).setDisplaySize(W, 760);
 
+  // v2.6 (R9): draw the other theme's textures once, almost invisibly, so the GPU upload happens behind the intro and not at the
+  // first level start of the other theme (themes alternate every basket)
+  var oth = theme === 'dusk' ? 'dawn' : 'dusk';
+  sc.warm = ['scenery_', 'sun_', 'water_'].map(function (k) { return sc.add.image(0, 0, k + oth).setOrigin(0, 0).setScale(0.02).setAlpha(0.004); });
+  sc.warmN = 3;
   sc.g = sc.add.graphics();
   sc.fg = sc.add.graphics();
   sc.floatTxt = [];
@@ -2300,6 +2655,7 @@ function spawnDrops(x, z, strength, scale) {
 
 function update(time, delta) {
   var sc = this, dt = Math.min(delta, 50) / 1000, T = time / 1000;
+  if (sc.warm && --sc.warmN <= 0) { sc.warm.forEach(function (im) { im.destroy(); }); sc.warm = null; }
   if (sc.curTheme !== theme) {
     sc.curTheme = theme;
     sc.bgTiles.forEach(function (b) { b.setTexture('scenery_' + theme); });

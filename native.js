@@ -175,6 +175,7 @@
   if (App) {
     App.addListener('backButton', function () {
       if (shown('adov')) return;                                            // web placeholder ad in progress
+      if (shown('intro')) { $('intro').click(); return; }                     // v2.6: back skips the intro
       if (shown('iap')) { $('iapNo').click(); return; }
       if (shown('shop')) { $('shopClose').click(); return; }
       if (shown('lvmap') && $('lvClose').style.display !== 'none') { $('lvClose').click(); return; }
@@ -185,6 +186,10 @@
     App.addListener('resume', function () { audio(true); });
   }
 
-  /* Hide the launch splash once the page has drawn. */
-  window.addEventListener('load', function () { if (Splash) setTimeout(function () { q(Splash.hide({ fadeOutDuration: 250 })); }, 150); });
+  /* v2.6 (R1): hide the launch splash as early as possible. The page behind it is already the same #120B2E with the
+     animated intro on top, so the hand-over is seamless. 'load' stays as a fallback in case this runs before the body paints. */
+  var splashDone = false;
+  function hideSplash() { if (splashDone || !Splash) return; splashDone = true; q(Splash.hide({ fadeOutDuration: 150 })); }
+  if (document.readyState !== 'loading') hideSplash(); else document.addEventListener('DOMContentLoaded', hideSplash);
+  window.addEventListener('load', hideSplash);
 })();
