@@ -580,6 +580,15 @@ body.sheetOn .frame .metrics, body.sheetOn .frame .card, body.sheetOn .frame .hi
 }
 .layer > .shop { padding-bottom: 0; }
 .layer > .shop .close { bottom: 12px; margin-bottom: 12px; box-shadow: 0 12px 0 var(--ink), 0 -14px 14px -6px var(--ink); }
+/* v2.6.1: messages raised while a full-height card is open (ad loading, no ad available, purchase not completed) show on top of it */
+.layer > .toast { position: absolute; left: 50%; top: 40%; z-index: 9; width: min(86%, 320px); box-sizing: border-box; padding: 14px 16px; border-radius: 14px; text-align: center;
+  background: rgba(15, 35, 43, .97); border: 2px solid var(--ochre); box-shadow: 0 10px 30px rgba(0, 0, 0, .45); pointer-events: none; opacity: 0; transform: translate(-50%, -50%) scale(.92); visibility: hidden; }
+.layer > .toast.show { visibility: visible; animation: toastIn 2.8s ease-out forwards; }
+.layer > .toast b { display: block; font-family: var(--font-display); font-weight: 800; font-size: 26px; letter-spacing: .05em; text-transform: uppercase; line-height: 1.05; color: var(--paper); }
+.layer > .toast span { display: block; margin-top: 4px; font-size: 14px; color: var(--ochre); }
+.layer > .toast span:empty { display: none; }
+@keyframes toastIn { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.92); } 8% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 85% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .layer > .toast.show { animation: none; opacity: 1; transform: translate(-50%, -50%); } }
 /* Animated intro (R2): about 2 s, tap anywhere to skip, static under reduced motion */
 .intro { position: fixed; inset: 0; z-index: 2147482000; background: #120b2e; display: none; overflow: hidden; cursor: pointer; outline: none; }
 .intro.show { display: block; animation: introOut .28s ease-in 1.8s forwards; }
@@ -683,6 +692,7 @@ body.sheetOn .frame .metrics, body.sheetOn .frame .card, body.sheetOn .frame .hi
     </div>
   </section>
   <div class="layer" id="layer">
+      <div class="toast" id="toast" aria-live="assertive"><b id="toastHead"></b><span id="toastSub"></span></div>
       <div class="tut sheet" id="tut">
         <div class="sbody">
           <div class="eyebrow"><span id="tutEye"></span><span class="tier E" id="tutTier">Easy</span><span class="stk sp" id="tutBest"></span></div>
@@ -746,7 +756,7 @@ body.sheetOn .frame .metrics, body.sheetOn .frame .card, body.sheetOn .frame .hi
         </table>
         </div>
         <div class="sfoot">
-        <button id="cont" type="button" style="display:none">+3 stones and keep going<span class="adtag">AD</span></button>
+        <button id="cont" type="button" style="display:none">+3 stones<span class="adtag">AD</span></button>
         <div class="row"><button id="share" type="button">Copy result</button><button id="again" type="button">New basket</button></div>
         </div>
       </div>
@@ -2109,7 +2119,7 @@ function resumeWith(p, s, g, head) {
   showBanner(head, 'Finish the goals', false);
 }
 function contLabel() {
-  if (!contUsed) return '+3 stones and keep going<span class="adtag">AD</span>';
+  if (!contUsed) return '+3 stones<span class="adtag">AD</span>';
   var c = PAID_COST[paidN];
   return econ.coins >= c ? '+5 stones for ' + c + ' coins' : 'Rescue Pack &middot; ' + priceOf('rescue') + '<br><small style="font-weight:600;font-size:11.5px">5 stones now + 500 coins</small>';
 }
@@ -2118,7 +2128,9 @@ $('cont').addEventListener('click', function () {
   Sound.unlock();
   if (!lvl) return;
   if (!contUsed) {
-    Ads.rewarded('+3 stones', function () { contUsed = true; resumeWith(1, 1, 1, '+3 stones'); track('continue_rewarded', { level: lvl.n }); });
+    var cb = $('cont'); cb.disabled = true; var free = setTimeout(function () { cb.disabled = false; }, 8000);   // no double taps while the ad loads
+    Ads.rewarded('+3 stones', function () { clearTimeout(free); cb.disabled = false; contUsed = true; resumeWith(1, 1, 1, '+3 stones'); track('continue_rewarded', { level: lvl.n }); },
+      function () { clearTimeout(free); cb.disabled = false; });
     return;
   }
   if (!paidAvail()) return;
@@ -2141,7 +2153,14 @@ function addFloat(x, z, h, txt, big) {
   setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 1950);
 }
 var bannerTimer = 0;
+var toastTimer = 0;
 function showBanner(head, sub, gem) {
+  if (document.body.classList.contains('sheetOn')) {        // v2.6.1: a card covers the lake, so show the message on top of the card
+    var t = $('toast'); $('toastHead').textContent = head; $('toastSub').textContent = sub || '';
+    t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2900);
+    return;
+  }
   var b = $('banner'); $('bannerHead').textContent = head; $('bannerSub').textContent = sub; $('bannerGem').style.display = gem ? 'block' : 'none';
   b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
   clearTimeout(bannerTimer); bannerTimer = setTimeout(function () { b.classList.remove('show'); }, 3100);
