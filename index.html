@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>html{color-scheme:dark;padding:var(--safe-area-inset-top,env(safe-area-inset-top,0px)) 0 var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px))}body{margin:0}
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>html{color-scheme:dark}body{margin:0}
 .bhead { display: flex; align-items: center; justify-content: space-between; }
 .stk { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700; color: var(--paper); }
 .stk i { display: inline-block; width: 13px; height: 6px; border-radius: 50%; background: #b9a98a; }
@@ -49,28 +49,166 @@
 .crs .r svg { grid-row: 1 / 3; }
 #failBars { display: none; flex-direction: column; gap: 8px; }
 #failBars .mtr { grid-template-columns: 96px 1fr auto; }
+
+html { height: 100%; overflow: hidden; background: #0f232b; }
+/* Intro (v2.6.2): transform and opacity only, so it keeps animating while the game loads. Elements start animating when .go is added (after paint and splash). */
+.intro { position: fixed; inset: 0; z-index: 2147482000; background: #120b2e; display: none; overflow: hidden; cursor: pointer; outline: none; }
+.intro.show { display: block; }
+.intro.out { animation: introOut .5s ease-in forwards; }
+.intro.skip { animation: introOut .16s ease-in forwards; }
+@keyframes introOut { to { opacity: 0; visibility: hidden; } }
+.iscene { position: absolute; inset: 0; width: 100%; height: 100%; }
+.iwrap { position: absolute; left: 0; top: 0; width: 360px; height: 640px; transform-origin: 0 0; transform: translate(calc(var(--ix, 0) * 1px), calc(var(--iy, 0) * 1px)) scale(var(--iu, 1)); }
+.iword { position: absolute; left: 0; right: 0; top: 19%; text-align: center; pointer-events: none; }
+.iword b { display: block; font-family: 'Big Shoulders Display', 'Arial Narrow', Impact, sans-serif; font-weight: 800; font-size: clamp(54px, 18vw, 80px); line-height: 1; letter-spacing: .06em; text-transform: uppercase; color: #ece6d6; opacity: 0; text-shadow: 0 0 12px rgba(104, 224, 255, .6), 0 0 30px rgba(104, 224, 255, .35); will-change: opacity; }
+.iword span { display: block; margin-top: 12px; font-family: 'Figtree', system-ui, sans-serif; font-size: 13px; font-weight: 600; letter-spacing: .34em; text-transform: uppercase; color: #e2a553; opacity: 0; will-change: opacity, transform; }
+.istone { position: absolute; left: -13px; top: -5px; width: 26px; height: 10px; opacity: 0; will-change: transform, opacity; }
+.irip { position: absolute; left: calc((var(--cx) - var(--rx)) * 1px); top: calc((var(--cy) - var(--ry)) * 1px); width: calc(var(--rx) * 2px); height: calc(var(--ry) * 2px); box-sizing: border-box; border: 2px solid #fff; border-radius: 50%; opacity: 0; will-change: transform, opacity; }
+.ihoopg { position: absolute; left: 222px; top: 322px; width: 80px; height: 100px; overflow: visible; opacity: 1; will-change: opacity; }
+.intro.go .iword b { animation: iWordOn 1s ease-out .15s forwards; }
+.intro.go .iword span { animation: iFade .5s ease-out 1.6s forwards; }
+.intro.go .istone { animation: iHop 1.9s linear .3s forwards; }
+.intro.go .irip { animation: iRip .8s ease-out var(--d) forwards; }
+.intro.go .ihoopg { animation: iGold 1s ease-out 1.8s forwards; }
+@keyframes iWordOn { 0% { opacity: 0; } 22% { opacity: .85; } 34% { opacity: .3; } 48% { opacity: 1; } 100% { opacity: 1; } }
+@keyframes iFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes iRip { 0% { opacity: .9; transform: scale(.3); } 100% { opacity: 0; transform: scale(1.7); } }
+@keyframes iGold { from { opacity: 1; } to { opacity: 0; } }
+@keyframes iHop {
+  0% { opacity: 1; transform: translate(30px, 650px) scale(1.7); animation-timing-function: ease-out; }
+  11.9% { transform: translate(63px, 548px) scale(1.5); animation-timing-function: ease-in; }
+  23.7% { transform: translate(96px, 552px) scale(1.4); animation-timing-function: ease-out; }
+  35.6% { transform: translate(128px, 478px) scale(1.2); animation-timing-function: ease-in; }
+  47.4% { transform: translate(160px, 470px) scale(1.1); animation-timing-function: ease-out; }
+  56.3% { transform: translate(184px, 422px) scale(1); animation-timing-function: ease-in; }
+  65.2% { transform: translate(208px, 420px) scale(.95); animation-timing-function: linear; }
+  81.5% { opacity: 1; transform: translate(262px, 374px) scale(.8); }
+  100% { opacity: 0; transform: translate(304px, 344px) scale(.65); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro.go .iword b, .intro.go .iword span { animation: none; opacity: 1; }
+  .intro.go .istone, .intro.go .irip, .intro.go .ihoopg { animation: none; }
+  .istone, .irip { opacity: 0; }
+}
 </style></head><body><title>Neon Skip</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="vendor/fonts.css">
+<script>
+/* v2.6.2 (Round 3) viewport and safe-area module. Single source of truth for the visible area:
+   --appH  height of the visible viewport (smallest of innerHeight, visualViewport and the root element)
+   --sat / --sab / --sal / --sar  space the page keeps clear of system bars and cut-outs. Each is the largest of: CSS env(), Capacitor's injected values,
+   and the NeonInsets native plugin (exact WindowInsets from the activity, available at any time, not only at page load). --sab also holds a small
+   floor so action buttons never touch the bottom edge. The page is a fixed box of exactly this size, so every sheet sits inside the visible screen. */
+(function () {
+  var root = document.documentElement, Cap = window.Capacitor, probe = null, nat = null, lastKey = '', FLOOR_B = 8;
+  var native = !!(Cap && typeof Cap.isNativePlatform === 'function' && Cap.isNativePlatform());
+  function num(v) { v = parseFloat(v); return isFinite(v) && v > 0 ? v : 0; }
+  function envInsets() {
+    try {
+      if (!probe) {
+        probe = document.createElement('div'); probe.setAttribute('aria-hidden', 'true');
+        probe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
+        document.body.appendChild(probe);
+      }
+      var c = getComputedStyle(probe); return { t: num(c.paddingTop), r: num(c.paddingRight), b: num(c.paddingBottom), l: num(c.paddingLeft) };
+    } catch (e) { return { t: 0, r: 0, b: 0, l: 0 }; }
+  }
+  function capInsets() {
+    var st = root.style;
+    return { t: num(st.getPropertyValue('--safe-area-inset-top')), r: num(st.getPropertyValue('--safe-area-inset-right')), b: num(st.getPropertyValue('--safe-area-inset-bottom')), l: num(st.getPropertyValue('--safe-area-inset-left')) };
+  }
+  function apply() {
+    var e = envInsets(), c = capInsets(), n = nat || { t: 0, r: 0, b: 0, l: 0 };
+    var t = Math.max(e.t, c.t, n.t), r = Math.max(e.r, c.r, n.r), b = Math.max(e.b, c.b, n.b), l = Math.max(e.l, c.l, n.l);
+    // In the app, until the native plugin has answered (or if it is missing) assume typical Android bars so nothing starts under them
+    if (native && !nat) { t = Math.max(t, 28); b = Math.max(b, 24); }
+    var vv = window.visualViewport, h = Math.min(window.innerHeight || 1e9, vv && vv.height ? vv.height : 1e9, root.clientHeight || 1e9);
+    if (!isFinite(h) || h < 200) h = window.innerHeight || 640;
+    h = Math.floor(h);
+    var key = [h, t, r, b, l].join('|');
+    if (key === lastKey) return; lastKey = key;
+    var st = root.style;
+    st.setProperty('--appH', h + 'px'); st.setProperty('--sat', Math.ceil(t) + 'px'); st.setProperty('--sab', (Math.ceil(b) + FLOOR_B) + 'px');
+    st.setProperty('--sal', Math.ceil(l) + 'px'); st.setProperty('--sar', Math.ceil(r) + 'px');
+    window.__neonViewport = { inner: [window.innerWidth, window.innerHeight], vv: vv ? [Math.round(vv.width), Math.round(vv.height)] : null, root: [root.clientWidth, root.clientHeight], screen: [screen.width, screen.height],
+      dpr: window.devicePixelRatio || 1, env: e, cap: c, native: nat, nativeApp: native, used: { h: h, t: Math.ceil(t), r: Math.ceil(r), b: Math.ceil(b) + FLOOR_B, l: Math.ceil(l) } };
+    try { window.dispatchEvent(new Event('neonviewport')); } catch (x) {}
+  }
+  function fromNative(o) {
+    if (!o) return;
+    var d = o.density > 0 ? o.density : (window.devicePixelRatio || 1);
+    var ov = o.oBottom !== undefined && o.oBottom !== null;
+    nat = ov ? { t: (o.oTop || 0) / d, r: (o.oRight || 0) / d, b: (o.oBottom || 0) / d, l: (o.oLeft || 0) / d, raw: o } : { t: (o.top || 0) / d, r: (o.right || 0) / d, b: (o.bottom || 0) / d, l: (o.left || 0) / d, raw: o };
+    apply();
+  }
+  window.__neonViewportApply = apply;
+  var plugin = null;
+  try { plugin = native && Cap.Plugins && Cap.Plugins.NeonInsets; } catch (e) {}
+  if (native && !plugin && typeof Cap.nativePromise === 'function') plugin = { get: function () { return Cap.nativePromise('NeonInsets', 'get', {}); } };
+  function pull() { try { if (plugin && plugin.get) plugin.get().then(fromNative, function () {}); } catch (e) {} }
+  window.__neonInsetsReady = !native || !plugin ? Promise.resolve() : new Promise(function (res) { var t = setTimeout(res, 700); try { plugin.get().then(function (o) { fromNative(o); clearTimeout(t); res(); }, function () { clearTimeout(t); res(); }); } catch (e) { clearTimeout(t); res(); } });
+  try { if (plugin && plugin.addListener) plugin.addListener('insets', fromNative); } catch (e) {}
+  apply();
+  window.addEventListener('resize', function () { apply(); pull(); });
+  window.addEventListener('orientationchange', function () { apply(); pull(); });
+  window.addEventListener('pageshow', function () { apply(); pull(); });
+  window.addEventListener('focus', function () { apply(); pull(); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { apply(); pull(); } });
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', apply);
+  [150, 600, 1500, 3500].forEach(function (ms) { setTimeout(function () { apply(); pull(); }, ms); });
+
+  /* ---- Intro controller (R1). The intro is built from transform and opacity animations only, so it keeps playing smoothly while the game loads. The clock
+     starts only once the page has painted and the launch splash is gone; it then holds for MIN_MS, waits for the game to be ready, and fades. Tap or back skips. ---- */
+  var MIN_MS = 3000, intro = null, ended = false, minDone = false, booted = false, skipReq = false, goT = 0;
+  function layoutIntro() {
+    if (!intro) return;
+    var w = intro.clientWidth || window.innerWidth, h = intro.clientHeight || window.innerHeight, u = Math.max(w / 360, h / 640);
+    var st = intro.style; st.setProperty('--iu', u.toFixed(4)); st.setProperty('--ix', ((w - 360 * u) / 2).toFixed(1)); st.setProperty('--iy', ((h - 640 * u) / 2).toFixed(1));
+  }
+  function endIntro(fast) { if (ended || !intro) return; ended = true; intro.classList.add(fast ? 'skip' : 'out'); }
+  function tryEnd() { if (!ended && booted && (minDone || skipReq)) endIntro(skipReq && !minDone); }
+  window.__introBooted = function () { booted = true; tryEnd(); };
+  window.__introReady = function () { return { go: goT, ended: ended, booted: booted }; };
+  function startIntro() {
+    intro = document.getElementById('intro'); if (!intro) return;
+    layoutIntro(); window.addEventListener('resize', layoutIntro);
+    intro.addEventListener('animationend', function (e) { if (e.target === intro && ended) { intro.classList.remove('show', 'go', 'out', 'skip'); intro.setAttribute('aria-hidden', 'true'); } });
+    intro.addEventListener('click', function () { skipReq = true; tryEnd(); });
+    intro.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') intro.click(); });
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches, hold = reduce ? 1400 : MIN_MS;
+    function go() {
+      goT = Math.round(performance.now()); intro.classList.add('go');
+      setTimeout(function () { minDone = true; tryEnd(); }, hold);
+      setTimeout(function () { booted = true; tryEnd(); }, 7000);            // never let a slow start trap the player behind the intro
+      setTimeout(function () { var b = window.__neonBoot; if (b) { window.__neonBoot = null; b(); } else { var t = setInterval(function () { var b2 = window.__neonBoot; if (b2) { clearInterval(t); window.__neonBoot = null; b2(); } }, 40); } }, 380);
+    }
+    // two frames so the intro has really been painted, then (app only) a short beat so the launch splash has finished fading
+    requestAnimationFrame(function () { requestAnimationFrame(function () { setTimeout(go, native ? 260 : 0); }); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startIntro); else startIntro();
+})();
+</script>
 <div class="intro show" id="intro" role="button" tabindex="0" aria-label="Neon Skip. Tap to skip the intro">
   <svg class="iscene" viewBox="0 0 360 640" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <defs>
       <linearGradient id="iSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#120b2e"/><stop offset=".55" stop-color="#3a1c5c"/><stop offset=".85" stop-color="#b4457a"/><stop offset="1" stop-color="#ff9a5c"/></linearGradient>
       <linearGradient id="iWater" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a2a72"/><stop offset=".25" stop-color="#2e1a58"/><stop offset="1" stop-color="#07050f"/></linearGradient>
-      <linearGradient id="iStone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd9a0"/><stop offset="1" stop-color="#e0624a"/></linearGradient>
       <filter id="iGlow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
     </defs>
     <rect width="360" height="352" fill="url(#iSky)"/>
     <path d="M0 352 L52 318 L96 334 L150 300 L206 330 L250 312 L300 336 L360 316 L360 352 Z" fill="#2a1446" opacity=".9"/>
     <rect y="352" width="360" height="288" fill="url(#iWater)"/>
     <g stroke="#ffc89a" stroke-linecap="round" opacity=".55"><line x1="150" y1="372" x2="214" y2="372" stroke-width="2"/><line x1="166" y1="384" x2="204" y2="384" stroke-width="1.6"/></g>
-    <g class="irip" style="--d:.42s"><ellipse cx="96" cy="552" rx="30" ry="7"/></g>
-    <g class="irip" style="--d:.74s"><ellipse cx="160" cy="470" rx="22" ry="5"/></g>
-    <g class="irip" style="--d:.98s"><ellipse cx="208" cy="420" rx="15" ry="3.6"/></g>
-    <g class="ihoop" filter="url(#iGlow)"><ellipse cx="262" cy="372" rx="20" ry="38" fill="none" stroke-width="5"/></g>
-    <g class="istone"><ellipse cx="0" cy="0" rx="13" ry="4.6" fill="url(#iStone)"/><ellipse cx="-3" cy="-1.4" rx="6" ry="1.4" fill="#fff" opacity=".45"/></g>
+    <g filter="url(#iGlow)"><ellipse cx="262" cy="372" rx="20" ry="38" fill="none" stroke="#68e0ff" stroke-width="5"/></g>
   </svg>
-  <div class="iword"><b>Neon Skip</b><span>Stone Skipping</span></div>
+  <div class="iwrap" aria-hidden="true">
+    <div class="irip" style="--cx:96;--cy:552;--rx:30;--ry:7;--d:.82s"></div>
+    <div class="irip" style="--cx:160;--cy:470;--rx:22;--ry:5;--d:1.3s"></div>
+    <div class="irip" style="--cx:208;--cy:420;--rx:15;--ry:3.6;--d:1.65s"></div>
+    <svg class="ihoopg" viewBox="0 0 360 640" preserveAspectRatio="none"><g filter="url(#iGlow)"><ellipse cx="262" cy="372" rx="20" ry="38" fill="none" stroke="#ffd25a" stroke-width="7"/></g></svg>
+    <svg class="istone" viewBox="-13 -5 26 10"><defs><linearGradient id="iStone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd9a0"/><stop offset="1" stop-color="#e0624a"/></linearGradient></defs><ellipse cx="0" cy="0" rx="13" ry="4.6" fill="url(#iStone)"/><ellipse cx="-3" cy="-1.4" rx="6" ry="1.4" fill="#fff" opacity=".45"/></svg>
+  </div>
+  <div class="iword"><b data-t="Neon Skip">Neon Skip</b><span>Stone Skipping</span></div>
 </div>
 <style>
 /* Layout: one-screen portrait app. Header strip, a 3:4 first-person lake stage with HUD overlays, a control deck (stone basket, angle).
@@ -88,17 +226,15 @@
   --font-body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
   color-scheme: dark;
 }
-html, body { height: 100%; }
 body {
+  position: fixed; left: 0; top: 0; width: 100%; height: var(--appH, 100%); box-sizing: border-box;
   margin: 0;
   background: var(--ink);
   color: var(--paper);
   font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.35;
-  padding-left: max(16px, var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));
-  padding-right: max(16px, var(--safe-area-inset-right, env(safe-area-inset-right, 0px)));
-  padding-block: 0;
+  padding: var(--sat, 0px) max(16px, var(--sar, 0px)) var(--sab, 8px) max(16px, var(--sal, 0px));
   overflow: hidden;
   -webkit-user-select: none;
   user-select: none;
@@ -212,7 +348,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
 .angle { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 10px; }
 .angle .lbl, .angle .read, .angle .slider { display: none; }
 .angle.tiltOn .read { display: block; grid-column: 1 / -1; }
-#angMeter { display: none; grid-column: 1 / -1; position: relative; height: 10px; margin: 2px 0 6px; }
+#angMeter { display: block; grid-row: 2; grid-column: 1 / -1; position: relative; height: 10px; margin: 2px 0 6px; }
 .angle.tiltOn #angMeter { display: block; }
 #angMeter .bar { position: absolute; left: 0; right: 0; top: 2px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #d9534f 0%, #d9534f 8%, #e8a838 8%, #e8a838 17%, #5fbf7f 17%, #5fbf7f 67%, #e8a838 67%, #e8a838 81%, #d9534f 81%, #d9534f 100%); }
 #angMeter .mk { position: absolute; top: 0; width: 4px; height: 10px; margin-left: -2px; border-radius: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.6); transition: left .08s linear; }
@@ -295,7 +431,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ochre); out
 .gp.met { border-color: var(--good); color: var(--good); }
 
 /* v2.0 layout: maximum stage, compact controls */
-body { padding-left: max(6px, var(--safe-area-inset-left, env(safe-area-inset-left, 0px))); padding-right: max(6px, var(--safe-area-inset-right, env(safe-area-inset-right, 0px))); }
+body { padding-left: max(6px, var(--sal, 0px)); padding-right: max(6px, var(--sar, 0px)); }
 .app { gap: 5px; padding-block: 5px; max-width: 640px; }
 .top { gap: 8px; }
 .top .word { font-size: 20px; }
@@ -448,7 +584,7 @@ body { padding-left: max(6px, var(--safe-area-inset-left, env(safe-area-inset-le
    shop, creature reveal) now live in .layer, which spans from under the header to the bottom of the screen, so they
    never sit on top of the live HUD. While one is open, body.sheetOn hides the HUD, goal bar and stone deck. */
 :root { --gy: clamp(14px, 2.4vh, 24px); --sx: 18px; }
-html { background: #120b2e; }
+html { background: #0f232b; }
 .app { position: relative; gap: 6px; }
 .btns[hidden] { display: none !important; }
 
@@ -476,7 +612,7 @@ html { background: #120b2e; }
 @keyframes sheetIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .adov { position: fixed; z-index: 2147481000; }
 .layer > .iap, .layer > .adov { pointer-events: auto; }
-body.sheetOn .goalbar, body.sheetOn .deck, body.sheetOn .frame .hud, body.sheetOn .frame .big, body.sheetOn .frame .side,
+body.sheetOn .goalbar, body.sheetOn .deck, body.sheetOn .frame .topbar,
 body.sheetOn .frame .metrics, body.sheetOn .frame .card, body.sheetOn .frame .hint, body.sheetOn .frame .banner, body.sheetOn .frame .pops { visibility: hidden; }
 
 .sheet .sbody { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; box-sizing: border-box; padding: clamp(14px, 2.6vh, 26px) var(--sx) 12px; display: flex; flex-direction: column; gap: var(--gy); }
@@ -589,39 +725,22 @@ body.sheetOn .frame .metrics, body.sheetOn .frame .card, body.sheetOn .frame .hi
 .layer > .toast span:empty { display: none; }
 @keyframes toastIn { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.92); } 8% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 85% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .layer > .toast.show { animation: none; opacity: 1; transform: translate(-50%, -50%); } }
-/* Animated intro (R2): about 2 s, tap anywhere to skip, static under reduced motion */
-.intro { position: fixed; inset: 0; z-index: 2147482000; background: #120b2e; display: none; overflow: hidden; cursor: pointer; outline: none; }
-.intro.show { display: block; animation: introOut .28s ease-in 1.8s forwards; }
-.intro.skip { animation: introOut .14s ease-in forwards; }
-@keyframes introOut { to { opacity: 0; visibility: hidden; } }
-.iscene { position: absolute; inset: 0; width: 100%; height: 100%; }
-.iword { position: absolute; left: 0; right: 0; top: 19%; text-align: center; pointer-events: none; }
-.iword b { display: block; font-family: var(--font-display); font-weight: 800; font-size: clamp(54px, 18vw, 80px); line-height: 1; letter-spacing: .06em; text-transform: uppercase; color: #ece6d6; opacity: 0; animation: iWordOn .7s ease-out .05s forwards; }
-.iword span { display: block; margin-top: 12px; font-family: var(--font-body); font-size: 13px; font-weight: 600; letter-spacing: .34em; text-transform: uppercase; color: var(--ochre); opacity: 0; animation: iFade .4s ease-out 1.15s forwards; }
-@keyframes iWordOn { 0% { opacity: 0; } 22% { opacity: .85; } 34% { opacity: .3; } 48% { opacity: 1; text-shadow: 0 0 20px rgba(104, 224, 255, .95), 0 0 46px rgba(104, 224, 255, .55); } 100% { opacity: 1; text-shadow: 0 0 12px rgba(104, 224, 255, .6), 0 0 30px rgba(104, 224, 255, .3); } }
-@keyframes iFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.istone { opacity: 0; animation: iHop 1.35s linear .1s forwards; }
-@keyframes iHop {
-  0% { opacity: 1; transform: translate(30px, 650px) scale(1.7); animation-timing-function: ease-out; }
-  11.9% { transform: translate(63px, 548px) scale(1.5); animation-timing-function: ease-in; }
-  23.7% { transform: translate(96px, 552px) scale(1.4); animation-timing-function: ease-out; }
-  35.6% { transform: translate(128px, 478px) scale(1.2); animation-timing-function: ease-in; }
-  47.4% { transform: translate(160px, 470px) scale(1.1); animation-timing-function: ease-out; }
-  56.3% { transform: translate(184px, 422px) scale(1); animation-timing-function: ease-in; }
-  65.2% { transform: translate(208px, 420px) scale(.95); animation-timing-function: linear; }
-  81.5% { opacity: 1; transform: translate(262px, 374px) scale(.8); }
-  100% { opacity: 0; transform: translate(304px, 344px) scale(.65); }
-}
-.irip ellipse { fill: none; stroke: #fff; stroke-width: 2; opacity: 0; transform-box: fill-box; transform-origin: center; animation: iRip .7s ease-out var(--d) forwards; }
-@keyframes iRip { 0% { opacity: .9; transform: scale(.3); } 100% { opacity: 0; transform: scale(1.7); } }
-.ihoop ellipse { stroke: #68e0ff; animation: iHoop .9s ease-out 1.18s forwards; }
-@keyframes iHoop { 0% { stroke: #ffd25a; stroke-width: 7; } 100% { stroke: #68e0ff; stroke-width: 5; } }
-@media (prefers-reduced-motion: reduce) {
-  .intro.show { animation-delay: .9s; }
-  .iword b, .iword span { animation: none; opacity: 1; }
-  .istone, .irip ellipse, .ihoop ellipse { animation: none; }
-  .layer > .sheet.show { animation: none; }
-}
+
+/* ===================== v2.6.2 (Round 3): full-height scene, overlay grid, deck ===================== */
+.frame { border-radius: 8px; }
+/* Top bar: Throw / Total at the left, the SKIPS counter in the middle, wind at the right; target and combo in a second row. Three grid columns cannot overlap. */
+.frame .topbar { position: absolute; left: 0; right: 0; top: 0; padding: 8px 10px 0; display: grid; grid-template-columns: 1fr auto 1fr; grid-template-areas: "hud big wind" "tgt . cmb" ". . snd" ". . hap"; align-items: start; gap: 6px 8px; pointer-events: none; z-index: 5; }
+.frame .topbar .hud { grid-area: hud; position: static; display: flex; gap: 12px; justify-self: start; }
+.frame .topbar .stat b { font-size: 24px; }
+.frame .topbar .big { grid-area: big; position: static; transform: none; justify-self: center; min-width: 64px; }
+.frame .topbar .big b { font-size: 56px; }
+.frame .topbar #windChip { grid-area: wind; justify-self: end; margin-top: 2px; }
+.frame .topbar #tgtChip { grid-area: tgt; justify-self: start; }
+.frame .topbar #comboChip { grid-area: cmb; justify-self: end; }
+.frame .metrics { top: max(36%, 192px); }   /* keeps the result panel clear of the right-hand chip stack on shorter phones */
+.frame .topbar #mute { grid-area: snd; justify-self: end; pointer-events: auto; }
+.frame .topbar #haptic { grid-area: hap; justify-self: end; pointer-events: auto; }
+.frame .topbar .chip { font-size: 12px; white-space: nowrap; }
 </style>
 
 <div class="app">
@@ -641,12 +760,12 @@ body.sheetOn .frame .metrics, body.sheetOn .frame .card, body.sheetOn .frame .hi
   <main class="stage" id="stage">
     <div class="frame" id="frame">
       <div id="game"></div>
-      <div class="hud">
-        <div class="stat"><span class="lbl">Throw</span><b id="throwNo">1/10</b></div>
-        <div class="stat"><span class="lbl">Total</span><b id="total">0</b></div>
-      </div>
-      <div class="big"><b id="skips">0</b><span class="lbl">Skips</span></div>
-      <div class="side">
+      <div class="topbar">
+        <div class="hud">
+          <div class="stat"><span class="lbl">Throw</span><b id="throwNo">1/10</b></div>
+          <div class="stat"><span class="lbl">Total</span><b id="total">0</b></div>
+        </div>
+        <div class="big"><b id="skips">0</b><span class="lbl">Skips</span></div>
         <div class="chip wind" id="windChip">
           <svg id="windArrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 L12.5 8.5 L9 8.5 L9 14.5 L7 14.5 L7 8.5 L3.5 8.5 Z" fill="#ece6d6"/></svg>
           <span id="windTxt">Calm</span>
@@ -689,6 +808,7 @@ body.sheetOn .frame .metrics, body.sheetOn .frame .card, body.sheetOn .frame .hi
       <div class="slider"><input id="angle" type="range" min="0" max="45" step="0.5" value="10" aria-label="Throw angle in degrees"></div>
       <span class="note" id="tiltNote">Swipe length sets the angle. Swipe direction aims.</span>
       <span class="btns" hidden><button id="tilt" type="button" aria-pressed="false" tabindex="-1">Phone aim</button></span>
+      
     </div>
   </section>
   <div class="layer" id="layer">
@@ -856,8 +976,9 @@ function simulate(stone, angleDeg, yawDeg, power, spin, windFn, T0, rng) {
 
 //--SIM-END
 
-var W = 480, H = 640, Z = 2;
+var W = 480, H = 640, Z = 2, H0 = 640;   // v2.6.2: H grows with the stage (640 to 960); H0 is the reference design height
 var HOR_AIM = 190, F0 = 600, HAND_H = 0.45;
+function setWorld(h) { H = h; HOR_AIM = h - 450; HBG = h - 300; cam.hy = HOR_AIM; }
 var AIM = { x: -2.2, z: 0, h: 1.8 };
 var BGW = 900, HBG = 340, SUNX = 330, SUNH = 70, SUN_BEARING = 0.14;
 /* Two looks that alternate between baskets: Painted Dawn and Dusk Neon. */
@@ -1392,40 +1513,62 @@ function onOrient(e) {
     }
   }
 }
+function validOrient(e) { return !!e && e.beta !== null && e.beta !== undefined && isFinite(e.beta); }
+function aimLog(ev, p) { try { (window.__skipLog = window.__skipLog || []).push([ev, p || {}, Date.now()]); } catch (x) {} }
 function tiltOff(msg) {
   tilt.on = false; tilt.beta0 = null; tilt.auto = false; yawMode = false; yawRef = null; aimYaw = ringBearing(); document.querySelector('.angle').classList.remove('tiltOn');
   window.removeEventListener('deviceorientation', onOrient);
   $('tilt').setAttribute('aria-pressed', 'false'); $('tilt').textContent = 'Phone aim';
-  $('tiltNote').textContent = AIM_FALLBACK;
+  $('tiltNote').textContent = msg || AIM_FALLBACK;
 }
 function tiltOn() {
+  window.removeEventListener('deviceorientation', onSensorFirst);
   tilt.on = true; tilt.seen = false; tilt.beta0 = null; tilt.smooth = 10; setAngle(10); yawRef = null; tilt.auto = true; tilt.stillT = 0; tilt.autoT = 0; tilt.pa = null; tilt.pb = null; tilt.pt = 0;
   document.querySelector('.angle').classList.add('tiltOn');
   $('tilt').setAttribute('aria-pressed', 'true'); $('tilt').textContent = 'Phone aim on';
   $('tiltNote').textContent = '';
+  window.removeEventListener('deviceorientation', onOrient);
   window.addEventListener('deviceorientation', onOrient);
-  clearTimeout(tilt.timer);
-  tilt.timer = setTimeout(function () { if (tilt.on && !tilt.seen) tiltOff('No motion data reached this page. Swipe direction aims.'); }, 1500);
+  tilt.evT = Date.now();
 }
-/* v2.6 (R5): no button. Phone aim switches itself on when motion data arrives; without a sensor the swipe sets angle and aim. */
+/* v2.6.2 (R4): the sensor listener stays attached for the whole session. Phone aim turns itself on at the first valid motion event, however late it
+   arrives (no 1.5 s give-up). Until then, and if a sensor never answers, the swipe sets angle and aim. If motion data stops while the screen is
+   showing, the swipe takes over again and the next event switches Phone aim back on. */
 var AIM_FALLBACK = 'Swipe length sets the angle. Swipe direction aims.';
+function onSensorFirst(e) {
+  if (!validOrient(e) || tilt.userOff) return;
+  aimLog('aim_sensor', { first: true, beta: Math.round(e.beta), t: Math.round(performance.now()) });
+  tiltOn(); onOrient(e);
+}
+function armSensor() {
+  window.removeEventListener('deviceorientation', onSensorFirst);
+  if (tilt.userOff) return;
+  window.addEventListener('deviceorientation', onSensorFirst);
+}
+window.addEventListener('deviceorientation', function (e) { if (validOrient(e)) tilt.evT = Date.now(); });
+setInterval(function () {
+  if (!tilt.on || document.hidden) return;
+  if (Date.now() - (tilt.evT || 0) > 2500) { aimLog('aim_sensor', { stale: true }); tiltOff('Motion data stopped. Swipe length sets the angle. Swipe direction aims.'); armSensor(); }
+}, 1000);
+document.addEventListener('visibilitychange', function () { if (!document.hidden) { tilt.evT = Date.now(); if (!tilt.on && !tilt.userOff) armSensor(); } });
 function autoAim() {
-  if (!('DeviceOrientationEvent' in window)) { tiltOff(); return; }
+  if (!('DeviceOrientationEvent' in window)) { tiltOff(); aimLog('aim_sensor', { none: true }); return; }
   var D = window.DeviceOrientationEvent;
   if (typeof D.requestPermission === 'function') {
-    // Newer Chrome grants this without a tap; iPhone needs a tap, so if refused now, ask again on the first tap anywhere
+    // iPhone: needs a tap. Ask now; if refused, ask again on the first tap anywhere.
     tiltOff();
     var ask = function () {
       document.removeEventListener('click', ask, true);
-      try { D.requestPermission().then(function (r) { if (r === 'granted') tiltOn(); }, function () {}); } catch (e) {}
+      try { D.requestPermission().then(function (r) { if (r === 'granted') armSensor(); }, function () {}); } catch (e) {}
     };
-    try { D.requestPermission().then(function (r) { if (r === 'granted') tiltOn(); else document.addEventListener('click', ask, true); }, function () { document.addEventListener('click', ask, true); }); }
+    try { D.requestPermission().then(function (r) { if (r === 'granted') armSensor(); else document.addEventListener('click', ask, true); }, function () { document.addEventListener('click', ask, true); }); }
     catch (e) { document.addEventListener('click', ask, true); }
-  } else tiltOn();
+  } else { tiltOff(); armSensor(); }
 }
 $('tilt').addEventListener('click', function () {
   Sound.unlock();
-  if (tilt.on) { tiltOff('Phone aim off. Swipe direction aims.'); return; }
+  if (tilt.on) { tilt.userOff = true; window.removeEventListener('deviceorientation', onSensorFirst); tiltOff('Phone aim off. Swipe direction aims.'); return; }
+  tilt.userOff = false;
   if (!('DeviceOrientationEvent' in window)) { tiltOff('This browser has no motion sensor. Swipe direction aims.'); return; }
   var D = window.DeviceOrientationEvent;
   if (typeof D.requestPermission === 'function') {
@@ -1435,16 +1578,21 @@ $('tilt').addEventListener('click', function () {
   } else tiltOn();
 });
 
-/* Keep the stage at an exact 3:4 box so the canvas fills it. */
+/* v2.6.2 (R3): the scene fills the whole stage between the header strip and the stone deck. Before the game boots, the world height H follows the
+   stage (width 480 design px, height 640 to 960); after boot H is fixed and the frame keeps that aspect, centred in the stage. */
+var booted = false;
 function fitFrame() {
   var st = $('stage'), fr = $('frame');
   var r = st.getBoundingClientRect();
-  var w = Math.min(r.width, r.height * 0.75), h = w / 0.75;
+  if (!(r.width > 40 && r.height > 40)) return;
+  if (!booted) { var nh = Math.round(Math.max(H0, Math.min(960, W * r.height / r.width))); if (nh !== H) setWorld(nh); }
+  var w = Math.min(r.width, r.height * W / H), h = w * H / W;
   fr.style.width = Math.floor(w) + 'px'; fr.style.height = Math.floor(h) + 'px';
   if (window.__skipGame && window.__skipGame.canvas) { try { window.__skipGame.scale.refresh(); } catch (e) {} }
 }
 if (window.ResizeObserver) new ResizeObserver(fitFrame).observe($('stage'));
 window.addEventListener('resize', fitFrame);
+window.addEventListener('neonviewport', fitFrame);
 fitFrame();
 autoAim();
 
@@ -1466,16 +1614,6 @@ if (window.MutationObserver) { var sheetMo = new MutationObserver(syncSheet); SH
 if (window.ResizeObserver) new ResizeObserver(placeLayer).observe(document.querySelector('.top'));
 window.addEventListener('resize', placeLayer);
 placeLayer();
-
-/* v2.6 (R2): animated intro on every cold start. CSS runs the 2 s animation from first paint; a tap skips it. */
-(function () {
-  var el = $('intro'); if (!el) return;
-  function done() { if (el.classList.contains('show')) { el.classList.remove('show', 'skip'); el.setAttribute('aria-hidden', 'true'); } }
-  el.addEventListener('animationend', function (e) { if (e.target === el) done(); });
-  el.addEventListener('click', function () { Sound.unlock(); el.classList.add('skip'); });
-  el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') el.click(); });
-  setTimeout(done, 3200);
-})();
 
 /* ---------- Daily challenge store (device only; shared leaderboard is a later gate) ---------- */
 var DAILY_KEY = 'skipstone.v02.daily';
@@ -2595,6 +2733,7 @@ function create() {
     var list = e.getCoalescedEvents ? e.getCoalescedEvents() : null;
     if (list && list.length) { for (var i = 0; i < list.length; i++) swipePts.push(toDesign(list[i])); } else swipePts.push(toDesign(e));
     swipeYaw = tailYaw(swipePts);
+    if (!tilt.on && swipePts.length > 2) { var sp0 = swipePts[0], sp1 = swipePts[swipePts.length - 1]; setAngle(Math.round(clamp(2 + 14 * (-(sp1.y - sp0.y) / H0), 2, 16) * 2) / 2); }   // v2.6.2: the colour bar follows the swipe when there is no phone sensor
   });
   function release(e) {
     if (!swipePts) return;
@@ -2638,7 +2777,7 @@ function analyse(pts) {
   for (var i = 0; i < n; i++) maxDev = Math.max(maxDev, Math.abs((pts[i].x - a.x) * dy - (pts[i].y - a.y) * dx) / chord);
   var yaw = tailYaw(pts); if (yaw === null) yaw = clamp(Math.atan2(dx, -dy) * 180 / Math.PI, -35, 35);
   yaw = clamp(yaw, -20, 20);
-  var angle = clamp(2 + 14 * (-dy / H), 2, 16);
+  var angle = clamp(2 + 14 * (-dy / H0), 2, 16);
   return { angle: angle, power: clamp((peak - 1.0) / 5.0, 0.04, 1), spin: clamp((maxDev / chord - 0.02) / 0.2, 0, 1), yaw: yaw, tap: false };
 }
 
@@ -2748,8 +2887,8 @@ function update(time, delta) {
     tgt = { x: sx - hdx * chaseD - hdz * side, z: sz - hdz * chaseD + hdx * side, h: ch, f: F0 * punch };
     tgt.yaw = Math.atan2(look.z - cam.z, look.x - cam.x);
     var dd = Math.max(1.5, (sx - cam.x) * camc + (sz - cam.z) * cams);
-    hyT = 0.52 * H - cam.f * (cam.h - sh) / dd;
-    hyT = clamp(hyT, 120, 300);
+    hyT = 0.52 * H0 + (H - H0) - cam.f * (cam.h - sh) / dd;
+    hyT = clamp(hyT, 120 + (H - H0), 300 + (H - H0));
   }
   var kp = state === 'returning' ? 4 : 6;
   cam.x += (tgt.x - cam.x) * Math.min(1, kp * dt);
@@ -3134,18 +3273,46 @@ function drawForeground(sc, T, stone, dt) {
 
 var qLevel = 0;
 try { qLevel = parseInt(new URLSearchParams(window.location.search).get('level'), 10) || 0; } catch (e) {}
-startLevel(qLevel >= 1 && qLevel <= LEVEL_COUNT ? qLevel : nextLevel());
-window.__skipGame = new Phaser.Game({
-  type: Phaser.AUTO,
-  parent: 'game',
-  width: W * Z,
-  height: H * Z,
-  backgroundColor: '#120b2e',
-  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-  audio: { noAudio: true },
-  input: { mouse: false, touch: false },
-  scene: { create: create, update: update }
-});
+/* v2.6.2 (R1): the level start and the Phaser game are created by boot(), which the intro controller calls once the intro is on screen. The intro runs on
+   the compositor (transform and opacity only), so this heavy step does not freeze it. The page keeps working if the controller is missing (tests). */
+function boot() {
+  if (booted) return;
+  var go = function () {
+    fitFrame(); booted = true; fitFrame();
+    startLevel(qLevel >= 1 && qLevel <= LEVEL_COUNT ? qLevel : nextLevel());
+    window.__skipGame = new Phaser.Game({
+      type: Phaser.AUTO,
+      parent: 'game',
+      width: W * Z,
+      height: H * Z,
+      backgroundColor: '#120b2e',
+      scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+      audio: { noAudio: true },
+      input: { mouse: false, touch: false },
+      scene: { create: create, update: update }
+    });
+    try { if (window.__introBooted) window.__introBooted(); } catch (e) {}
+    aimLog('boot', { H: H, frame: [$('frame').clientWidth, $('frame').clientHeight], vp: window.__neonViewport && window.__neonViewport.used });
+  };
+  // wait (at most 0.7 s) for the native inset answer so the world height is final before the canvas is created
+  var ready = window.__neonInsetsReady || Promise.resolve();
+  var fired = false, fire = function () { if (!fired) { fired = true; go(); } };
+  ready.then(function () { requestAnimationFrame(fire); }, fire);
+  setTimeout(fire, 900);
+}
+/* Viewport diagnostics for the playtest log (debug builds read window.__skipLog): what the page was given, and where the bottom controls ended up. */
+var vpLogN = 0, vpLogT = 0;
+function layoutProbe() {
+  var r = function (sel) { var n = document.querySelector(sel); if (!n) return null; var b = n.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)]; };
+  var worst = 0; ['tutGo', 'tutMap', 'again', 'cont', 'share', 'dblBtn', 'lvClose'].forEach(function (id) { var n = $(id); if (n && n.offsetParent !== null) worst = Math.max(worst, Math.round(n.getBoundingClientRect().bottom)); });
+  return { H: H, vp: window.__neonViewport || null, body: r('body'), stage: r('#stage'), frame: r('#frame'), deck: r('.deck'), topbar: r('.topbar'), big: r('.big'), maxBtnBottom: worst };
+}
+function logViewport(tag) { if (vpLogN >= 10) return; vpLogN++; aimLog('viewport', { tag: tag, probe: layoutProbe() }); }
+window.addEventListener('neonviewport', function () { clearTimeout(vpLogT); vpLogT = setTimeout(function () { logViewport('change'); }, 500); });
+setTimeout(function () { logViewport('t+2s'); }, 2000);
+setTimeout(function () { logViewport('t+5s'); }, 5000);
+window.__neonBoot = boot;
+if (!document.getElementById('intro') || !document.getElementById('intro').classList.contains('show')) { window.__neonBoot = null; boot(); }
 window.__skipSim = { simulate: simulate, STONES: STONES };
 /* Test hooks for headless checks only; not reachable from the game interface. */
 window.__skipDbg = {
